@@ -11,7 +11,7 @@ import {ai} from '@/ai/genkit';
 import {z} from 'genkit';
 import { getContractDataById } from '@/services/bigquery-service';
 
-export const FetchContractDataInputSchema = z.object({
+const FetchContractDataInputSchema = z.object({
   recordId: z.string().describe('The ID of the record to fetch from BigQuery.'),
 });
 export type FetchContractDataInput = z.infer<typeof FetchContractDataInputSchema>;
@@ -19,7 +19,7 @@ export type FetchContractDataInput = z.infer<typeof FetchContractDataInputSchema
 // Define an output schema that matches the fields of the NDA template.
 // This makes the output predictable and type-safe.
 // All fields are optional as they might not exist in BigQuery or be null.
-export const FetchContractDataOutputSchema = z.object({
+const FetchContractDataOutputSchema = z.object({
   id: z.string().optional(),
   partyOneName: z.string().optional().nullable(),
   partyOneAddress: z.string().optional().nullable(),
