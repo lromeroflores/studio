@@ -6,12 +6,13 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
 
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, Eye } from 'lucide-react';
+import { Trash2, Eye, DatabaseZap, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 import { TemplateForm } from '@/components/contract/template-form';
@@ -19,12 +20,16 @@ import { AIClauseGenerator } from '@/components/contract/ai-clause-generator';
 import { ContractPreview } from '@/components/contract/contract-preview';
 import type { ContractTemplate, AdHocClause, ContractField } from '@/components/contract/types';
 import { defaultTemplates } from '@/lib/templates';
+import { fetchContractDataFromBigQuery, type FetchContractDataOutput } from '@/ai/flows/fetch-contract-data-from-bigquery';
 
 export default function ContractEditorPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplate>(defaultTemplates[0]);
   const [adHocClauses, setAdHocClauses] = useState<AdHocClause[]>([]);
   const [contractPreviewText, setContractPreviewText] = useState<string>('');
   const { toast } = useToast();
+
+  const [bigQueryRecordId, setBigQueryRecordId] = useState<string>('');
+  const [isFetchingFromBigQuery, setIsFetchingFromBigQuery] = useState<boolean>(false);
 
   const validationSchema = useMemo(() => {
     const schemaFields: Record<string, z.ZodTypeAny> = {};
@@ -35,18 +40,20 @@ export default function ContractEditorPage() {
         case 'textarea':
           zodType = z.string();
           if (field.required) zodType = zodType.min(1, `${field.label} is required.`);
-          else zodType = zodType.optional();
+          else zodType = zodType.optional().nullable(); // Allow null from BQ
           break;
         case 'number':
           zodType = z.preprocess(
             (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
-            field.required ? z.number({invalid_type_error: `${field.label} must be a number.`}) : z.number({invalid_type_error: `${field.label} must be a number.`}).optional()
+            field.required 
+              ? z.number({invalid_type_error: `${field.label} must be a number.`}) 
+              : z.number({invalid_type_error: `${field.label} must be a number.`}).optional().nullable()
           );
           break;
         case 'date':
-          zodType = z.string(); // HTML date input gives string
+          zodType = z.string(); 
           if (field.required) zodType = zodType.min(1, `${field.label} is required.`);
-          else zodType = zodType.optional();
+          else zodType = zodType.optional().nullable();
           break;
         default:
           zodType = z.any();
@@ -93,7 +100,6 @@ export default function ContractEditorPage() {
     toast({ title: 'Preview Updated', description: 'Contract preview has been refreshed with the latest data.' });
   };
   
-  // Update preview on form data change
   useEffect(() => {
     const subscription = formMethods.watch((values) => {
       setContractPreviewText(selectedTemplate.baseText(values as Record<string, any>));
@@ -105,6 +111,59 @@ export default function ContractEditorPage() {
     const newTemplate = defaultTemplates.find(t => t.id === templateId);
     if (newTemplate) {
       setSelectedTemplate(newTemplate);
+       // Reset form with new template defaults
+      formMethods.reset(
+        newTemplate.fields.reduce((acc, field) => {
+          acc[field.id] = field.defaultValue || (field.type === 'number' ? undefined : '');
+          return acc;
+        }, {} as Record<string, any>)
+      );
+    }
+  };
+
+  const handleFetchFromBigQuery = async () => {
+    if (!bigQueryRecordId.trim()) {
+      toast({ title: 'Error', description: 'Please enter a Record ID to fetch from BigQuery.', variant: 'destructive' });
+      return;
+    }
+    setIsFetchingFromBigQuery(true);
+    try {
+      const result: FetchContractDataOutput = await fetchContractDataFromBigQuery({ recordId: bigQueryRecordId });
+      if (result) {
+        // Populate form fields
+        // Ensure selectedTemplate fields are iterated to avoid setting undefined fields on the form
+        selectedTemplate.fields.forEach(field => {
+          if (result.hasOwnProperty(field.id)) {
+            let valueToSet = result[field.id as keyof FetchContractDataOutput];
+            
+            // Handle date formatting if necessary (BigQuery might return ISO string, HTML date input needs YYYY-MM-DD)
+            if (field.type === 'date' && typeof valueToSet === 'string' && valueToSet) {
+              try {
+                valueToSet = new Date(valueToSet).toISOString().split('T')[0];
+              } catch (e) {
+                console.warn(`Could not parse date for field ${field.id}: ${valueToSet}`);
+                valueToSet = ''; // or keep original, or set to null
+              }
+            }
+            
+            // For number fields, ensure it's a number or undefined for optional fields
+            if (field.type === 'number') {
+               valueToSet = valueToSet === null || valueToSet === undefined || valueToSet === '' ? undefined : Number(valueToSet);
+            }
+
+            formMethods.setValue(field.id as any, valueToSet ?? '');
+          }
+        });
+        toast({ title: 'Data Fetched', description: 'Contract data has been pre-filled from BigQuery.' });
+        handlePreviewContract(); // Refresh preview
+      } else {
+        toast({ title: 'Not Found', description: `No data found in BigQuery for Record ID: ${bigQueryRecordId}`, variant: 'destructive' });
+      }
+    } catch (error) {
+      console.error('Error fetching from BigQuery:', error);
+      toast({ title: 'BigQuery Fetch Failed', description: `Could not fetch data: ${error instanceof Error ? error.message : 'Unknown error'}`, variant: 'destructive' });
+    } finally {
+      setIsFetchingFromBigQuery(false);
     }
   };
 
@@ -117,7 +176,7 @@ export default function ContractEditorPage() {
           <Card className="shadow-lg">
             <CardHeader>
               <CardTitle>Contract Details</CardTitle>
-              <CardDescription>Fill in the fields for your chosen contract template.</CardDescription>
+              <CardDescription>Fill in the fields for your chosen contract template or fetch from BigQuery.</CardDescription>
             </CardHeader>
             <CardContent>
               <div className="space-y-4">
@@ -135,6 +194,23 @@ export default function ContractEditorPage() {
                       ))}
                     </SelectContent>
                   </Select>
+                </div>
+                <Separator />
+                 <div>
+                  <Label htmlFor="bigquery-record-id">Fetch by Record ID (from BigQuery)</Label>
+                  <div className="flex space-x-2 mt-1">
+                    <Input
+                      id="bigquery-record-id"
+                      placeholder="Enter Record ID"
+                      value={bigQueryRecordId}
+                      onChange={(e) => setBigQueryRecordId(e.target.value)}
+                      disabled={isFetchingFromBigQuery}
+                    />
+                    <Button onClick={handleFetchFromBigQuery} disabled={isFetchingFromBigQuery || !bigQueryRecordId.trim()} className="whitespace-nowrap">
+                      {isFetchingFromBigQuery ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DatabaseZap className="mr-2 h-4 w-4" />}
+                      Fetch Data
+                    </Button>
+                  </div>
                 </div>
                 <Separator />
                 <FormProvider {...formMethods}>
