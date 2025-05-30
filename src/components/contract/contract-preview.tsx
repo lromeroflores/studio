@@ -1,12 +1,12 @@
 
 'use client';
 
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
-import { Textarea } from '@/components/ui/textarea'; // Added Textarea
-import { Printer, Download, Edit3, Save, XCircle } from 'lucide-react'; // Added new icons
+import { Textarea } from '@/components/ui/textarea';
+import { Printer, Download, Edit3, Save, XCircle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { AdHocClause, TemplateSectionStatus } from './types';
 
@@ -21,7 +21,8 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editTextInEditor, setEditTextInEditor] = useState<string>('');
-  const [displayedText, setDisplayedText] = useState<string>('');
+  // State to hold the manually edited version. If null, generated text is used.
+  const [editedVersion, setEditedVersion] = useState<string | null>(null);
 
   const processTextWithSectionVisibility = useCallback((text: string, sections: TemplateSectionStatus[]): string => {
     let processedText = text;
@@ -51,33 +52,39 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     return processedBase + adHocText;
   }, [baseText, templateSections, adHocClauses, processTextWithSectionVisibility, formatAdHocClausesText]);
 
-  useEffect(() => {
-    if (!isEditing) {
-      const newGeneratedText = calculateGeneratedText();
-      setDisplayedText(newGeneratedText);
+  // Determine the text to display: edited version if available, otherwise generated.
+  const currentTextToShow = useMemo(() => {
+    if (editedVersion !== null) {
+      return editedVersion;
     }
-  }, [baseText, adHocClauses, templateSections, isEditing, calculateGeneratedText]);
+    return calculateGeneratedText();
+  }, [editedVersion, calculateGeneratedText]);
+
+  // If underlying contract props change, invalidate manual edits.
+  useEffect(() => {
+    setEditedVersion(null);
+  }, [baseText, adHocClauses, templateSections]);
 
 
   const handleEditText = () => {
-    setEditTextInEditor(displayedText);
+    setEditTextInEditor(currentTextToShow); // Initialize editor with what's currently shown
     setIsEditing(true);
   };
 
   const handleSaveEdits = () => {
-    setDisplayedText(editTextInEditor);
+    setEditedVersion(editTextInEditor); // Save manual edits
     setIsEditing(false);
     toast({ title: 'Changes Saved', description: 'Your edits to the contract have been saved.' });
   };
 
   const handleCancelEdits = () => {
-    setIsEditing(false);
-    // displayedText will be reset by the useEffect watching isEditing
+    setIsEditing(false); // Simply exit edit mode; currentTextToShow will ensure correct display
     toast({ title: 'Edits Canceled', description: 'Your changes have been discarded.', variant: 'default' });
   };
 
   const getTextForAction = () => {
-    return isEditing ? editTextInEditor : displayedText;
+    // If editing, use the live text from editor, otherwise use the determined currentTextToShow
+    return isEditing ? editTextInEditor : currentTextToShow;
   };
 
   const handlePrint = () => {
@@ -102,8 +109,6 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
   };
 
   const handleExportPdf = () => {
-    // In a real app, you'd use a library like jsPDF or a server-side PDF generation service.
-    // For now, this remains a mock.
     const textToExport = getTextForAction();
     console.log("Text to export for PDF:", textToExport);
     toast({
@@ -117,8 +122,8 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
       <CardHeader>
         <CardTitle>Contract Preview</CardTitle>
         <CardDescription>
-          Review the generated contract. 
-          {isEditing 
+          Review the generated contract.
+          {isEditing
             ? "You are currently editing the contract text directly."
             : "You can edit the text below or use the form/clause tools."}
         </CardDescription>
@@ -131,10 +136,10 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
               onChange={(e) => setEditTextInEditor(e.target.value)}
               className="h-full w-full resize-none border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
               placeholder="Start typing your contract..."
-              rows={15} // Approximate based on 400px height
+              rows={15}
             />
           ) : (
-            <pre className="text-sm whitespace-pre-wrap break-words">{displayedText}</pre>
+            <pre className="text-sm whitespace-pre-wrap break-words">{currentTextToShow}</pre>
           )}
         </ScrollArea>
       </CardContent>
@@ -167,4 +172,3 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     </Card>
   );
 }
-
