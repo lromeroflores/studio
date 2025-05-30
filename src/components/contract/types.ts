@@ -19,3 +19,10 @@ export interface AdHocClause {
   id: string;
   text: string;
 }
+
+export interface TemplateSectionStatus {
+  id: string; // Matches section_id from template comments
+  title: string; // User-friendly title for the section
+  visible: boolean;
+  originalContent: string; // To help with display or debugging
+}

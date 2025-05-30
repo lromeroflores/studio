@@ -5,18 +5,40 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Printer, Download } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { AdHocClause } from './types';
+import type { AdHocClause, TemplateSectionStatus } from './types';
 
 interface ContractPreviewProps {
-  baseText: string;
+  baseText: string; // This is the fully interpolated text from the template
   adHocClauses: AdHocClause[];
+  templateSections: TemplateSectionStatus[];
 }
 
-export function ContractPreview({ baseText, adHocClauses }: ContractPreviewProps) {
+export function ContractPreview({ baseText, adHocClauses, templateSections }: ContractPreviewProps) {
   const { toast } = useToast();
 
+  const processTextWithSectionVisibility = (text: string, sections: TemplateSectionStatus[]): string => {
+    let processedText = text;
+
+    sections.forEach(section => {
+      if (!section.visible) {
+        // Regex to find the section including its comments and remove it
+        // Match[1] is the section ID, Match[2] is the content
+        const sectionRegex = new RegExp(`<!-- SECTION_START: ${section.id} -->(.*?)<!-- SECTION_END: ${section.id} -->`, 'gs');
+        processedText = processedText.replace(sectionRegex, '');
+      }
+    });
+
+    // Clean up any remaining section comments (e.g. if section was visible)
+    processedText = processedText.replace(/<!-- SECTION_(START|END): .*? -->/gs, '');
+    // Also remove multiple blank lines that might result from removed sections
+    processedText = processedText.replace(/\n\s*\n\s*\n/g, '\n\n'); 
+    return processedText.trim();
+  };
+
+
   const fullContractText = () => {
-    let text = baseText;
+    let text = processTextWithSectionVisibility(baseText, templateSections);
+    
     if (adHocClauses.length > 0) {
       text += '\n\n--- AD-HOC CLAUSES ---\n';
       adHocClauses.forEach((clause, index) => {
@@ -34,10 +56,9 @@ export function ContractPreview({ baseText, adHocClauses }: ContractPreviewProps
       printWindow.document.write('<style>body { font-family: Arial, sans-serif; white-space: pre-wrap; word-wrap: break-word; padding: 20px; } h1 { font-size: 1.5em; margin-bottom: 1em; } p { margin-bottom: 0.5em; line-height: 1.6; }</style>');
       printWindow.document.write('</head><body>');
       printWindow.document.write('<h1>Contract Document</h1>');
-      // Sanitize and format for printing
       const formattedText = printableContent
         .split('\n')
-        .map(line => `<p>${line.replace(/</g, "&lt;").replace(/>/g, "&gt;") || "&nbsp;"}</p>`) // handle empty lines
+        .map(line => `<p>${line.replace(/</g, "&lt;").replace(/>/g, "&gt;") || "&nbsp;"}</p>`)
         .join('');
       printWindow.document.write(formattedText);
       printWindow.document.write('</body></html>');
@@ -49,7 +70,6 @@ export function ContractPreview({ baseText, adHocClauses }: ContractPreviewProps
   };
 
   const handleExportPdf = () => {
-    // This is a mocked PDF export. For real PDF export, a library like jsPDF or react-pdf would be needed.
     toast({
       title: 'PDF Export (Mock)',
       description: 'Contract PDF export initiated! (This is a placeholder functionality).',
@@ -60,7 +80,7 @@ export function ContractPreview({ baseText, adHocClauses }: ContractPreviewProps
     <Card className="shadow-lg col-span-1 md:col-span-2">
       <CardHeader>
         <CardTitle>Contract Preview</CardTitle>
-        <CardDescription>Review the generated contract below. Sections from the template are combined with any ad-hoc clauses you've added.</CardDescription>
+        <CardDescription>Review the generated contract below. Sections from the template are combined with any ad-hoc clauses you've added. Use "Manage Template Sections" to toggle predefined clauses.</CardDescription>
       </CardHeader>
       <CardContent>
         <ScrollArea className="h-[400px] w-full rounded-md border p-4 bg-muted/20">

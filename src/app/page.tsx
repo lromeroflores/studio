@@ -1,6 +1,6 @@
 'use client';
 
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useCallback } from 'react';
 import { useForm, FormProvider } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import * as z from 'zod';
@@ -12,15 +12,45 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { Separator } from '@/components/ui/separator';
-import { Trash2, Eye, DatabaseZap, Loader2 } from 'lucide-react';
+import { Switch } from '@/components/ui/switch';
+import { Trash2, Eye, DatabaseZap, Loader2, ListCollapse } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 import { TemplateForm } from '@/components/contract/template-form';
 import { AIClauseGenerator } from '@/components/contract/ai-clause-generator';
 import { ContractPreview } from '@/components/contract/contract-preview';
-import type { ContractTemplate, AdHocClause, ContractField } from '@/components/contract/types';
+import type { ContractTemplate, AdHocClause, ContractField, TemplateSectionStatus } from '@/components/contract/types';
 import { defaultTemplates } from '@/lib/templates';
 import { fetchContractDataFromBigQuery, type FetchContractDataOutput } from '@/ai/flows/fetch-contract-data-from-bigquery';
+
+// Helper function to create a user-friendly title from a section ID
+const sectionIdToTitle = (id: string): string => {
+  return id
+    .replace(/_/g, ' ')
+    .replace(/-/g, ' ')
+    .split(' ')
+    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+    .join(' ');
+};
+
+// Helper function to parse sections from template text
+const extractSectionsFromTemplate = (templateText: string): TemplateSectionStatus[] => {
+  const sections: TemplateSectionStatus[] = [];
+  const sectionRegex = /<!-- SECTION_START: (.*?) -->(.*?)<!-- SECTION_END: \1 -->/gs;
+  let match;
+  while ((match = sectionRegex.exec(templateText)) !== null) {
+    const id = match[1];
+    const content = match[2].trim();
+    sections.push({
+      id,
+      title: sectionIdToTitle(id),
+      originalContent: content, // Store original content for reference or stable ID generation
+      visible: true,
+    });
+  }
+  return sections;
+};
+
 
 export default function ContractEditorPage() {
   const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplate>(defaultTemplates[0]);
@@ -31,6 +61,8 @@ export default function ContractEditorPage() {
   const [bigQueryRecordId, setBigQueryRecordId] = useState<string>('');
   const [isFetchingFromBigQuery, setIsFetchingFromBigQuery] = useState<boolean>(false);
 
+  const [templateSections, setTemplateSections] = useState<TemplateSectionStatus[]>([]);
+
   const validationSchema = useMemo(() => {
     const schemaFields: Record<string, z.ZodTypeAny> = {};
     selectedTemplate.fields.forEach(field => {
@@ -40,7 +72,7 @@ export default function ContractEditorPage() {
         case 'textarea':
           zodType = z.string();
           if (field.required) zodType = zodType.min(1, `${field.label} is required.`);
-          else zodType = zodType.optional().nullable(); // Allow null from BQ
+          else zodType = zodType.optional().nullable();
           break;
         case 'number':
           zodType = z.preprocess(
@@ -74,15 +106,38 @@ export default function ContractEditorPage() {
     }, [selectedTemplate]),
   });
 
+  const generateContractPreviewText = useCallback(() => {
+    const currentValues = formMethods.getValues();
+    return selectedTemplate.baseText(currentValues);
+  }, [formMethods, selectedTemplate]);
+
   useEffect(() => {
+    // Initialize/reset form and sections when template changes
     formMethods.reset(
       selectedTemplate.fields.reduce((acc, field) => {
         acc[field.id] = field.defaultValue || (field.type === 'number' ? undefined : '');
         return acc;
       }, {} as Record<string, any>)
     );
-    setContractPreviewText(selectedTemplate.baseText(formMethods.getValues()));
-  }, [selectedTemplate, formMethods]);
+    
+    const initialPreviewText = generateContractPreviewText();
+    setContractPreviewText(initialPreviewText);
+
+    // Parse sections from the raw template structure (not interpolated with data yet, for stable IDs)
+    const rawTemplateText = selectedTemplate.baseText({}); // Use empty data for parsing structure
+    const parsedSections = extractSectionsFromTemplate(rawTemplateText);
+    setTemplateSections(parsedSections.map(s => ({ ...s, visible: true }))); // All visible by default
+
+  }, [selectedTemplate, formMethods, generateContractPreviewText]);
+
+
+  useEffect(() => {
+    // Update preview text whenever form values change
+    const subscription = formMethods.watch((values) => {
+      setContractPreviewText(selectedTemplate.baseText(values as Record<string, any>));
+    });
+    return () => subscription.unsubscribe();
+  }, [formMethods, selectedTemplate]);
 
 
   const handleAddAdHocClause = (clause: AdHocClause) => {
@@ -95,29 +150,17 @@ export default function ContractEditorPage() {
   };
 
   const handlePreviewContract = () => {
+    // This function is mostly for explicit refresh, actual preview updates via useEffect on form watch
     const currentValues = formMethods.getValues();
     setContractPreviewText(selectedTemplate.baseText(currentValues));
     toast({ title: 'Preview Updated', description: 'Contract preview has been refreshed with the latest data.' });
   };
   
-  useEffect(() => {
-    const subscription = formMethods.watch((values) => {
-      setContractPreviewText(selectedTemplate.baseText(values as Record<string, any>));
-    });
-    return () => subscription.unsubscribe();
-  }, [formMethods, selectedTemplate]);
-
   const handleTemplateChange = (templateId: string) => {
     const newTemplate = defaultTemplates.find(t => t.id === templateId);
     if (newTemplate) {
       setSelectedTemplate(newTemplate);
-       // Reset form with new template defaults
-      formMethods.reset(
-        newTemplate.fields.reduce((acc, field) => {
-          acc[field.id] = field.defaultValue || (field.type === 'number' ? undefined : '');
-          return acc;
-        }, {} as Record<string, any>)
-      );
+      // Form reset and section parsing is handled by the useEffect watching selectedTemplate
     }
   };
 
@@ -130,32 +173,22 @@ export default function ContractEditorPage() {
     try {
       const result: FetchContractDataOutput = await fetchContractDataFromBigQuery({ recordId: bigQueryRecordId });
       if (result) {
-        // Populate form fields
-        // Ensure selectedTemplate fields are iterated to avoid setting undefined fields on the form
         selectedTemplate.fields.forEach(field => {
           if (result.hasOwnProperty(field.id)) {
             let valueToSet = result[field.id as keyof FetchContractDataOutput];
-            
-            // Handle date formatting if necessary (BigQuery might return ISO string, HTML date input needs YYYY-MM-DD)
             if (field.type === 'date' && typeof valueToSet === 'string' && valueToSet) {
               try {
                 valueToSet = new Date(valueToSet).toISOString().split('T')[0];
-              } catch (e) {
-                console.warn(`Could not parse date for field ${field.id}: ${valueToSet}`);
-                valueToSet = ''; // or keep original, or set to null
-              }
+              } catch (e) { console.warn(`Could not parse date for field ${field.id}: ${valueToSet}`); valueToSet = ''; }
             }
-            
-            // For number fields, ensure it's a number or undefined for optional fields
             if (field.type === 'number') {
                valueToSet = valueToSet === null || valueToSet === undefined || valueToSet === '' ? undefined : Number(valueToSet);
             }
-
             formMethods.setValue(field.id as any, valueToSet ?? '');
           }
         });
         toast({ title: 'Data Fetched', description: 'Contract data has been pre-filled from BigQuery.' });
-        handlePreviewContract(); // Refresh preview
+        setContractPreviewText(generateContractPreviewText()); // Refresh preview with new data
       } else {
         toast({ title: 'Not Found', description: `No data found in BigQuery for Record ID: ${bigQueryRecordId}`, variant: 'destructive' });
       }
@@ -167,11 +200,19 @@ export default function ContractEditorPage() {
     }
   };
 
+  const handleToggleSectionVisibility = (sectionId: string) => {
+    setTemplateSections(prevSections =>
+      prevSections.map(section =>
+        section.id === sectionId ? { ...section, visible: !section.visible } : section
+      )
+    );
+  };
+
 
   return (
     <div className="container mx-auto py-2">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Column: Template and AI */}
+        {/* Left Column: Template, AI, Sections */}
         <div className="md:col-span-1 space-y-6">
           <Card className="shadow-lg">
             <CardHeader>
@@ -225,6 +266,32 @@ export default function ContractEditorPage() {
             </CardFooter>
           </Card>
 
+          {templateSections.length > 0 && (
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <ListCollapse className="mr-2 h-6 w-6 text-accent" />
+                  Manage Template Sections
+                </CardTitle>
+                <CardDescription>Toggle visibility of predefined sections in the contract.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {templateSections.map((section) => (
+                  <div key={section.id} className="flex items-center justify-between p-2 border rounded-md bg-muted/20">
+                    <Label htmlFor={`section-toggle-${section.id}`} className="flex-1 cursor-pointer text-sm">
+                      {section.title}
+                    </Label>
+                    <Switch
+                      id={`section-toggle-${section.id}`}
+                      checked={section.visible}
+                      onCheckedChange={() => handleToggleSectionVisibility(section.id)}
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
+
           <AIClauseGenerator onAddClause={handleAddAdHocClause} />
           
           {adHocClauses.length > 0 && (
@@ -249,7 +316,11 @@ export default function ContractEditorPage() {
 
         {/* Right Column: Preview */}
         <div className="md:col-span-2">
-          <ContractPreview baseText={contractPreviewText} adHocClauses={adHocClauses} />
+          <ContractPreview 
+            baseText={contractPreviewText} 
+            adHocClauses={adHocClauses}
+            templateSections={templateSections} 
+          />
         </div>
       </div>
     </div>
