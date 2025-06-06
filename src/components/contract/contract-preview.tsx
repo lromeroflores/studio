@@ -157,21 +157,23 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
             : "You can edit the text below or use the form/clause tools."}
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-4 bg-muted/20 border rounded-md">
-        {isEditing ? (
-          <Textarea
-            value={editTextInEditor}
-            onChange={(e) => setEditTextInEditor(e.target.value)}
-            className="w-full resize-none border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent min-h-[300px]"
-            placeholder="Start typing your contract..."
-            rows={15}
-            disabled={isRenumbering}
-          />
-        ) : (
-          <pre className="text-sm whitespace-pre-wrap break-words min-h-[300px]">{currentTextToShow}</pre>
-        )}
+      <CardContent className="px-6 pb-6 pt-0"> {/* Added px-6 pb-6 for side and bottom padding, pt-0 to match default CardContent structure */}
+        <div className="p-4 bg-muted/20 border rounded-md min-h-[calc(300px+2rem)]"> {/* Inner div for grey background and its own padding */}
+          {isEditing ? (
+            <Textarea
+              value={editTextInEditor}
+              onChange={(e) => setEditTextInEditor(e.target.value)}
+              className="w-full resize-none border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent min-h-[300px]"
+              placeholder="Start typing your contract..."
+              rows={15}
+              disabled={isRenumbering}
+            />
+          ) : (
+            <pre className="text-sm whitespace-pre-wrap break-words min-h-[300px]">{currentTextToShow}</pre>
+          )}
+        </div>
       </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row gap-2 justify-between items-center pt-4">
+      <CardFooter className="flex flex-col sm:flex-row gap-2 justify-between items-center px-6 pb-6 pt-4"> {/* Ensure consistent px-6 pb-6 */}
         <div className="flex gap-2 flex-wrap">
           <Button onClick={handlePrint} variant="outline" className="w-full sm:w-auto" disabled={isRenumbering}>
             <Printer className="mr-2 h-4 w-4" /> Print
