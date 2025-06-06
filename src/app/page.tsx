@@ -49,7 +49,8 @@ const extractSectionsFromTemplate = (templateText: string): TemplateSectionStatu
       visible: true,
     });
   }
-  return sections;
+  // Filter out the logo section if it's parsed, as it's not a toggleable content section
+  return sections.filter(section => section.id !== 'logo_section');
 };
 
 
@@ -113,7 +114,6 @@ export default function ContractEditorPage() {
   }, [formMethods, selectedTemplate]);
 
   useEffect(() => {
-    // Initialize/reset form and sections when template changes
     formMethods.reset(
       selectedTemplate.fields.reduce((acc, field) => {
         acc[field.id] = field.defaultValue || (field.type === 'number' ? undefined : '');
@@ -124,16 +124,14 @@ export default function ContractEditorPage() {
     const initialPreviewText = generateContractPreviewText();
     setContractPreviewText(initialPreviewText);
 
-    // Parse sections from the raw template structure (not interpolated with data yet, for stable IDs)
-    const rawTemplateText = selectedTemplate.baseText({}); // Use empty data for parsing structure
+    const rawTemplateText = selectedTemplate.baseText({}); 
     const parsedSections = extractSectionsFromTemplate(rawTemplateText);
-    setTemplateSections(parsedSections.map(s => ({ ...s, visible: true }))); // All visible by default
+    setTemplateSections(parsedSections.map(s => ({ ...s, visible: true }))); 
 
   }, [selectedTemplate, formMethods, generateContractPreviewText]);
 
 
   useEffect(() => {
-    // Update preview text whenever form values change
     const subscription = formMethods.watch((values) => {
       setContractPreviewText(selectedTemplate.baseText(values as Record<string, any>));
     });
@@ -151,7 +149,6 @@ export default function ContractEditorPage() {
   };
 
   const handlePreviewContract = () => {
-    // This function is mostly for explicit refresh, actual preview updates via useEffect on form watch
     const currentValues = formMethods.getValues();
     setContractPreviewText(selectedTemplate.baseText(currentValues));
     toast({ title: 'Preview Updated', description: 'Contract preview has been refreshed with the latest data.' });
@@ -161,7 +158,6 @@ export default function ContractEditorPage() {
     const newTemplate = defaultTemplates.find(t => t.id === templateId);
     if (newTemplate) {
       setSelectedTemplate(newTemplate);
-      // Form reset and section parsing is handled by the useEffect watching selectedTemplate
     }
   };
 
@@ -174,22 +170,28 @@ export default function ContractEditorPage() {
     try {
       const result: FetchContractDataOutput = await fetchContractDataFromBigQuery({ recordId: bigQueryRecordId });
       if (result) {
+        // Create a new object for formMethods.setValue to ensure reactivity for all fields
+        const valuesToSet: Record<string, any> = {};
         selectedTemplate.fields.forEach(field => {
           if (result.hasOwnProperty(field.id)) {
-            let valueToSet = result[field.id as keyof FetchContractDataOutput];
-            if (field.type === 'date' && typeof valueToSet === 'string' && valueToSet) {
+            let value = result[field.id as keyof FetchContractDataOutput];
+            if (field.type === 'date' && typeof value === 'string' && value) {
               try {
-                valueToSet = new Date(valueToSet).toISOString().split('T')[0];
-              } catch (e) { console.warn(`Could not parse date for field ${field.id}: ${valueToSet}`); valueToSet = ''; }
+                value = new Date(value).toISOString().split('T')[0];
+              } catch (e) { console.warn(`Could not parse date for field ${field.id}: ${value}`); value = ''; }
             }
             if (field.type === 'number') {
-               valueToSet = valueToSet === null || valueToSet === undefined || valueToSet === '' ? undefined : Number(valueToSet);
+               value = value === null || value === undefined || value === '' ? undefined : Number(value);
             }
-            formMethods.setValue(field.id as any, valueToSet ?? '');
+            valuesToSet[field.id] = value ?? (field.type === 'number' ? undefined : '');
+          } else {
+            // If BQ result doesn't have a field, set it to its default or empty
+             valuesToSet[field.id] = field.defaultValue || (field.type === 'number' ? undefined : '');
           }
         });
+        formMethods.reset(valuesToSet); // Use reset to update all fields and trigger re-validation/re-render
         toast({ title: 'Data Fetched', description: 'Contract data has been pre-filled from BigQuery.' });
-        setContractPreviewText(generateContractPreviewText()); // Refresh preview with new data
+        // Preview will update via useEffect watching form values
       } else {
         toast({ title: 'Not Found', description: `No data found in BigQuery for Record ID: ${bigQueryRecordId}`, variant: 'destructive' });
       }

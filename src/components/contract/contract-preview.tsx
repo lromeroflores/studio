@@ -33,16 +33,18 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
         processedText = processedText.replace(sectionRegex, '');
       }
     });
+    // Remove all section comments after processing visibility
     processedText = processedText.replace(/<!-- SECTION_(START|END): .*? -->/gs, '');
+    // Remove multiple empty newlines that might result from section removal
     processedText = processedText.replace(/\n\s*\n\s*\n/g, '\n\n');
     return processedText.trim();
   }, []);
 
   const formatAdHocClausesText = useCallback((clauses: AdHocClause[]): string => {
     if (clauses.length === 0) return '';
-    let adHocText = '\n\n--- AD-HOC CLAUSES ---\n';
+    let adHocText = '\n\n<hr style="margin: 20px 0; border-top: 1px solid #ccc;">\n<h3 style="font-size: 1.1em; margin-bottom: 10px;">AD-HOC CLAUSES</h3>\n';
     clauses.forEach((clause, index) => {
-      adHocText += `\n${index + 1}. ${clause.text}\n`;
+      adHocText += `<div style="margin-bottom: 10px;"><strong>${index + 1}.</strong> ${clause.text.replace(/\n/g, '<br>')}</div>\n`;
     });
     return adHocText;
   }, []);
@@ -61,17 +63,27 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
   }, [editedVersion, calculateGeneratedText]);
 
   useEffect(() => {
-    setEditedVersion(null);
+    setEditedVersion(null); // Reset edited version when underlying data changes
   }, [baseText, adHocClauses, templateSections]);
 
 
   const handleEditText = () => {
-    setEditTextInEditor(currentTextToShow);
+    // For editing, we want plain text, so we convert the HTML to a simpler text representation
+    // This is a basic conversion; a more sophisticated HTML-to-text might be needed for complex HTML
+    const div = document.createElement('div');
+    div.innerHTML = currentTextToShow;
+    setEditTextInEditor(div.textContent || div.innerText || "");
     setIsEditing(true);
   };
 
   const handleSaveEdits = () => {
-    setEditedVersion(editTextInEditor);
+    // When saving from plain text editor, we assume the edits are plain text.
+    // If the editor was more advanced (WYSIWYG), this would be different.
+    // For now, we'll wrap the edited text in a way that prevents it from being interpreted as HTML if it's not.
+    // A simple approach: escape HTML characters or treat as preformatted text.
+    // However, if renumbering returns HTML, this needs to be consistent.
+    // For now, let's assume renumbering provides HTML compatible string.
+    setEditedVersion(editTextInEditor.replace(/\n/g, '<br>')); // Basic conversion for display
     setIsEditing(false);
     toast({ title: 'Changes Saved', description: 'Your edits to the contract have been saved.' });
   };
@@ -81,23 +93,26 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     toast({ title: 'Edits Canceled', description: 'Your changes have been discarded.', variant: 'default' });
   };
 
+  // getTextForAction should return plain text for actions like re-numbering,
+  // as the AI flow expects plain text.
   const getTextForAction = () => {
-    return isEditing ? editTextInEditor : currentTextToShow;
+    if (isEditing) return editTextInEditor; // Already plain text
+
+    // Convert currentTextToShow (which can be HTML) to plain text
+    const div = document.createElement('div');
+    div.innerHTML = currentTextToShow;
+    return div.textContent || div.innerText || "";
   };
 
   const handlePrint = () => {
-    const printableContent = getTextForAction();
+    const printableContent = currentTextToShow; // Print the HTML content
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write('<html><head><title>Contract Preview</title>');
-      printWindow.document.write('<style>body { font-family: Arial, sans-serif; white-space: pre-wrap; word-wrap: break-word; padding: 20px; } h1 { font-size: 1.5em; margin-bottom: 1em; } p { margin-bottom: 0.5em; line-height: 1.6; }</style>');
+      printWindow.document.write('<style>body { font-family: Arial, sans-serif; padding: 20px; } table { border-collapse: collapse; width: 100%; margin-bottom: 1em;} th, td { border: 1px solid #ddd; padding: 8px; text-align: left;} th { background-color: #f2f2f2;} img {max-width: 200px; margin-bottom: 1em;} hr {margin: 1em 0; border-top: 1px solid #ccc;} h3 {margin-top: 1em; margin-bottom: 0.5em;}</style>');
       printWindow.document.write('</head><body>');
       printWindow.document.write('<h1>Contract Document</h1>');
-      const formattedText = printableContent
-        .split('\n')
-        .map(line => `<p>${line.replace(/</g, "&lt;").replace(/>/g, "&gt;") || "&nbsp;"}</p>`)
-        .join('');
-      printWindow.document.write(formattedText);
+      printWindow.document.write(printableContent); // Directly write the HTML
       printWindow.document.write('</body></html>');
       printWindow.document.close();
       printWindow.print();
@@ -107,7 +122,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
   };
 
   const handleExportPdf = () => {
-    const textToExport = getTextForAction();
+    const textToExport = getTextForAction(); // Get plain text for PDF export
     console.log("Text to export for PDF:", textToExport);
     toast({
       title: 'PDF Export (Mock)',
@@ -116,19 +131,23 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
   };
 
   const handleRenumberContract = async () => {
-    const textToRenumber = getTextForAction();
-    if (!textToRenumber.trim()) {
+    const plainTextToRenumber = getTextForAction(); // AI expects plain text
+    if (!plainTextToRenumber.trim()) {
       toast({ title: "Cannot Renumber", description: "Contract text is empty.", variant: "destructive" });
       return;
     }
     setIsRenumbering(true);
     try {
-      const result: RenumberContractOutput = await renumberContract({ contractText: textToRenumber });
+      const result: RenumberContractOutput = await renumberContract({ contractText: plainTextToRenumber });
       if (result && result.renumberedContractText) {
+        // AI returns renumbered plain text, convert newlines for HTML display
+        const renumberedHtml = result.renumberedContractText.replace(/\n/g, '<br>');
         if (isEditing) {
+          // If editing, update the plain text editor
           setEditTextInEditor(result.renumberedContractText);
         }
-        setEditedVersion(result.renumberedContractText);
+        // Update the main preview with the HTML version
+        setEditedVersion(renumberedHtml);
         toast({ title: "Contract Re-numbered", description: "Clauses and references have been updated by AI." });
       } else {
         throw new Error("AI did not return renumbered text.");
@@ -157,8 +176,8 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
             : "You can edit the text below or use the form/clause tools."}
         </CardDescription>
       </CardHeader>
-      <CardContent className="px-6 pb-6 pt-0"> {/* Added px-6 pb-6 for side and bottom padding, pt-0 to match default CardContent structure */}
-        <div className="p-4 bg-muted/20 border rounded-md min-h-[calc(300px+2rem)]"> {/* Inner div for grey background and its own padding */}
+      <CardContent className="px-6 pb-6 pt-0">
+         <div className="p-4 bg-muted/20 border rounded-md min-h-[calc(300px+2rem)]">
           {isEditing ? (
             <Textarea
               value={editTextInEditor}
@@ -169,11 +188,14 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
               disabled={isRenumbering}
             />
           ) : (
-            <pre className="text-sm whitespace-pre-wrap break-words min-h-[300px]">{currentTextToShow}</pre>
+            <div
+              className="text-sm prose prose-sm max-w-none min-h-[300px]"
+              dangerouslySetInnerHTML={{ __html: currentTextToShow }}
+            />
           )}
         </div>
       </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row gap-2 justify-between items-center px-6 pb-6 pt-4"> {/* Ensure consistent px-6 pb-6 */}
+      <CardFooter className="flex flex-col sm:flex-row gap-2 justify-between items-center px-6 pb-6 pt-4">
         <div className="flex gap-2 flex-wrap">
           <Button onClick={handlePrint} variant="outline" className="w-full sm:w-auto" disabled={isRenumbering}>
             <Printer className="mr-2 h-4 w-4" /> Print

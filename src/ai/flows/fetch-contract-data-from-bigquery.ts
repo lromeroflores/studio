@@ -28,6 +28,9 @@ const FetchContractDataOutputSchema = z.object({
   effectiveDate: z.string().optional().nullable(), // Dates from BQ might be strings
   term: z.union([z.string(), z.number()]).optional().nullable(), // Term could be number or string if BQ stores it as such
   purpose: z.string().optional().nullable(),
+  serviceDescription: z.string().optional().nullable(),
+  serviceQuantity: z.union([z.string(), z.number()]).optional().nullable(),
+  serviceUnitPrice: z.union([z.string(), z.number()]).optional().nullable(),
 }).nullable(); // The entire object can be null if no record is found
 
 export type FetchContractDataOutput = z.infer<typeof FetchContractDataOutputSchema>;
