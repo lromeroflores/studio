@@ -147,7 +147,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
 
 
   return (
-    <Card className="shadow-lg">
+    <Card className="shadow-lg flex flex-col h-full">
       <CardHeader>
         <CardTitle>Contract Preview</CardTitle>
         <CardDescription>
@@ -157,8 +157,8 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
             : "You can edit the text below or use the form/clause tools."}
         </CardDescription>
       </CardHeader>
-      <CardContent className="p-0"> {/* Removed padding from CardContent itself */}
-        <div className="p-4 bg-muted/20 border rounded-md mx-6 mb-6"> {/* Added wrapper with margin (mx-6 mb-6) and padding (p-4) */}
+      <CardContent className="flex-grow overflow-y-auto p-0">
+        <div className="p-4 bg-muted/20 border rounded-md mx-6 h-full">
           {isEditing ? (
             <Textarea
               value={editTextInEditor}
