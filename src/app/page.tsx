@@ -317,7 +317,7 @@ export default function ContractEditorPage() {
 
         {/* Right Column: Preview */}
         <div className="md:col-span-2">
-          <div className="sticky top-20">
+          <div className="sticky top-6">
             <ContractPreview
               baseText={contractPreviewText}
               adHocClauses={adHocClauses}
