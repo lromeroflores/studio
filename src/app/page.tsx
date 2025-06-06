@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState, useEffect, useMemo, useCallback } from 'react';
@@ -316,11 +317,13 @@ export default function ContractEditorPage() {
 
         {/* Right Column: Preview */}
         <div className="md:col-span-2">
-          <ContractPreview 
-            baseText={contractPreviewText} 
-            adHocClauses={adHocClauses}
-            templateSections={templateSections} 
-          />
+          <div className="sticky top-20">
+            <ContractPreview 
+              baseText={contractPreviewText} 
+              adHocClauses={adHocClauses}
+              templateSections={templateSections} 
+            />
+          </div>
         </div>
       </div>
     </div>
