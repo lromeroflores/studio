@@ -50,7 +50,7 @@ ${formData.partyTwoAddress || '[Party Two Address]'}
 
 <!-- SECTION_START: obligations_clause -->
 3. Obligations. The Receiving Party agrees:
-   (a) to hold the Confidential Information in strict confidence and to take all reasonable precautions to protect such Confidential Information;
+   (a) to hold the Confidential Information in strict confidence and to take all reasonable precautions to protect such Confidential Information, in accordance with the terms outlined in clause 1 regarding the Purpose;
    (b) not to disclose any Confidential Information to any third party without the prior written consent of the Disclosing Party;
    (c) not to use any Confidential Information for any purpose except the Purpose.
 <!-- SECTION_END: obligations_clause -->

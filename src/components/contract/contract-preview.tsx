@@ -6,9 +6,10 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
-import { Printer, Download, Edit3, Save, XCircle } from 'lucide-react';
+import { Printer, Download, Edit3, Save, XCircle, Loader2, ListRestart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { AdHocClause, TemplateSectionStatus } from './types';
+import { renumberContract, type RenumberContractOutput } from '@/ai/flows/renumber-contract-flow';
 
 interface ContractPreviewProps {
   baseText: string;
@@ -21,8 +22,9 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
 
   const [isEditing, setIsEditing] = useState<boolean>(false);
   const [editTextInEditor, setEditTextInEditor] = useState<string>('');
-  // State to hold the manually edited version. If null, generated text is used.
   const [editedVersion, setEditedVersion] = useState<string | null>(null);
+  const [isRenumbering, setIsRenumbering] = useState<boolean>(false);
+
 
   const processTextWithSectionVisibility = useCallback((text: string, sections: TemplateSectionStatus[]): string => {
     let processedText = text;
@@ -52,7 +54,6 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     return processedBase + adHocText;
   }, [baseText, templateSections, adHocClauses, processTextWithSectionVisibility, formatAdHocClausesText]);
 
-  // Determine the text to display: edited version if available, otherwise generated.
   const currentTextToShow = useMemo(() => {
     if (editedVersion !== null) {
       return editedVersion;
@@ -60,30 +61,28 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     return calculateGeneratedText();
   }, [editedVersion, calculateGeneratedText]);
 
-  // If underlying contract props change, invalidate manual edits.
   useEffect(() => {
-    setEditedVersion(null);
+    setEditedVersion(null); // Invalidate manual edits if underlying props change
   }, [baseText, adHocClauses, templateSections]);
 
 
   const handleEditText = () => {
-    setEditTextInEditor(currentTextToShow); // Initialize editor with what's currently shown
+    setEditTextInEditor(currentTextToShow);
     setIsEditing(true);
   };
 
   const handleSaveEdits = () => {
-    setEditedVersion(editTextInEditor); // Save manual edits
+    setEditedVersion(editTextInEditor);
     setIsEditing(false);
     toast({ title: 'Changes Saved', description: 'Your edits to the contract have been saved.' });
   };
 
   const handleCancelEdits = () => {
-    setIsEditing(false); // Simply exit edit mode; currentTextToShow will ensure correct display
+    setIsEditing(false);
     toast({ title: 'Edits Canceled', description: 'Your changes have been discarded.', variant: 'default' });
   };
 
   const getTextForAction = () => {
-    // If editing, use the live text from editor, otherwise use the determined currentTextToShow
     return isEditing ? editTextInEditor : currentTextToShow;
   };
 
@@ -117,6 +116,37 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     });
   };
 
+  const handleRenumberContract = async () => {
+    const textToRenumber = getTextForAction();
+    if (!textToRenumber.trim()) {
+      toast({ title: "Cannot Renumber", description: "Contract text is empty.", variant: "destructive" });
+      return;
+    }
+    setIsRenumbering(true);
+    try {
+      const result: RenumberContractOutput = await renumberContract({ contractText: textToRenumber });
+      if (result && result.renumberedContractText) {
+        if (isEditing) {
+          setEditTextInEditor(result.renumberedContractText);
+        }
+        setEditedVersion(result.renumberedContractText); // Set as the new authoritative version
+        toast({ title: "Contract Re-numbered", description: "Clauses and references have been updated by AI." });
+      } else {
+        throw new Error("AI did not return renumbered text.");
+      }
+    } catch (error) {
+      console.error('Error re-numbering contract:', error);
+      toast({
+        title: 'AI Re-numbering Failed',
+        description: `Could not process the contract: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsRenumbering(false);
+    }
+  };
+
+
   return (
     <Card className="shadow-lg col-span-1 md:col-span-2">
       <CardHeader>
@@ -137,6 +167,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
               className="h-full w-full resize-none border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
               placeholder="Start typing your contract..."
               rows={15}
+              disabled={isRenumbering}
             />
           ) : (
             <pre className="text-sm whitespace-pre-wrap break-words">{currentTextToShow}</pre>
@@ -145,25 +176,29 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
       </CardContent>
       <CardFooter className="flex flex-col sm:flex-row gap-2 justify-between items-center">
         <div className="flex gap-2 flex-wrap">
-          <Button onClick={handlePrint} variant="outline" className="w-full sm:w-auto">
+          <Button onClick={handlePrint} variant="outline" className="w-full sm:w-auto" disabled={isRenumbering}>
             <Printer className="mr-2 h-4 w-4" /> Print
           </Button>
-          <Button onClick={handleExportPdf} className="w-full sm:w-auto">
+          <Button onClick={handleExportPdf} className="w-full sm:w-auto" disabled={isRenumbering}>
             <Download className="mr-2 h-4 w-4" /> Export as PDF (Mock)
           </Button>
         </div>
         <div className="flex gap-2 flex-wrap">
+           <Button onClick={handleRenumberContract} variant="outline" className="w-full sm:w-auto" disabled={isRenumbering}>
+            {isRenumbering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <ListRestart className="mr-2 h-4 w-4" />}
+            Renumber (AI)
+          </Button>
           {isEditing ? (
             <>
-              <Button onClick={handleSaveEdits} className="w-full sm:w-auto">
+              <Button onClick={handleSaveEdits} className="w-full sm:w-auto" disabled={isRenumbering}>
                 <Save className="mr-2 h-4 w-4" /> Save Edits
               </Button>
-              <Button onClick={handleCancelEdits} variant="destructive" className="w-full sm:w-auto">
+              <Button onClick={handleCancelEdits} variant="destructive" className="w-full sm:w-auto" disabled={isRenumbering}>
                 <XCircle className="mr-2 h-4 w-4" /> Cancel
               </Button>
             </>
           ) : (
-            <Button onClick={handleEditText} variant="secondary" className="w-full sm:w-auto">
+            <Button onClick={handleEditText} variant="secondary" className="w-full sm:w-auto" disabled={isRenumbering}>
               <Edit3 className="mr-2 h-4 w-4" /> Edit Text
             </Button>
           )}
