@@ -147,7 +147,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
 
 
   return (
-    <Card className="shadow-lg flex flex-col h-full">
+    <Card className="shadow-lg">
       <CardHeader>
         <CardTitle>Contract Preview</CardTitle>
         <CardDescription>
@@ -157,21 +157,19 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
             : "You can edit the text below or use the form/clause tools."}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow overflow-y-auto p-0">
-        <div className="p-4 bg-muted/20 border rounded-md mx-6 h-full">
-          {isEditing ? (
-            <Textarea
-              value={editTextInEditor}
-              onChange={(e) => setEditTextInEditor(e.target.value)}
-              className="h-full w-full resize-none border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent min-h-[300px]"
-              placeholder="Start typing your contract..."
-              rows={15} 
-              disabled={isRenumbering}
-            />
-          ) : (
-            <pre className="text-sm whitespace-pre-wrap break-words h-full w-full min-h-[300px]">{currentTextToShow}</pre>
-          )}
-        </div>
+      <CardContent className="p-4 bg-muted/20 border rounded-md">
+        {isEditing ? (
+          <Textarea
+            value={editTextInEditor}
+            onChange={(e) => setEditTextInEditor(e.target.value)}
+            className="w-full resize-none border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent min-h-[300px]"
+            placeholder="Start typing your contract..."
+            rows={15}
+            disabled={isRenumbering}
+          />
+        ) : (
+          <pre className="text-sm whitespace-pre-wrap break-words min-h-[300px]">{currentTextToShow}</pre>
+        )}
       </CardContent>
       <CardFooter className="flex flex-col sm:flex-row gap-2 justify-between items-center pt-4">
         <div className="flex gap-2 flex-wrap">

@@ -78,13 +78,13 @@ export default function ContractEditorPage() {
         case 'number':
           zodType = z.preprocess(
             (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
-            field.required 
-              ? z.number({invalid_type_error: `${field.label} must be a number.`}) 
+            field.required
+              ? z.number({invalid_type_error: `${field.label} must be a number.`})
               : z.number({invalid_type_error: `${field.label} must be a number.`}).optional().nullable()
           );
           break;
         case 'date':
-          zodType = z.string(); 
+          zodType = z.string();
           if (field.required) zodType = zodType.min(1, `${field.label} is required.`);
           else zodType = zodType.optional().nullable();
           break;
@@ -120,7 +120,7 @@ export default function ContractEditorPage() {
         return acc;
       }, {} as Record<string, any>)
     );
-    
+
     const initialPreviewText = generateContractPreviewText();
     setContractPreviewText(initialPreviewText);
 
@@ -156,7 +156,7 @@ export default function ContractEditorPage() {
     setContractPreviewText(selectedTemplate.baseText(currentValues));
     toast({ title: 'Preview Updated', description: 'Contract preview has been refreshed with the latest data.' });
   };
-  
+
   const handleTemplateChange = (templateId: string) => {
     const newTemplate = defaultTemplates.find(t => t.id === templateId);
     if (newTemplate) {
@@ -294,7 +294,7 @@ export default function ContractEditorPage() {
           )}
 
           <AIClauseGenerator onAddClause={handleAddAdHocClause} />
-          
+
           {adHocClauses.length > 0 && (
             <Card className="shadow-lg">
               <CardHeader>
@@ -317,11 +317,11 @@ export default function ContractEditorPage() {
 
         {/* Right Column: Preview */}
         <div className="md:col-span-2">
-          <div className="sticky top-20 h-[calc(100vh-80px)]">
-            <ContractPreview 
-              baseText={contractPreviewText} 
+          <div className="sticky top-20">
+            <ContractPreview
+              baseText={contractPreviewText}
               adHocClauses={adHocClauses}
-              templateSections={templateSections} 
+              templateSections={templateSections}
             />
           </div>
         </div>
