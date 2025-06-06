@@ -317,7 +317,8 @@ export default function ContractEditorPage() {
 
         {/* Right Column: Preview */}
         <div className="md:col-span-2">
-          <div className="sticky top-20"> {/* This div makes its child sticky */}
+          {/* This div makes its child sticky and manages its height and scrolling */}
+          <div className="sticky top-20 h-[calc(100vh-80px)] overflow-y-auto">
             <ContractPreview 
               baseText={contractPreviewText} 
               adHocClauses={adHocClauses}
@@ -329,3 +330,5 @@ export default function ContractEditorPage() {
     </div>
   );
 }
+
+    

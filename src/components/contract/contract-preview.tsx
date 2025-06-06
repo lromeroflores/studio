@@ -4,7 +4,6 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { Textarea } from '@/components/ui/textarea';
 import { Printer, Download, Edit3, Save, XCircle, Loader2, ListRestart } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
@@ -148,7 +147,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
 
 
   return (
-    <Card className="shadow-lg col-span-1 md:col-span-2">
+    <Card className="shadow-lg flex flex-col h-full">
       <CardHeader>
         <CardTitle>Contract Preview</CardTitle>
         <CardDescription>
@@ -158,23 +157,21 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
             : "You can edit the text below or use the form/clause tools."}
         </CardDescription>
       </CardHeader>
-      <CardContent>
-        <ScrollArea className="h-[400px] w-full rounded-md border p-4 bg-muted/20">
-          {isEditing ? (
-            <Textarea
-              value={editTextInEditor}
-              onChange={(e) => setEditTextInEditor(e.target.value)}
-              className="h-full w-full resize-none border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent"
-              placeholder="Start typing your contract..."
-              rows={15}
-              disabled={isRenumbering}
-            />
-          ) : (
-            <pre className="text-sm whitespace-pre-wrap break-words">{currentTextToShow}</pre>
-          )}
-        </ScrollArea>
+      <CardContent className="flex-grow p-4 bg-muted/20 border rounded-md">
+        {isEditing ? (
+          <Textarea
+            value={editTextInEditor}
+            onChange={(e) => setEditTextInEditor(e.target.value)}
+            className="h-full w-full resize-none border-0 p-0 focus-visible:ring-0 focus-visible:ring-offset-0 bg-transparent min-h-[300px]"
+            placeholder="Start typing your contract..."
+            rows={15} 
+            disabled={isRenumbering}
+          />
+        ) : (
+          <pre className="text-sm whitespace-pre-wrap break-words h-full w-full">{currentTextToShow}</pre>
+        )}
       </CardContent>
-      <CardFooter className="flex flex-col sm:flex-row gap-2 justify-between items-center">
+      <CardFooter className="flex flex-col sm:flex-row gap-2 justify-between items-center pt-4">
         <div className="flex gap-2 flex-wrap">
           <Button onClick={handlePrint} variant="outline" className="w-full sm:w-auto" disabled={isRenumbering}>
             <Printer className="mr-2 h-4 w-4" /> Print
@@ -207,3 +204,5 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     </Card>
   );
 }
+
+    
