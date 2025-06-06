@@ -211,7 +211,7 @@ export default function ContractEditorPage() {
 
 
   return (
-    <div className="container mx-auto py-2">
+    <div className="container mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         {/* Left Column: Template, AI, Sections */}
         <div className="md:col-span-1 space-y-6">
@@ -317,7 +317,7 @@ export default function ContractEditorPage() {
 
         {/* Right Column: Preview */}
         <div className="md:col-span-2">
-          <div className="sticky top-6">
+          <div className="sticky top-0">
             <ContractPreview
               baseText={contractPreviewText}
               adHocClauses={adHocClauses}
