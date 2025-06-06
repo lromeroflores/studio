@@ -29,7 +29,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     let processedText = text;
     sections.forEach(section => {
       if (!section.visible) {
-        const sectionRegex = new RegExp(`<!-- SECTION_START: ${section.id} -->(.*?)<!-- SECTION_END: ${section.id} -->`, 'gs');
+        const sectionRegex = new RegExp(`<!-- SECTION_START: \${section.id} -->(.*?)<!-- SECTION_END: \${section.id} -->`, 'gs');
         processedText = processedText.replace(sectionRegex, '');
       }
     });
@@ -42,7 +42,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     if (clauses.length === 0) return '';
     let adHocText = '\n\n--- AD-HOC CLAUSES ---\n';
     clauses.forEach((clause, index) => {
-      adHocText += `\n${index + 1}. ${clause.text}\n`;
+      adHocText += `\n\${index + 1}. \${clause.text}\n`;
     });
     return adHocText;
   }, []);
@@ -61,7 +61,10 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
   }, [editedVersion, calculateGeneratedText]);
 
   useEffect(() => {
-    setEditedVersion(null); // Invalidate manual edits if underlying props change
+    // If baseText, adHocClauses, or templateSections change, the contract structure has changed.
+    // Invalidate manual edits by resetting editedVersion.
+    // This ensures the preview reflects the new underlying data.
+    setEditedVersion(null);
   }, [baseText, adHocClauses, templateSections]);
 
 
@@ -78,10 +81,13 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
 
   const handleCancelEdits = () => {
     setIsEditing(false);
+    // No need to reset editTextInEditor or displayedText here,
+    // as currentTextToShow will correctly pick up the last saved editedVersion or generate new.
     toast({ title: 'Edits Canceled', description: 'Your changes have been discarded.', variant: 'default' });
   };
 
   const getTextForAction = () => {
+    // If editing, use the live text from the editor. Otherwise, use currentTextToShow.
     return isEditing ? editTextInEditor : currentTextToShow;
   };
 
@@ -95,7 +101,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
       printWindow.document.write('<h1>Contract Document</h1>');
       const formattedText = printableContent
         .split('\n')
-        .map(line => `<p>${line.replace(/</g, "&lt;").replace(/>/g, "&gt;") || "&nbsp;"}</p>`)
+        .map(line => `<p>\${line.replace(/</g, "&lt;").replace(/>/g, "&gt;") || "&nbsp;"}</p>`)
         .join('');
       printWindow.document.write(formattedText);
       printWindow.document.write('</body></html>');
@@ -128,7 +134,8 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
         if (isEditing) {
           setEditTextInEditor(result.renumberedContractText);
         }
-        setEditedVersion(result.renumberedContractText); // Set as the new authoritative version
+        // Set the renumbered text as the new authoritative "edited" version
+        setEditedVersion(result.renumberedContractText);
         toast({ title: "Contract Re-numbered", description: "Clauses and references have been updated by AI." });
       } else {
         throw new Error("AI did not return renumbered text.");
@@ -137,7 +144,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
       console.error('Error re-numbering contract:', error);
       toast({
         title: 'AI Re-numbering Failed',
-        description: `Could not process the contract: ${error instanceof Error ? error.message : 'Unknown error'}`,
+        description: `Could not process the contract: \${error instanceof Error ? error.message : 'Unknown error'}`,
         variant: 'destructive',
       });
     } finally {
@@ -147,7 +154,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
 
 
   return (
-    <Card className="shadow-lg flex flex-col h-full">
+    <Card className="shadow-lg">
       <CardHeader>
         <CardTitle>Contract Preview</CardTitle>
         <CardDescription>
@@ -157,7 +164,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
             : "You can edit the text below or use the form/clause tools."}
         </CardDescription>
       </CardHeader>
-      <CardContent className="flex-grow p-4 bg-muted/20 border rounded-md">
+      <CardContent className="p-4 bg-muted/20 border rounded-md">
         {isEditing ? (
           <Textarea
             value={editTextInEditor}
@@ -204,5 +211,3 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     </Card>
   );
 }
-
-    
