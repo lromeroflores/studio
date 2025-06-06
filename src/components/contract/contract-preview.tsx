@@ -42,7 +42,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
 
   const formatAdHocClausesText = useCallback((clauses: AdHocClause[]): string => {
     if (clauses.length === 0) return '';
-    let adHocText = '\n\n<hr style="margin: 20px 0; border-top: 1px solid #ccc;">\n<h3 style="font-size: 1.1em; margin-bottom: 10px;">AD-HOC CLAUSES</h3>\n';
+    let adHocText = '\n\n<hr style="margin: 20px 0; border-top: 1px solid #ccc;">\n<h3 style="font-size: 1.1em; margin-bottom: 10px;">--- AD-HOC CLAUSES ---</h3>\n';
     clauses.forEach((clause, index) => {
       adHocText += `<div style="margin-bottom: 10px;"><strong>${index + 1}.</strong> ${clause.text.replace(/\n/g, '<br>')}</div>\n`;
     });
@@ -68,8 +68,6 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
 
 
   const handleEditText = () => {
-    // For editing, we want plain text, so we convert the HTML to a simpler text representation
-    // This is a basic conversion; a more sophisticated HTML-to-text might be needed for complex HTML
     const div = document.createElement('div');
     div.innerHTML = currentTextToShow;
     setEditTextInEditor(div.textContent || div.innerText || "");
@@ -77,13 +75,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
   };
 
   const handleSaveEdits = () => {
-    // When saving from plain text editor, we assume the edits are plain text.
-    // If the editor was more advanced (WYSIWYG), this would be different.
-    // For now, we'll wrap the edited text in a way that prevents it from being interpreted as HTML if it's not.
-    // A simple approach: escape HTML characters or treat as preformatted text.
-    // However, if renumbering returns HTML, this needs to be consistent.
-    // For now, let's assume renumbering provides HTML compatible string.
-    setEditedVersion(editTextInEditor.replace(/\n/g, '<br>')); // Basic conversion for display
+    setEditedVersion(editTextInEditor.replace(/\n/g, '<br>'));
     setIsEditing(false);
     toast({ title: 'Changes Saved', description: 'Your edits to the contract have been saved.' });
   };
@@ -93,26 +85,22 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     toast({ title: 'Edits Canceled', description: 'Your changes have been discarded.', variant: 'default' });
   };
 
-  // getTextForAction should return plain text for actions like re-numbering,
-  // as the AI flow expects plain text.
   const getTextForAction = () => {
-    if (isEditing) return editTextInEditor; // Already plain text
-
-    // Convert currentTextToShow (which can be HTML) to plain text
+    if (isEditing) return editTextInEditor;
     const div = document.createElement('div');
     div.innerHTML = currentTextToShow;
     return div.textContent || div.innerText || "";
   };
 
   const handlePrint = () => {
-    const printableContent = currentTextToShow; // Print the HTML content
+    const printableContent = currentTextToShow;
     const printWindow = window.open('', '_blank');
     if (printWindow) {
       printWindow.document.write('<html><head><title>Contract Preview</title>');
-      printWindow.document.write('<style>body { font-family: Arial, sans-serif; padding: 20px; } table { border-collapse: collapse; width: 100%; margin-bottom: 1em;} th, td { border: 1px solid #ddd; padding: 8px; text-align: left;} th { background-color: #f2f2f2;} img {max-width: 200px; margin-bottom: 1em;} hr {margin: 1em 0; border-top: 1px solid #ccc;} h3 {margin-top: 1em; margin-bottom: 0.5em;}</style>');
+      printWindow.document.write('<style>body { font-family: Arial, sans-serif; padding: 20px; white-space: pre-wrap; } table { border-collapse: collapse; width: 100%; margin-bottom: 1em;} th, td { border: 1px solid #ddd; padding: 8px; text-align: left;} th { background-color: #f2f2f2;} img {max-width: 200px; margin-bottom: 1em;} hr {margin: 1em 0; border-top: 1px solid #ccc;} h3 {margin-top: 1em; margin-bottom: 0.5em;}</style>');
       printWindow.document.write('</head><body>');
       printWindow.document.write('<h1>Contract Document</h1>');
-      printWindow.document.write(printableContent); // Directly write the HTML
+      printWindow.document.write(printableContent);
       printWindow.document.write('</body></html>');
       printWindow.document.close();
       printWindow.print();
@@ -122,7 +110,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
   };
 
   const handleExportPdf = () => {
-    const textToExport = getTextForAction(); // Get plain text for PDF export
+    const textToExport = getTextForAction();
     console.log("Text to export for PDF:", textToExport);
     toast({
       title: 'PDF Export (Mock)',
@@ -131,7 +119,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
   };
 
   const handleRenumberContract = async () => {
-    const plainTextToRenumber = getTextForAction(); // AI expects plain text
+    const plainTextToRenumber = getTextForAction();
     if (!plainTextToRenumber.trim()) {
       toast({ title: "Cannot Renumber", description: "Contract text is empty.", variant: "destructive" });
       return;
@@ -140,14 +128,11 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     try {
       const result: RenumberContractOutput = await renumberContract({ contractText: plainTextToRenumber });
       if (result && result.renumberedContractText) {
-        // AI returns renumbered plain text, convert newlines for HTML display
         const renumberedHtml = result.renumberedContractText.replace(/\n/g, '<br>');
         if (isEditing) {
-          // If editing, update the plain text editor
-          setEditTextInEditor(result.renumberedContractText);
+          setEditTextInEditor(result.renumberedContractText); // Update editor with plain text
         }
-        // Update the main preview with the HTML version
-        setEditedVersion(renumberedHtml);
+        setEditedVersion(renumberedHtml); // Update preview with HTML formatted text
         toast({ title: "Contract Re-numbered", description: "Clauses and references have been updated by AI." });
       } else {
         throw new Error("AI did not return renumbered text.");
@@ -167,7 +152,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
 
   return (
     <Card className="shadow-lg">
-      <CardHeader>
+      <CardHeader className="px-6 pb-6 pt-6">
         <CardTitle>Contract Preview</CardTitle>
         <CardDescription>
           Review the generated contract.
@@ -189,7 +174,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
             />
           ) : (
             <div
-              className="text-sm prose prose-sm max-w-none min-h-[300px]"
+              className="text-sm prose prose-sm max-w-none min-h-[300px] whitespace-pre-wrap"
               dangerouslySetInnerHTML={{ __html: currentTextToShow }}
             />
           )}
@@ -228,3 +213,4 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     </Card>
   );
 }
+
