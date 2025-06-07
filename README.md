@@ -1,4 +1,4 @@
-# Firebase Studio
+# ContractEase
 
 This is a NextJS starter in Firebase Studio.
 
