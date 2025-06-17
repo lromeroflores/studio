@@ -44,7 +44,8 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     if (clauses.length === 0) return '';
     let adHocText = '\n\n<hr style="margin: 20px 0; border-top: 1px solid #ccc;">\n<h3 style="font-size: 1.1em; margin-bottom: 10px;">--- AD-HOC CLAUSES ---</h3>\n';
     clauses.forEach((clause, index) => {
-      adHocText += `<div style="margin-bottom: 10px;"><strong>${index + 1}.</strong> ${clause.text.replace(/\n/g, '<br>')}</div>\n`;
+      const clauseHtml = clause.text.replace(/\n/g, '<br>');
+      adHocText += `<div style="margin-bottom: 10px;"><strong>${index + 1}.</strong> ${clauseHtml}</div>\n`;
     });
     return adHocText;
   }, []);
