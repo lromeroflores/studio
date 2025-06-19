@@ -1,26 +1,3 @@
-import type { SVGProps } from 'react';
 
-export function ContractEaseLogo(props: SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      xmlns="http://www.w3.org/2000/svg"
-      viewBox="0 0 200 50"
-      width="120"
-      height="30"
-      aria-label="ContractEase Logo"
-      {...props}
-    >
-      <rect width="200" height="50" fill="transparent" />
-      <text
-        x="10"
-        y="35"
-        fontFamily="var(--font-geist-sans), Arial, sans-serif"
-        fontSize="30"
-        fontWeight="bold"
-        fill="hsl(var(--sidebar-foreground))"
-      >
-        ContractEase
-      </text>
-    </svg>
-  );
-}
+// This file is no longer needed and will be removed.
+// The CovaltoLogo component is now in covalto-logo.tsx

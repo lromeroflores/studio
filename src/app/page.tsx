@@ -8,6 +8,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { CovaltoLogo } from '@/components/icons/covalto-logo'; // Import the new logo
 
 export default function LoginPage() {
   const router = useRouter();
@@ -38,20 +39,8 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl bg-card/90 backdrop-blur-sm border-border/50 z-10">
         <CardHeader className="space-y-2 text-center pt-8">
           <div className="flex justify-center mb-4">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 200 50" width="180" height="45" aria-label="ContractEase Logo">
-              <rect width="200" height="50" fill="transparent" />
-              <text
-                x="10"
-                y="35"
-                fontFamily="var(--font-geist-sans), Arial, sans-serif"
-                fontSize="30"
-                fontWeight="bold"
-                fill="hsl(var(--primary))"
-                className="drop-shadow-sm"
-              >
-                ContractEase
-              </text>
-            </svg>
+            {/* Use the new CovaltoLogo component */}
+            <CovaltoLogo width="200" height="auto" />
           </div>
           <CardTitle className="text-3xl font-bold text-foreground">Analyst Portal</CardTitle>
           <CardDescription className="text-muted-foreground">
@@ -101,7 +90,7 @@ export default function LoginPage() {
         </form>
       </Card>
       <footer className="mt-12 text-center text-sm text-slate-500 dark:text-slate-400 z-10">
-        &copy; {new Date().getFullYear()} ContractEase Inc. All rights reserved.
+        &copy; {new Date().getFullYear()} Covalto ContractEase Inc. All rights reserved.
       </footer>
     </div>
   );

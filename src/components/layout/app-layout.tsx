@@ -1,3 +1,4 @@
+
 "use client";
 
 import React from 'react';
@@ -12,9 +13,9 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { ContractEaseLogo } from '@/components/icons/logo';
+import { CovaltoLogo } from '@/components/icons/covalto-logo'; // Updated import
 import { MainNav } from './main-nav';
-import { UserCircle, LogOut, Settings } from 'lucide-react'; // Added Settings here
+import { UserCircle, LogOut, Settings } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -35,8 +36,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <Sidebar collapsible="icon" variant="sidebar" className="border-r border-sidebar-border">
         <SidebarRail />
         <SidebarHeader className="p-4">
-          <div className="flex items-center gap-2">
-            <ContractEaseLogo />
+          <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-start">
+            <CovaltoLogo width="150" height="auto" className="group-data-[collapsible=icon]:hidden" />
+            <CovaltoLogo width="35" height="auto" className="hidden group-data-[collapsible=icon]:block" />
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -76,8 +78,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       <SidebarInset className="bg-background">
         <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6 shadow-sm">
           <SidebarTrigger className="md:hidden" />
-          <h1 className="text-xl font-semibold text-foreground">Contract Editor</h1>
-          {/* Add any header actions here if needed */}
+          {/* Header content can be dynamic based on page if needed */}
         </header>
         <main className="flex-1 overflow-auto p-6">
           {children}
