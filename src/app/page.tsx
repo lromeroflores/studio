@@ -42,7 +42,7 @@ export default function LoginPage() {
             {/* Use the new CovaltoLogo component */}
             <CovaltoLogo width="200" height="auto" />
           </div>
-          <CardTitle className="text-3xl font-bold text-foreground">Analyst Portal</CardTitle>
+          <CardTitle className="text-3xl font-bold text-foreground">Portal de Generación de Contratos</CardTitle>
           <CardDescription className="text-muted-foreground">
             Access your contract opportunities and management tools.
             <br />
