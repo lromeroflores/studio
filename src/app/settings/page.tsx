@@ -1,38 +1,43 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Sun, Moon, Info, Palette, Languages } from 'lucide-react';
+import { Sun, Moon, Info, Palette } from 'lucide-react'; // Removed Languages
 import { useToast } from '@/hooks/use-toast';
 
 export default function SettingsPage() {
   const { toast } = useToast();
-  const [isDarkMode, setIsDarkMode] = useState(false); // Mock state
-  const [language, setLanguage] = useState('en'); // Mock state
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true); // Mock state
+  const [isDarkMode, setIsDarkMode] = useState(false); 
+  const [notificationsEnabled, setNotificationsEnabled] = useState(true); 
+
+  useEffect(() => {
+    // Initialize isDarkMode state based on the current theme
+    setIsDarkMode(document.documentElement.classList.contains('dark'));
+  }, []);
 
   const handleThemeToggle = (checked: boolean) => {
     setIsDarkMode(checked);
-    toast({
-      title: `Theme Changed (Simulated)`,
-      description: `Theme set to ${checked ? 'Dark Mode' : 'Light Mode'}. Actual theme switching requires more setup.`,
-    });
-    // In a real app, you would call a function to update the theme globally (e.g., using next-themes)
+    if (checked) {
+      document.documentElement.classList.add('dark');
+      localStorage.setItem('theme', 'dark');
+      toast({
+        title: `Theme Changed`,
+        description: `Theme set to Dark Mode.`,
+      });
+    } else {
+      document.documentElement.classList.remove('dark');
+      localStorage.setItem('theme', 'light');
+      toast({
+        title: `Theme Changed`,
+        description: `Theme set to Light Mode.`,
+      });
+    }
   };
   
-  const handleLanguageChange = (value: string) => {
-    setLanguage(value);
-     toast({
-      title: `Language Changed (Simulated)`,
-      description: `Language set to ${value}. Actual localization requires i18n setup.`,
-    });
-  };
-
   const handleNotificationsToggle = (checked: boolean) => {
     setNotificationsEnabled(checked);
      toast({
@@ -75,30 +80,10 @@ export default function SettingsPage() {
 
       <Card className="shadow-xl">
         <CardHeader>
-          <CardTitle className="text-2xl flex items-center"><Languages className="mr-3 h-6 w-6 text-primary" /> Preferences</CardTitle>
-          <CardDescription>Manage your language and notification settings.</CardDescription>
+          <CardTitle className="text-2xl flex items-center"><Info className="mr-3 h-6 w-6 text-primary" /> Preferences</CardTitle>
+          <CardDescription>Manage your notification settings.</CardDescription>
         </CardHeader>
         <CardContent className="space-y-6">
-          <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
-            <div className="space-y-0.5">
-                <Label htmlFor="language-select" className="text-base font-medium">
-                Language
-                </Label>
-                <p className="text-sm text-muted-foreground">
-                Choose your preferred language for the interface.
-                </p>
-            </div>
-            <Select value={language} onValueChange={handleLanguageChange}>
-              <SelectTrigger id="language-select" className="w-[180px]">
-                <SelectValue placeholder="Select language" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="en">English</SelectItem>
-                <SelectItem value="es">Español (Simulated)</SelectItem>
-                <SelectItem value="fr">Français (Simulated)</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
            <div className="flex items-center justify-between p-4 border rounded-lg bg-muted/30">
             <div className="space-y-0.5">
                 <Label htmlFor="notifications-toggle" className="text-base font-medium">

@@ -1,6 +1,7 @@
 
 'use client'; // Required for usePathname
 
+import React, { useEffect } from 'react'; // Added useEffect
 import { Geist, Geist_Mono } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
@@ -25,6 +26,22 @@ export default function RootLayout({
 }>) {
   const pathname = usePathname();
   const isAuthPage = pathname === '/' || pathname === '/register';
+
+  useEffect(() => {
+    // Apply theme from localStorage or system preference on initial client load
+    const storedTheme = localStorage.getItem('theme');
+    if (storedTheme === 'dark' || (!storedTheme && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+      document.documentElement.classList.add('dark');
+      if (!storedTheme) {
+        localStorage.setItem('theme', 'dark');
+      }
+    } else {
+      document.documentElement.classList.remove('dark');
+      if (!storedTheme) {
+        localStorage.setItem('theme', 'light');
+      }
+    }
+  }, []);
 
   // Determine page title dynamically
   let pageTitle = 'ContractEase';
