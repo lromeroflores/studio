@@ -2,7 +2,7 @@
 "use client";
 
 import React from 'react';
-import { useRouter } from 'next/navigation'; 
+import { useRouter } from 'next/navigation';
 import {
   SidebarProvider,
   Sidebar,
@@ -32,10 +32,10 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
-  const router = useRouter(); 
+  const router = useRouter();
 
   const handleLogout = () => {
-    router.push('/'); 
+    router.push('/');
   };
 
   return (
@@ -54,9 +54,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
         <SidebarFooter className="p-2">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button 
-                variant="ghost" 
-                className="w-full justify-start p-2 text-sidebar-foreground hover:bg-[hsl(var(--sidebar-user-profile-hover-bg))] hover:text-[hsl(var(--sidebar-user-profile-hover-fg))]"
+              <Button
+                variant="ghost"
+                className="w-full justify-start p-2 text-sidebar-foreground hover:bg-sidebar-user-profile-hover-bg hover:text-sidebar-user-profile-hover-fg"
               >
                 <Avatar className="h-8 w-8 mr-2">
                   <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="user avatar" />
@@ -77,7 +77,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={handleLogout}> 
+              <DropdownMenuItem onSelect={handleLogout}>
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
