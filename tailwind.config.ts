@@ -59,7 +59,12 @@ export default {
   				'accent-foreground': 'hsl(var(--sidebar-accent-foreground))',
   				border: 'hsl(var(--sidebar-border))',
   				ring: 'hsl(var(--sidebar-ring))'
-  			}
+  			},
+        'button-primary': {
+          DEFAULT: 'hsl(37 100% 55%)', // Orange for background
+          foreground: 'hsl(0 0% 20%)',   // Dark Gray text for light mode
+          'foreground-dark': 'hsl(0 0% 95%)', // Light Gray/White text for dark mode
+        },
   		},
   		borderRadius: {
   			lg: 'var(--radius)',
