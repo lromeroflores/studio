@@ -2,13 +2,13 @@
 'use client';
 
 import React from 'react';
+import Link from 'next/link'; // Import Link
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
-// CovaltoLogo import removed as it's replaced by an img tag
 
 export default function LoginPage() {
   const router = useRouter();
@@ -46,7 +46,7 @@ export default function LoginPage() {
               height="auto" 
             />
           </div>
-          <CardTitle className="text-3xl font-bold text-foreground">Portal de Generación de Contratos</CardTitle>
+          <CardTitle className="text-2xl font-bold text-foreground">Portal de Generación de Contratos</CardTitle>
           <CardDescription className="text-muted-foreground">
             Access your contract opportunities and management tools.
             <br />
@@ -85,11 +85,17 @@ export default function LoginPage() {
               <p className="text-sm text-destructive text-center">{error}</p>
             )}
           </CardContent>
-          <CardFooter className="pb-8">
+          <CardFooter className="flex flex-col gap-4 pb-8">
             <Button type="submit" className="w-full text-lg py-6" disabled={isLoading}>
               {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
               {isLoading ? 'Authenticating...' : 'Secure Login'}
             </Button>
+            <div className="text-center text-sm">
+              <span className="text-muted-foreground">¿No tienes una cuenta? </span>
+              <Link href="/register" className="font-medium text-primary hover:underline">
+                Regístrate aquí
+              </Link>
+            </div>
           </CardFooter>
         </form>
       </Card>

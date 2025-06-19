@@ -6,7 +6,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import AppLayout from '@/components/layout/app-layout';
 import { usePathname } from 'next/navigation';
-import type { Metadata } from 'next'; // Import for type safety if using generateMetadata
+// import type { Metadata } from 'next'; // Import for type safety if using generateMetadata
 
 const geistSans = Geist({
   variable: '--font-geist-sans',
@@ -32,13 +32,14 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const isLoginPage = pathname === '/';
+  const isAuthPage = pathname === '/' || pathname === '/register';
 
   // Determine page title dynamically
-  // This is a simple way; for more complex apps, consider Next.js metadata API with generateMetadata in page/layout server components
   let pageTitle = 'ContractEase';
-  if (isLoginPage) {
+  if (pathname === '/') {
     pageTitle = 'Login - ContractEase';
+  } else if (pathname === '/register') {
+    pageTitle = 'Register - ContractEase';
   } else if (pathname === '/opportunities') {
     pageTitle = 'Opportunities - ContractEase';
   } else if (pathname && pathname.startsWith('/editor')) {
@@ -46,16 +47,14 @@ export default function RootLayout({
   }
   
   return (
-    <html lang="en" suppressHydrationWarning>{/* suppressHydrationWarning often useful with client-side dynamic content */}
+    <html lang="en" suppressHydrationWarning>
       <head>
         <title>{pageTitle}</title>
-        {/* Standard meta description, can also be made dynamic */}
         <meta name="description" content="Streamline your contract management with AI-powered tools and efficient workflows." />
-        {/* Add other common head elements like favicons, etc. here */}
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
-        {isLoginPage ? (
-          children // LoginPage does not use AppLayout
+        {isAuthPage ? (
+          children 
         ) : (
           <AppLayout>
             {children}
