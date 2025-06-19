@@ -45,6 +45,10 @@ body {
     --sidebar-accent-foreground: 209 100% 22%; /* Covalto Blue text on sidebar accent */
     --sidebar-border: 210 17% 90%; /* Light Gray border */
     --sidebar-ring: 176 100% 33%; /* Covalto Green for focus rings in sidebar */
+
+    /* New Button Primary Colors (Orange) */
+    --button-primary-bg: 37 100% 55%; /* Orange ~ #FF9E1B */
+    --button-primary-fg: 0 0% 20%;    /* Dark Gray text for orange buttons */
   }
 
   .dark {
@@ -78,6 +82,10 @@ body {
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 210 15% 25%;
     --sidebar-ring: 176 100% 45%; /* Brighter Covalto Green */
+
+    /* New Button Primary Colors (Orange) - Dark Mode */
+    --button-primary-bg: 37 100% 55%; /* Orange, can be same or adjusted if needed */
+    --button-primary-fg: 0 0% 95%;    /* Light Gray/White text for dark mode orange buttons */
   }
 }
 
