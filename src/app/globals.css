@@ -8,75 +8,76 @@ body {
 
 @layer base {
   :root {
-    --background: 225 20% 96.1%; /* #F0F0F5 */
-    --foreground: 240 10% 3.9%; /* Dark Gray for text */
+    --background: 0 0% 100%; /* White */
+    --foreground: 0 0% 20%; /* Dark Gray #333333 */
     --card: 0 0% 100%; /* White */
-    --card-foreground: 240 10% 3.9%;
+    --card-foreground: 0 0% 20%;
     --popover: 0 0% 100%;
-    --popover-foreground: 240 10% 3.9%;
-    --primary: 231 48% 48%; /* #3F51B5 Deep Blue */
+    --popover-foreground: 0 0% 20%;
+    --primary: 209 100% 22%; /* Covalto Blue #003A70 */
     --primary-foreground: 0 0% 98%; /* White */
-    --secondary: 225 15% 90%; /* Lighter shade of background for secondary elements */
-    --secondary-foreground: 231 48% 48%; /* Primary color for text on secondary */
-    --muted: 225 15% 85%; /* Muted elements, slightly darker than secondary */
-    --muted-foreground: 240 5% 45%; /* Muted text */
-    --accent: 263 44% 55%; /* #7E57C2 Vibrant Purple */
+    --secondary: 204 25% 97%; /* Light Gray #F7F9FA */
+    --secondary-foreground: 209 100% 22%; /* Covalto Blue for text on secondary */
+    --muted: 210 17% 92%; /* Light Gray #EAECEE (slightly adjusted for more contrast) */
+    --muted-foreground: 0 0% 40%; /* Medium Gray */
+    --accent: 176 100% 33%; /* Covalto Green #00A99D */
     --accent-foreground: 0 0% 98%; /* White */
     --destructive: 0 72% 51%; /* Standard destructive red */
     --destructive-foreground: 0 0% 98%;
-    --border: 225 10% 85%; /* Light grey border, related to background */
+    --border: 210 17% 90%; /* Light Gray #DEE2E6 */
     --input: 0 0% 100%; /* White input background for contrast */
-    --input-border: 225 10% 80%; /* Slightly darker border for inputs */
-    --ring: 231 48% 48%; /* Primary color for focus rings */
+    --input-border: 210 17% 80%; /* Slightly darker border for inputs #CDD1D4 */
+    --ring: 209 100% 22%; /* Covalto Blue for focus rings */
     --radius: 0.5rem;
 
-    --chart-1: 231 48% 48%;
-    --chart-2: 263 44% 55%;
+    --chart-1: 209 100% 22%; /* Covalto Blue */
+    --chart-2: 176 100% 33%; /* Covalto Green */
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
-    /* Sidebar specific theme variables */
-    --sidebar-background: 230 30% 15%; /* Darker, professional blue-gray */
-    --sidebar-foreground: 0 0% 90%; /* Light text for readability */
-    --sidebar-primary: 231 48% 48%; /* App's primary color for active/important sidebar items */
+    /* Sidebar specific theme variables - aligned with Covalto's lighter theme */
+    --sidebar-background: 0 0% 98%; /* Very Light Gray, almost white */
+    --sidebar-foreground: 0 0% 20%; /* Dark text */
+    --sidebar-primary: 209 100% 22%; /* Covalto Blue for active/important sidebar items */
     --sidebar-primary-foreground: 0 0% 98%; /* White text on sidebar primary */
-    --sidebar-accent: 230 30% 25%; /* Hover/accent color for sidebar items */
-    --sidebar-accent-foreground: 0 0% 98%; /* White text on sidebar accent */
-    --sidebar-border: 230 30% 20%; /* Border color within the sidebar */
-    --sidebar-ring: 263 44% 55%; /* App's accent color for focus rings in sidebar */
+    --sidebar-accent: 204 25% 94%; /* Slightly darker gray for hover/accent #EFF3F5 */
+    --sidebar-accent-foreground: 209 100% 22%; /* Covalto Blue text on sidebar accent */
+    --sidebar-border: 210 17% 90%; /* Light Gray border */
+    --sidebar-ring: 176 100% 33%; /* Covalto Green for focus rings in sidebar */
   }
 
   .dark {
-    --background: 240 10% 3.9%;
-    --foreground: 0 0% 98%;
-    --card: 240 10% 3.9%;
-    --card-foreground: 0 0% 98%;
-    --popover: 240 10% 3.9%;
-    --popover-foreground: 0 0% 98%;
-    --primary: 231 48% 52%; /* Adjusted primary for dark mode */
-    --primary-foreground: 0 0% 10%;
-    --secondary: 240 3.7% 15.9%;
-    --secondary-foreground: 0 0% 98%;
-    --muted: 240 3.7% 15.9%;
-    --muted-foreground: 0 0% 63.9%;
-    --accent: 263 44% 60%; /* Adjusted accent for dark mode */
+    --background: 210 20% 12%; /* Dark Blue-Gray */
+    --foreground: 0 0% 95%; /* Light Gray/White */
+    --card: 210 20% 15%; /* Slightly Lighter Dark Blue-Gray */
+    --card-foreground: 0 0% 95%;
+    --popover: 210 20% 15%;
+    --popover-foreground: 0 0% 95%;
+    --primary: 209 100% 45%; /* Brighter Covalto Blue for Dark Mode */
+    --primary-foreground: 0 0% 98%; 
+    --secondary: 210 18% 20%; /* Darker Gray */
+    --secondary-foreground: 0 0% 90%;
+    --muted: 210 15% 25%; /* Muted Dark Gray */
+    --muted-foreground: 0 0% 60%;
+    --accent: 176 100% 45%; /* Brighter Covalto Green for Dark Mode */
     --accent-foreground: 0 0% 98%;
-    --destructive: 0 62.8% 30.6%;
+    --destructive: 0 60% 50%; /* Adjusted destructive red for dark */
     --destructive-foreground: 0 0% 98%;
-    --border: 240 3.7% 15.9%;
-    --input: 240 3.7% 15.9%;
-    --input-border: 240 3.7% 25.9%;
-    --ring: 231 48% 52%;
+    --border: 210 15% 30%; /* Darker Border */
+    --input: 210 20% 18%; /* Dark input background */
+    --input-border: 210 15% 35%; /* Border for dark inputs */
+    --ring: 209 100% 45%; /* Brighter Covalto Blue for focus rings */
 
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 231 48% 52%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 263 44% 60%;
+    /* Dark Sidebar */
+    --sidebar-background: 210 20% 10%; /* Even Darker for Sidebar */
+    --sidebar-foreground: 0 0% 90%;
+    --sidebar-primary: 209 100% 45%; /* Brighter Covalto Blue */
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 210 18% 17%; /* Darker hover for sidebar */
+    --sidebar-accent-foreground: 0 0% 95%;
+    --sidebar-border: 210 15% 25%;
+    --sidebar-ring: 176 100% 45%; /* Brighter Covalto Green */
   }
 }
 
@@ -88,6 +89,6 @@ body {
     @apply bg-background text-foreground;
   }
   input, textarea, select {
-    @apply border border-input; /* Changed from @apply border-input-border; */
+    @apply border border-input;
   }
 }

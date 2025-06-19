@@ -33,8 +33,8 @@ export default function LoginPage() {
   };
 
   return (
-    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-900 to-slate-800 p-4 selection:bg-primary/40 selection:text-white">
-      <div className="absolute inset-0 bg-[url('https://placehold.co/1920x1080/000000/FFFFFF/png?text=Abstract+Background')] bg-cover bg-center opacity-10" data-ai-hint="abstract background"></div>
+    <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 p-4 selection:bg-primary/40 selection:text-white">
+      <div className="absolute inset-0 bg-[url('https://placehold.co/1920x1080/E0E7FF/003A70/png?text=Corporate+Network')] bg-cover bg-center opacity-10 dark:opacity-5" data-ai-hint="finance technology"></div>
       <Card className="w-full max-w-md shadow-2xl bg-card/90 backdrop-blur-sm border-border/50 z-10">
         <CardHeader className="space-y-2 text-center pt-8">
           <div className="flex justify-center mb-4">
@@ -72,7 +72,7 @@ export default function LoginPage() {
                 onChange={(e) => setEmail(e.target.value)}
                 required
                 disabled={isLoading}
-                className="bg-input/50 focus:bg-input"
+                className="bg-background/80 focus:bg-background"
               />
             </div>
             <div className="space-y-2">
@@ -85,7 +85,7 @@ export default function LoginPage() {
                 onChange={(e) => setPassword(e.target.value)}
                 required
                 disabled={isLoading}
-                className="bg-input/50 focus:bg-input"
+                className="bg-background/80 focus:bg-background"
               />
             </div>
             {error && (
@@ -100,7 +100,7 @@ export default function LoginPage() {
           </CardFooter>
         </form>
       </Card>
-      <footer className="mt-12 text-center text-sm text-slate-400 z-10">
+      <footer className="mt-12 text-center text-sm text-slate-500 dark:text-slate-400 z-10">
         &copy; {new Date().getFullYear()} ContractEase Inc. All rights reserved.
       </footer>
     </div>
