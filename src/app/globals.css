@@ -45,8 +45,8 @@ body {
     --sidebar-accent-foreground: 209 100% 22%; /* Covalto Blue text on sidebar accent */
     --sidebar-border: 210 17% 90%; /* Light Gray border */
     --sidebar-ring: 176 100% 33%; /* Covalto Green for focus rings in sidebar */
-    --sidebar-user-profile-hover-bg: 36 82% 64%; /* Orange #eaa14b */
-    --sidebar-user-profile-hover-fg: 209 100% 22%; /* Covalto Blue text */
+    --sidebar-user-profile-hover-bg: 209 100% 14.5%; /* Covalto Dark Blue #002a49 */
+    --sidebar-user-profile-hover-fg: 0 0% 98%; /* White text */
 
 
     /* Button primary colors (Orange for Covalto example) */
@@ -85,7 +85,7 @@ body {
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 210 15% 25%;
     --sidebar-ring: 176 100% 45%; /* Brighter Covalto Green */
-    --sidebar-user-profile-hover-bg: 36 82% 60%; /* Slightly desaturated Orange for dark */
+    --sidebar-user-profile-hover-bg: 209 100% 14.5%; /* Covalto Dark Blue #002a49 */
     --sidebar-user-profile-hover-fg: 0 0% 95%; /* Lighter text for dark button */
 
     /* Button primary colors for dark theme */
