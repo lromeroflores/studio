@@ -41,7 +41,7 @@ export default {
   				foreground: 'hsl(var(--destructive-foreground))'
   			},
   			border: 'hsl(var(--border))',
-  			input: 'hsl(var(--input-border))', // Changed from hsl(var(--input))
+  			input: 'hsl(var(--input-border))', 
   			ring: 'hsl(var(--ring))',
   			chart: {
   				'1': 'hsl(var(--chart-1))',
@@ -61,8 +61,8 @@ export default {
   				ring: 'hsl(var(--sidebar-ring))'
   			},
         'button-primary': {
-          DEFAULT: 'hsl(36 82% 64%)', // New Orange #eaa14b
-          foreground: 'hsl(var(--primary))',   // Covalto Blue text (using theme's primary)
+          DEFAULT: 'hsl(var(--button-primary-bg))',
+          foreground: 'hsl(var(--button-primary-fg))',
         },
   		},
   		borderRadius: {
@@ -86,11 +86,16 @@ export default {
   				to: {
   					height: '0'
   				}
-  			}
+  			},
+        'fade-in': {
+          '0%': { opacity: '0', transform: 'translateY(10px)' },
+          '100%': { opacity: '1', transform: 'translateY(0)' },
+        }
   		},
   		animation: {
   			'accordion-down': 'accordion-down 0.2s ease-out',
-  			'accordion-up': 'accordion-up 0.2s ease-out'
+  			'accordion-up': 'accordion-up 0.2s ease-out',
+        'fade-in': 'fadeIn 0.5s ease-out forwards',
   		}
   	}
   },

@@ -18,7 +18,7 @@ body {
     --primary-foreground: 0 0% 98%; /* White */
     --secondary: 204 25% 97%; /* Light Gray #F7F9FA */
     --secondary-foreground: 209 100% 22%; /* Covalto Blue for text on secondary */
-    --muted: 210 17% 92%; /* Light Gray #EAECEE (slightly adjusted for more contrast) */
+    --muted: 210 17% 92%; /* Light Gray #EAECEE */
     --muted-foreground: 0 0% 40%; /* Medium Gray */
     --accent: 176 100% 33%; /* Covalto Green #00A99D */
     --accent-foreground: 0 0% 98%; /* White */
@@ -45,6 +45,10 @@ body {
     --sidebar-accent-foreground: 209 100% 22%; /* Covalto Blue text on sidebar accent */
     --sidebar-border: 210 17% 90%; /* Light Gray border */
     --sidebar-ring: 176 100% 33%; /* Covalto Green for focus rings in sidebar */
+
+    /* Button primary colors (Orange for Covalto example) */
+    --button-primary-bg: 36 82% 64%; /* Orange #eaa14b */
+    --button-primary-fg: 209 100% 22%; /* Covalto Blue text */
   }
 
   .dark {
@@ -78,6 +82,10 @@ body {
     --sidebar-accent-foreground: 0 0% 95%;
     --sidebar-border: 210 15% 25%;
     --sidebar-ring: 176 100% 45%; /* Brighter Covalto Green */
+
+    /* Button primary colors for dark theme */
+    --button-primary-bg: 36 82% 60%; /* Slightly desaturated Orange for dark */
+    --button-primary-fg: 0 0% 95%; /* Lighter text for dark button */
   }
 }
 
@@ -90,5 +98,12 @@ body {
   }
   input, textarea, select {
     @apply border border-input;
+  }
+}
+
+@layer utilities {
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(10px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 }
