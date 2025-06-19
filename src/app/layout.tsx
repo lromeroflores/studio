@@ -18,14 +18,6 @@ const geistMono = Geist_Mono({
   subsets: ['latin'],
 });
 
-// Static metadata can be defined here if this were a Server Component,
-// or if not using 'use client' directly in this RootLayout.
-// For dynamic titles in a 'use client' layout, manage via <title> tag or effects.
-// export const metadata: Metadata = {
-//   title: 'ContractEase',
-//   description: 'Automate contract filling and AI-powered clause generation.',
-// };
-
 export default function RootLayout({
   children,
 }: Readonly<{
@@ -44,6 +36,10 @@ export default function RootLayout({
     pageTitle = 'Opportunities - ContractEase';
   } else if (pathname && pathname.startsWith('/editor')) {
     pageTitle = 'Contract Editor - ContractEase';
+  } else if (pathname === '/profile') {
+    pageTitle = 'User Profile - ContractEase';
+  } else if (pathname === '/settings') {
+    pageTitle = 'Settings - ContractEase';
   }
   
   return (

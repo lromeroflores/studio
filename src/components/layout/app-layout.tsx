@@ -1,8 +1,9 @@
 
 "use client";
 
-import React from 'react';
+import React, { useState } from 'react'; // Added useState
 import { useRouter } from 'next/navigation';
+import Link from 'next/link'; // Added Link
 import {
   SidebarProvider,
   Sidebar,
@@ -33,6 +34,9 @@ interface AppLayoutProps {
 
 export default function AppLayout({ children }: AppLayoutProps) {
   const router = useRouter();
+  // Simulating user data - in a real app, this would come from auth/context
+  const [userName, setUserName] = useState('Analista Covalto');
+  const [userAvatar, setUserAvatar] = useState('https://placehold.co/40x40.png');
 
   const handleLogout = () => {
     router.push('/');
@@ -59,22 +63,26 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 className="w-full justify-start p-2 text-sidebar-foreground hover:bg-sidebar-user-profile-hover-bg hover:text-sidebar-user-profile-hover-fg"
               >
                 <Avatar className="h-8 w-8 mr-2">
-                  <AvatarImage src="https://placehold.co/40x40.png" alt="User Avatar" data-ai-hint="user avatar" />
-                  <AvatarFallback>U</AvatarFallback>
+                  <AvatarImage src={userAvatar} alt="User Avatar" data-ai-hint="user avatar"/>
+                  <AvatarFallback>{userName.charAt(0).toUpperCase()}</AvatarFallback>
                 </Avatar>
-                <span className="group-data-[collapsible=icon]:hidden">User Profile</span>
+                <span className="group-data-[collapsible=icon]:hidden truncate">{userName}</span>
               </Button>
             </DropdownMenuTrigger>
             <DropdownMenuContent side="right" align="start" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
-                <UserCircle className="mr-2 h-4 w-4" />
-                <span>Profile</span>
+              <DropdownMenuItem asChild>
+                <Link href="/profile">
+                  <UserCircle className="mr-2 h-4 w-4" />
+                  <span>Profile</span>
+                </Link>
               </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Settings</span>
+              <DropdownMenuItem asChild>
+                <Link href="/settings">
+                  <Settings className="mr-2 h-4 w-4" />
+                  <span>Settings</span>
+                </Link>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onSelect={handleLogout}>
