@@ -46,7 +46,7 @@ export default function RootLayout({
   }
   
   return (
-    <html lang="en" suppressHydrationWarning> {/* suppressHydrationWarning often useful with client-side dynamic content */}
+    <html lang="en" suppressHydrationWarning>{/* suppressHydrationWarning often useful with client-side dynamic content */}
       <head>
         <title>{pageTitle}</title>
         {/* Standard meta description, can also be made dynamic */}
