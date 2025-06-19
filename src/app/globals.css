@@ -8,83 +8,84 @@ body {
 
 @layer base {
   :root {
-    --background: 0 0% 100%; /* White */
-    --foreground: 0 0% 20%; /* Dark Gray #333333 */
+    --background: 240 10% 97%; /* Light Grey #F0F0F5 */
+    --foreground: 240 10% 10%; /* Dark Gray for text */
     --card: 0 0% 100%; /* White */
-    --card-foreground: 0 0% 20%;
+    --card-foreground: 240 10% 10%;
     --popover: 0 0% 100%;
-    --popover-foreground: 0 0% 20%;
-    --primary: 209 100% 22%; /* Covalto Blue #003A70 */
+    --popover-foreground: 240 10% 10%;
+    --primary: 222 47% 48%; /* Deep Blue #3F51B5 */
     --primary-foreground: 0 0% 98%; /* White */
-    --secondary: 204 25% 97%; /* Light Gray #F7F9FA */
-    --secondary-foreground: 209 100% 22%; /* Covalto Blue for text on secondary */
-    --muted: 210 17% 92%; /* Light Gray #EAECEE */
-    --muted-foreground: 0 0% 40%; /* Medium Gray */
-    --accent: 176 100% 33%; /* Covalto Green #00A99D */
-    --accent-foreground: 0 0% 98%; /* White */
+    --secondary: 240 5% 90%; /* Lighter version of background */
+    --secondary-foreground: 222 47% 48%; /* Deep Blue for text on secondary */
+    --muted: 240 5% 85%; /* Slightly darker muted gray */
+    --muted-foreground: 240 5% 45%; /* Medium Gray for muted text */
+    --accent: 36 82% 64%; /* Orange #eaa14b - Was: Vibrant Purple #7E57C2 (260 46% 67%) */
+    --accent-foreground: 209 100% 22%; /* Covalto Blue for text on orange accent - Was: 0 0% 98% (White) */
     --destructive: 0 72% 51%; /* Standard destructive red */
     --destructive-foreground: 0 0% 98%;
-    --border: 210 17% 90%; /* Light Gray #DEE2E6 */
+    --border: 240 5% 80%; /* Border color based on light grey */
     --input: 0 0% 100%; /* White input background for contrast */
-    --input-border: 210 17% 80%; /* Slightly darker border for inputs #CDD1D4 */
-    --ring: 209 100% 22%; /* Covalto Blue for focus rings */
+    --input-border: 240 5% 75%; /* Slightly darker border for inputs */
+    --ring: 222 47% 48%; /* Deep Blue for focus rings */
     --radius: 0.5rem;
 
-    --chart-1: 209 100% 22%; /* Covalto Blue */
-    --chart-2: 176 100% 33%; /* Covalto Green */
+    --chart-1: 222 47% 48%; /* Deep Blue */
+    --chart-2: 260 46% 67%; /* Vibrant Purple */
     --chart-3: 197 37% 24%;
     --chart-4: 43 74% 66%;
     --chart-5: 27 87% 67%;
 
-    /* Sidebar specific theme variables - aligned with Covalto's lighter theme */
+    /* Sidebar specific theme variables */
     --sidebar-background: 0 0% 98%; /* Very Light Gray, almost white */
     --sidebar-foreground: 0 0% 20%; /* Dark text */
-    --sidebar-primary: 209 100% 22%; /* Covalto Blue for active/important sidebar items */
+    --sidebar-primary: 222 47% 48%; /* Deep Blue for active/important sidebar items */
     --sidebar-primary-foreground: 0 0% 98%; /* White text on sidebar primary */
-    --sidebar-accent: 204 25% 94%; /* Slightly darker gray for hover/accent #EFF3F5 */
-    --sidebar-accent-foreground: 209 100% 22%; /* Covalto Blue text on sidebar accent */
-    --sidebar-border: 210 17% 90%; /* Light Gray border */
-    --sidebar-ring: 176 100% 33%; /* Covalto Green for focus rings in sidebar */
+    --sidebar-accent: 240 5% 94%; /* Slightly darker gray for hover/accent #EFF3F5 */
+    --sidebar-accent-foreground: 222 47% 48%; /* Deep Blue text on sidebar accent */
+    --sidebar-border: 240 5% 90%; /* Light Gray border */
+    --sidebar-ring: 260 46% 67%; /* Vibrant Purple for focus rings in sidebar */
+    
     --sidebar-user-profile-hover-bg: 209 100% 14.5%; /* Covalto Dark Blue #002a49 */
     --sidebar-user-profile-hover-fg: 0 0% 98%; /* White text */
 
-
-    /* Button primary colors (Orange for Covalto example) */
+    /* Button primary colors */
     --button-primary-bg: 36 82% 64%; /* Orange #eaa14b */
     --button-primary-fg: 209 100% 22%; /* Covalto Blue text */
   }
 
   .dark {
-    --background: 210 20% 12%; /* Dark Blue-Gray */
-    --foreground: 0 0% 95%; /* Light Gray/White */
-    --card: 210 20% 15%; /* Slightly Lighter Dark Blue-Gray */
+    --background: 240 6% 10%; /* Dark Grey for background */
+    --foreground: 0 0% 95%; /* Light Gray/White for text */
+    --card: 240 6% 12%; /* Slightly Lighter Dark Grey for cards */
     --card-foreground: 0 0% 95%;
-    --popover: 210 20% 15%;
+    --popover: 240 6% 12%;
     --popover-foreground: 0 0% 95%;
-    --primary: 209 100% 45%; /* Brighter Covalto Blue for Dark Mode */
+    --primary: 222 55% 58%; /* Brighter Deep Blue for Dark Mode */
     --primary-foreground: 0 0% 98%; 
-    --secondary: 210 18% 20%; /* Darker Gray */
+    --secondary: 240 5% 15%; /* Darker Gray for secondary */
     --secondary-foreground: 0 0% 90%;
-    --muted: 210 15% 25%; /* Muted Dark Gray */
+    --muted: 240 5% 20%; /* Muted Dark Gray */
     --muted-foreground: 0 0% 60%;
-    --accent: 176 100% 45%; /* Brighter Covalto Green for Dark Mode */
-    --accent-foreground: 0 0% 98%;
+    --accent: 36 82% 60%; /* Slightly desaturated Orange for dark theme accent - Was: 260 50% 72% (Brighter Purple) */
+    --accent-foreground: 0 0% 95%; /* Light Gray/White text on dark orange accent - Was: 0 0% 98% */
     --destructive: 0 60% 50%; /* Adjusted destructive red for dark */
     --destructive-foreground: 0 0% 98%;
-    --border: 210 15% 30%; /* Darker Border */
-    --input: 210 20% 18%; /* Dark input background */
-    --input-border: 210 15% 35%; /* Border for dark inputs */
-    --ring: 209 100% 45%; /* Brighter Covalto Blue for focus rings */
+    --border: 240 5% 25%; /* Darker Border */
+    --input: 240 6% 14%; /* Dark input background */
+    --input-border: 240 5% 30%; /* Border for dark inputs */
+    --ring: 222 55% 58%; /* Brighter Deep Blue for focus rings */
 
     /* Dark Sidebar */
-    --sidebar-background: 210 20% 10%; /* Even Darker for Sidebar */
+    --sidebar-background: 240 6% 8%; /* Even Darker for Sidebar */
     --sidebar-foreground: 0 0% 90%;
-    --sidebar-primary: 209 100% 45%; /* Brighter Covalto Blue */
+    --sidebar-primary: 222 55% 58%; /* Brighter Deep Blue */
     --sidebar-primary-foreground: 0 0% 98%;
-    --sidebar-accent: 210 18% 17%; /* Darker hover for sidebar */
+    --sidebar-accent: 240 5% 13%; /* Darker hover for sidebar */
     --sidebar-accent-foreground: 0 0% 95%;
-    --sidebar-border: 210 15% 25%;
-    --sidebar-ring: 176 100% 45%; /* Brighter Covalto Green */
+    --sidebar-border: 240 5% 20%;
+    --sidebar-ring: 260 50% 72%; /* Brighter Purple */
+
     --sidebar-user-profile-hover-bg: 209 100% 14.5%; /* Covalto Dark Blue #002a49 */
     --sidebar-user-profile-hover-fg: 0 0% 95%; /* Lighter text for dark button */
 
