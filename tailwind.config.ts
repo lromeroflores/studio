@@ -61,9 +61,8 @@ export default {
   				ring: 'hsl(var(--sidebar-ring))'
   			},
         'button-primary': {
-          DEFAULT: 'hsl(37 100% 55%)', // Orange for background
-          foreground: 'hsl(0 0% 20%)',   // Dark Gray text for light mode
-          'foreground-dark': 'hsl(0 0% 95%)', // Light Gray/White text for dark mode
+          DEFAULT: 'hsl(36 82% 64%)', // New Orange #eaa14b
+          foreground: 'hsl(var(--primary))',   // Covalto Blue text (using theme's primary)
         },
   		},
   		borderRadius: {
