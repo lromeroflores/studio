@@ -2,6 +2,7 @@
 "use client";
 
 import React from 'react';
+import { useRouter } from 'next/navigation'; // Import useRouter
 import {
   SidebarProvider,
   Sidebar,
@@ -13,7 +14,7 @@ import {
   SidebarRail,
 } from '@/components/ui/sidebar';
 import { Button } from '@/components/ui/button';
-import { CovaltoLogo } from '@/components/icons/covalto-logo'; // Updated import
+import { CovaltoLogo } from '@/components/icons/covalto-logo';
 import { MainNav } from './main-nav';
 import { UserCircle, LogOut, Settings } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
@@ -31,6 +32,12 @@ interface AppLayoutProps {
 }
 
 export default function AppLayout({ children }: AppLayoutProps) {
+  const router = useRouter(); // Initialize router
+
+  const handleLogout = () => {
+    router.push('/'); // Redirect to login page
+  };
+
   return (
     <SidebarProvider defaultOpen={true}>
       <Sidebar collapsible="icon" variant="sidebar" className="border-r border-sidebar-border">
@@ -67,7 +74,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
                 <span>Settings</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
-              <DropdownMenuItem>
+              <DropdownMenuItem onSelect={handleLogout}> {/* Attach handleLogout here */}
                 <LogOut className="mr-2 h-4 w-4" />
                 <span>Log out</span>
               </DropdownMenuItem>
