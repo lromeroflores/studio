@@ -9,6 +9,7 @@ import { Badge } from '@/components/ui/badge';
 import type { Opportunity } from '@/types/opportunity';
 import { ArrowRight, Briefcase, FileText, Clock, Search } from 'lucide-react';
 import { Input } from '@/components/ui/input';
+import { ClientFormattedDate } from '@/components/common/client-formatted-date';
 
 // Mock Data
 const mockOpportunitiesData: Opportunity[] = [
@@ -158,7 +159,7 @@ export default function OpportunitiesPage() {
               </CardContent>
               <CardFooter className="flex flex-col items-start pt-4 border-t mt-auto">
                 <div className="text-xs text-muted-foreground mb-4 flex items-center w-full">
-                   <Clock className="mr-1.5 h-3.5 w-3.5" /> Last Updated: {new Date(opp.lastUpdated).toLocaleDateString()}
+                   <Clock className="mr-1.5 h-3.5 w-3.5" /> Last Updated: <ClientFormattedDate dateString={opp.lastUpdated} loadingText="..." />
                 </div>
                 <Button onClick={() => handleSelectOpportunity(opp)} className="w-full font-medium" size="lg">
                   Work on Opportunity <ArrowRight className="ml-2 h-4 w-4" />
