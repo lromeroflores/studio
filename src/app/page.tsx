@@ -8,10 +8,11 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth } from '@/lib/firebase';
+import { auth, isFirebaseConfigured } from '@/lib/firebase';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
 export default function LoginPage() {
@@ -26,6 +27,12 @@ export default function LoginPage() {
     event.preventDefault();
     setIsLoading(true);
     setError('');
+
+    if (!isFirebaseConfigured || !auth) {
+      setError('Firebase is not configured correctly. Please check your environment variables.');
+      setIsLoading(false);
+      return;
+    }
 
     if (!email || !password) {
         setError('Please enter both email and password.');
@@ -51,6 +58,17 @@ export default function LoginPage() {
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 p-4 selection:bg-primary/40 selection:text-white animate-fade-in">
       <div className="absolute inset-0 bg-[url('https://placehold.co/1920x1080/E0E7FF/003A70/png?text=Corporate+Network')] bg-cover bg-center opacity-10 dark:opacity-5" data-ai-hint="finance technology"></div>
+      
+      {!isFirebaseConfigured && (
+        <Alert variant="destructive" className="max-w-md w-full mb-6 z-10">
+          <AlertTriangle className="h-4 w-4" />
+          <AlertTitle>Configuration Error</AlertTitle>
+          <AlertDescription>
+            Firebase is not configured. Please add your `NEXT_PUBLIC_FIREBASE_*` variables to your `.env` file and restart the server.
+          </AlertDescription>
+        </Alert>
+      )}
+
       <Card className="w-full max-w-md shadow-2xl bg-card/90 backdrop-blur-sm border-border/50 z-10">
         <CardHeader className="space-y-2 text-center pt-8">
           <div className="flex justify-center mb-4">
@@ -77,7 +95,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={isLoading || !isFirebaseConfigured}
                 className="bg-background/80 focus:bg-background"
               />
             </div>
@@ -90,7 +108,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoading}
+                disabled={isLoading || !isFirebaseConfigured}
                 className="bg-background/80 focus:bg-background"
               />
             </div>
@@ -99,7 +117,7 @@ export default function LoginPage() {
             )}
           </CardContent>
           <CardFooter className="flex flex-col gap-4 pb-8">
-            <Button type="submit" className="w-full text-lg py-6" disabled={isLoading}>
+            <Button type="submit" className="w-full text-lg py-6" disabled={isLoading || !isFirebaseConfigured}>
               {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
               {isLoading ? 'Authenticating...' : 'Secure Login'}
             </Button>
