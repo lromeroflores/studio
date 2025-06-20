@@ -138,18 +138,20 @@ export default function OpportunitiesPage() {
               onClick={() => handleSelectOpportunity(opp)}
               className="group flex items-center justify-between p-4 border rounded-xl hover:bg-muted/50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md hover:border-primary/30"
             >
-              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-6 w-full min-w-0">
-                <div className="font-medium text-lg text-foreground mb-2 sm:mb-0 sm:w-56 md:w-72 truncate" title={opp.clientName}>
+              <div className="flex flex-1 flex-col sm:flex-row sm:items-center sm:gap-6 min-w-0">
+                <div className="font-medium text-lg text-foreground mb-2 sm:mb-0 sm:w-2/5 lg:w-1/3 truncate" title={opp.clientName}>
                   {opp.clientName}
                 </div>
                 <div className="flex items-center gap-4 sm:gap-6 text-sm text-muted-foreground">
-                  <Badge variant={getStatusBadgeVariant(opp.opportunityStatus)}>{opp.opportunityStatus}</Badge>
-                  <div className="flex items-center gap-2">
-                    <FileText className="h-4 w-4" />
+                  <div className="flex items-center justify-start w-28 shrink-0">
+                    <Badge variant={getStatusBadgeVariant(opp.opportunityStatus)} className="w-full justify-center">{opp.opportunityStatus}</Badge>
+                  </div>
+                  <div className="flex items-center gap-2 w-44 shrink-0 truncate">
+                    <FileText className="h-4 w-4 flex-shrink-0" />
                     <span className="truncate">{opp.contractType}</span>
                   </div>
-                  <div className="hidden md:flex items-center gap-2">
-                    <Clock className="h-4 w-4" />
+                  <div className="hidden md:flex items-center gap-2 w-32 shrink-0">
+                    <Clock className="h-4 w-4 flex-shrink-0" />
                     <ClientFormattedDate dateString={opp.lastUpdated} />
                   </div>
                 </div>
