@@ -98,45 +98,103 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
       return;
     }
 
-    const originalPadding = contentToExport.style.padding;
-    const marginPx = 40; // Approx 0.4-0.5 inch margin (e.g. 40px / 96dpi ~ 0.41in)
-    contentToExport.style.padding = `${marginPx}px`;
-    
-    // Ensure the content is rendered with padding before capturing
-    // A small timeout can sometimes help ensure styles are applied if there are complex reflows
-    await new Promise(resolve => setTimeout(resolve, 50));
-
-
     toast({ title: "Exporting PDF...", description: "Please wait while the PDF is being generated." });
+    
     try {
       const canvas = await html2canvas(contentToExport, {
-        scale: 2, // Improve quality
-        useCORS: true, 
+        scale: 2, // Higher scale for better quality
+        useCORS: true,
         logging: false,
-        width: contentToExport.scrollWidth + (2 * marginPx), // Ensure canvas width includes padding
-        height: contentToExport.scrollHeight + (2 * marginPx), // Ensure canvas height includes padding
-        windowWidth: contentToExport.scrollWidth + (2 * marginPx),
-        windowHeight: contentToExport.scrollHeight + (2 * marginPx),
+        width: contentToExport.scrollWidth, // Capture full width of content
+        height: contentToExport.scrollHeight, // Capture full height of content
+        windowWidth: contentToExport.scrollWidth,
+        windowHeight: contentToExport.scrollHeight,
       });
-      const imgData = canvas.toDataURL('image/png');
-      
-      // PDF page will be sized to the canvas, which now includes the padding as margins
+
+      const imgWidthPx = canvas.width;
+      const imgHeightPx = canvas.height;
+
+      // PDF setup: Letter size, 1-inch margins
       const pdf = new jsPDF({
         orientation: 'p',
-        unit: 'px',
-        format: [canvas.width, canvas.height] 
+        unit: 'pt', // points
+        format: 'letter', // 612pt x 792pt
       });
-      
-      pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
+
+      const pdfPageWidthPt = pdf.internal.pageSize.getWidth();
+      const pdfPageHeightPt = pdf.internal.pageSize.getHeight();
+      const marginPt = 72; // 1 inch = 72 points
+
+      const contentBoxWidthPt = pdfPageWidthPt - 2 * marginPt;
+      const contentBoxHeightPt = pdfPageHeightPt - 2 * marginPt;
+
+      // Calculate scaling factor to fit image width into contentBoxWidthPt
+      const scaleFactor = contentBoxWidthPt / imgWidthPx;
+      // const scaledTotalImgHeightPt = imgHeightPx * scaleFactor;
+
+      let yCanvasPosPx = 0; // Current Y position on the source canvas (in pixels)
+      let pageCount = 0;
+
+      while (yCanvasPosPx < imgHeightPx) {
+        pageCount++;
+        if (pageCount > 1) {
+          pdf.addPage();
+        }
+
+        // Calculate the height of the current slice from the original canvas (in pixels)
+        // This slice, when scaled by scaleFactor, should fit into contentBoxHeightPt
+        let sliceHeightPx = Math.min(
+          imgHeightPx - yCanvasPosPx, // Remaining height on canvas
+          contentBoxHeightPt / scaleFactor // Max height that fits on PDF page (converted to canvas pixels)
+        );
+        
+        // Create a temporary canvas for this slice
+        const sliceCanvas = document.createElement('canvas');
+        sliceCanvas.width = imgWidthPx;
+        sliceCanvas.height = sliceHeightPx;
+        const sliceCtx = sliceCanvas.getContext('2d');
+
+        if (!sliceCtx) {
+          throw new Error("Failed to get 2D context for slice canvas");
+        }
+        
+        // Draw the slice from the original canvas to the temporary slice canvas
+        sliceCtx.drawImage(
+          canvas,       // Source canvas
+          0,            // Source X
+          yCanvasPosPx, // Source Y
+          imgWidthPx,   // Source Width
+          sliceHeightPx,// Source Height
+          0,            // Destination X on sliceCanvas
+          0,            // Destination Y on sliceCanvas
+          imgWidthPx,   // Destination Width on sliceCanvas
+          sliceHeightPx // Destination Height on sliceCanvas
+        );
+        
+        const sliceImgDataUrl = sliceCanvas.toDataURL('image/png');
+        const sliceDisplayHeightPt = sliceHeightPx * scaleFactor; // Height of this slice on the PDF page
+
+        pdf.addImage(
+          sliceImgDataUrl,
+          'PNG',
+          marginPt,               // X position on PDF page (left margin)
+          marginPt,               // Y position on PDF page (top margin)
+          contentBoxWidthPt,      // Width of image on PDF page
+          sliceDisplayHeightPt    // Height of image on PDF page
+        );
+
+        yCanvasPosPx += sliceHeightPx;
+      }
+
       pdf.save('contract.pdf');
-      toast({ title: "PDF Exported", description: "Contract has been exported as contract.pdf." });
+      toast({ title: "PDF Exported", description: `Contract exported as contract.pdf (${pageCount} pages).` });
+
     } catch (error) {
       console.error("Error exporting PDF:", error);
-      toast({ title: "PDF Export Failed", description: `Could not export the contract as PDF. ${error instanceof Error ? error.message : ''}`, variant: "destructive" });
-    } finally {
-      contentToExport.style.padding = originalPadding; // Restore original padding
+      toast({ title: "PDF Export Failed", description: `Could not export PDF. ${error instanceof Error ? error.message : 'Unknown error'}`, variant: "destructive" });
     }
   };
+
 
   const handleRenumberContract = async () => {
     const plainTextToRenumber = getTextForAction();
@@ -195,7 +253,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
           ) : (
             <div
               ref={previewContentRef}
-              className="text-sm prose prose-sm max-w-none min-h-[300px] whitespace-pre-wrap break-words" // Added break-words
+              className="text-sm prose prose-sm max-w-none min-h-[300px] whitespace-pre-wrap break-words" 
               dangerouslySetInnerHTML={{ __html: currentTextToShow }}
             />
           )}
@@ -231,4 +289,3 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
     </Card>
   );
 }
-
