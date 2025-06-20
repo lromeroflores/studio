@@ -78,41 +78,63 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
 
   const handleToggleAndSaveEditing = () => {
     if (isEditing) {
+      // When saving, convert newlines in textarea to <br> for HTML display
       setEditedVersion(editTextInEditor.replace(/\n/g, '<br>'));
       setIsEditing(false);
       toast({ title: 'Edits Applied', description: 'Your direct edits have been applied to the preview.' });
     } else {
+      // When entering edit mode, convert <br> from HTML preview to newlines for textarea
       const div = document.createElement('div');
-      div.innerHTML = currentTextToShow;
-      setEditTextInEditor(div.textContent || div.innerText || "");
+      div.innerHTML = currentTextToShow; // currentTextToShow is HTML
+      setEditTextInEditor(div.innerText || div.textContent || ""); // Get text content
       setIsEditing(true);
     }
   };
 
   const handleExportPdf = async () => {
-    if (!previewContentRef.current) {
+    const contentToExport = previewContentRef.current;
+    if (!contentToExport) {
       toast({ title: "Export Error", description: "Preview content not found.", variant: "destructive" });
       return;
     }
+
+    const originalPadding = contentToExport.style.padding;
+    const marginPx = 40; // Approx 0.4-0.5 inch margin (e.g. 40px / 96dpi ~ 0.41in)
+    contentToExport.style.padding = `${marginPx}px`;
+    
+    // Ensure the content is rendered with padding before capturing
+    // A small timeout can sometimes help ensure styles are applied if there are complex reflows
+    await new Promise(resolve => setTimeout(resolve, 50));
+
+
     toast({ title: "Exporting PDF...", description: "Please wait while the PDF is being generated." });
     try {
-      const canvas = await html2canvas(previewContentRef.current, {
+      const canvas = await html2canvas(contentToExport, {
         scale: 2, // Improve quality
-        useCORS: true, // If images are from external sources
+        useCORS: true, 
         logging: false,
+        width: contentToExport.scrollWidth + (2 * marginPx), // Ensure canvas width includes padding
+        height: contentToExport.scrollHeight + (2 * marginPx), // Ensure canvas height includes padding
+        windowWidth: contentToExport.scrollWidth + (2 * marginPx),
+        windowHeight: contentToExport.scrollHeight + (2 * marginPx),
       });
       const imgData = canvas.toDataURL('image/png');
+      
+      // PDF page will be sized to the canvas, which now includes the padding as margins
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'px',
         format: [canvas.width, canvas.height] 
       });
+      
       pdf.addImage(imgData, 'PNG', 0, 0, canvas.width, canvas.height);
       pdf.save('contract.pdf');
       toast({ title: "PDF Exported", description: "Contract has been exported as contract.pdf." });
     } catch (error) {
       console.error("Error exporting PDF:", error);
-      toast({ title: "PDF Export Failed", description: "Could not export the contract as PDF.", variant: "destructive" });
+      toast({ title: "PDF Export Failed", description: `Could not export the contract as PDF. ${error instanceof Error ? error.message : ''}`, variant: "destructive" });
+    } finally {
+      contentToExport.style.padding = originalPadding; // Restore original padding
     }
   };
 
@@ -160,7 +182,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
         </CardDescription>
       </CardHeader>
       <CardContent className="px-6 pb-6 pt-0">
-         <div className="p-4 bg-muted/20 border rounded-md min-h-[calc(300px+2rem)]">
+         <div className="p-4 bg-muted/20 border rounded-md min-h-[calc(300px+2rem)] overflow-hidden">
           {isEditing ? (
             <Textarea
               value={editTextInEditor}
@@ -173,7 +195,7 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
           ) : (
             <div
               ref={previewContentRef}
-              className="text-sm prose prose-sm max-w-none min-h-[300px] whitespace-pre-wrap"
+              className="text-sm prose prose-sm max-w-none min-h-[300px] whitespace-pre-wrap break-words" // Added break-words
               dangerouslySetInnerHTML={{ __html: currentTextToShow }}
             />
           )}
@@ -203,9 +225,10 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
           disabled={isRenumbering}
         >
           {isEditing ? <Save className="mr-2 h-4 w-4" /> : <Edit3 className="mr-2 h-4 w-4" />}
-          Edit Text
+          {isEditing ? "Save Edits" : "Edit Text"}
         </Button>
       </CardFooter>
     </Card>
   );
 }
+
