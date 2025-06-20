@@ -17,9 +17,9 @@ export default function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="sticky top-0 z-40 w-full border-b bg-gray-100/90 backdrop-blur-sm dark:bg-gray-950/90">
-        <div className="container flex h-14 items-center">
-          <div className="mr-4 hidden md:flex">
-            <Link href="/opportunities" className="mr-6 flex items-center space-x-2">
+        <div className="container flex h-16 items-center justify-between">
+          <div className="flex items-center">
+            <Link href="/opportunities" className="flex items-center space-x-2">
               <CovaltoLogo className="h-auto w-32" />
             </Link>
           </div>
@@ -37,7 +37,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
       </header>
 
       <div className="container flex-1 items-start md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10">
-        <aside className="fixed top-14 z-30 -ml-2 hidden h-[calc(100vh-3.5rem)] w-full shrink-0 md:sticky md:block">
+        <aside className="fixed top-16 z-30 -ml-2 hidden h-[calc(100vh-4rem)] w-full shrink-0 md:sticky md:block">
             <div className="h-full py-6 pr-6 lg:py-8">
               <MainNav />
             </div>
