@@ -37,7 +37,7 @@ const mockOpportunitiesData: Opportunity[] = [
     clientName: 'Alpha Builders Co.',
     contractId: 'const-v2-alpha',
     contractType: 'Construction Contract',
-    opportunityStatus: 'Pending Review',
+    opportunityStatus: 'In Progress',
     contractStatus: 'Negotiation',
     lastUpdated: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
     description: 'Final legal review of the construction contract for the new HQ project, check liability clauses.',
@@ -67,7 +67,7 @@ const mockOpportunitiesData: Opportunity[] = [
     clientName: 'Eco Renewables Corp.',
     contractId: 'supply-v3-eco',
     contractType: 'Supply Agreement',
-    opportunityStatus: 'Closed',
+    opportunityStatus: 'Completed',
     contractStatus: 'Archived',
     lastUpdated: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
     description: 'Long-term supply agreement for solar panels, successfully concluded and archived.',
@@ -78,9 +78,7 @@ function getStatusBadgeVariant(status: Opportunity['opportunityStatus']): "defau
   switch (status.toLowerCase()) {
     case 'new': return 'default';
     case 'in progress': return 'secondary';
-    case 'pending review': return 'outline';
-    case 'completed': return 'default';
-    case 'closed': return 'outline';
+    case 'completed': return 'outline';
     default: return 'secondary';
   }
 }
