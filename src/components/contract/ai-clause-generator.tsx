@@ -1,3 +1,4 @@
+
 'use client';
 
 import React, { useState } from 'react';
@@ -7,13 +8,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Wand2, PlusCircle, Loader2 } from 'lucide-react';
 import { suggestContractClause } from '@/ai/flows/suggest-contract-clause';
 import { useToast } from '@/hooks/use-toast';
-import type { AdHocClause } from './types';
 
 interface AIClauseGeneratorProps {
-  onAddClause: (clause: AdHocClause) => void;
+  onAddCell: (text: string) => void;
 }
 
-export function AIClauseGenerator({ onAddClause }: AIClauseGeneratorProps) {
+export function AIClauseGenerator({ onAddCell }: AIClauseGeneratorProps) {
   const [clauseDescription, setClauseDescription] = useState('');
   const [suggestedClause, setSuggestedClause] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -23,7 +23,7 @@ export function AIClauseGenerator({ onAddClause }: AIClauseGeneratorProps) {
     if (!clauseDescription.trim()) {
       toast({
         title: 'Error',
-        description: 'Please describe the clause you want to generate.',
+        description: 'Please describe the section you want to generate.',
         variant: 'destructive',
       });
       return;
@@ -36,8 +36,8 @@ export function AIClauseGenerator({ onAddClause }: AIClauseGeneratorProps) {
     } catch (error) {
       console.error('Error generating clause:', error);
       toast({
-        title: 'AI Clause Generation Failed',
-        description: 'Could not generate clause. Please try again.',
+        title: 'AI Section Generation Failed',
+        description: 'Could not generate section. Please try again.',
         variant: 'destructive',
       });
     } finally {
@@ -47,12 +47,12 @@ export function AIClauseGenerator({ onAddClause }: AIClauseGeneratorProps) {
 
   const handleAddClause = () => {
     if (suggestedClause) {
-      onAddClause({ id: Date.now().toString(), text: suggestedClause });
+      onAddCell(suggestedClause);
       setSuggestedClause(null);
       setClauseDescription(''); // Clear description after adding
       toast({
-        title: 'Clause Added',
-        description: 'The AI-generated clause has been added to your contract.',
+        title: 'Section Added',
+        description: 'The AI-generated section has been added to your contract notebook.',
       });
     }
   };
@@ -62,9 +62,9 @@ export function AIClauseGenerator({ onAddClause }: AIClauseGeneratorProps) {
       <CardHeader>
         <CardTitle className="flex items-center">
           <Wand2 className="mr-2 h-6 w-6 text-accent" />
-          AI Clause Generator
+          AI Section Generator
         </CardTitle>
-        <CardDescription>Describe the clause you need, and our AI will suggest legal wording.</CardDescription>
+        <CardDescription>Describe a new section, and our AI will suggest the wording. It will be added to the end of the contract.</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
         <Textarea
@@ -76,12 +76,12 @@ export function AIClauseGenerator({ onAddClause }: AIClauseGeneratorProps) {
         />
         <Button onClick={handleGenerateClause} disabled={isLoading || !clauseDescription.trim()} className="w-full">
           {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-          Generate Clause
+          Generate Section
         </Button>
         {suggestedClause && (
           <Card className="mt-4 bg-secondary/50">
             <CardHeader>
-              <CardTitle className="text-md">Suggested Clause:</CardTitle>
+              <CardTitle className="text-md">Suggested Section:</CardTitle>
             </CardHeader>
             <CardContent>
               <p className="text-sm whitespace-pre-wrap">{suggestedClause}</p>

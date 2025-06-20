@@ -1,334 +1,188 @@
 
 'use client';
 
-import React, { useState, useEffect, useMemo, useCallback } from 'react';
-import { useForm, FormProvider } from 'react-hook-form';
-import { zodResolver } from '@hookform/resolvers/zod';
-import * as z from 'zod';
-
+import React, { useState, useEffect, Suspense, useCallback } from 'react';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Label } from '@/components/ui/label';
-import { Separator } from '@/components/ui/separator';
-import { Switch } from '@/components/ui/switch';
-import { Trash2, Eye, DatabaseZap, Loader2, ListCollapse } from 'lucide-react';
+import { Textarea } from '@/components/ui/textarea';
+import { Card, CardContent } from '@/components/ui/card';
+import { Loader2, Trash2, ArrowUp, ArrowDown, PlusCircle, Save, GripVertical } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-
-import { TemplateForm } from '@/components/contract/template-form';
 import { AIClauseGenerator } from '@/components/contract/ai-clause-generator';
-import { ContractPreview } from '@/components/contract/contract-preview';
-import type { ContractTemplate, AdHocClause, ContractField, TemplateSectionStatus } from '@/components/contract/types';
+import type { ContractCell } from '@/components/contract/types';
 import { defaultTemplates } from '@/lib/templates';
 import { fetchContractDataFromBigQuery, type FetchContractDataOutput } from '@/ai/flows/fetch-contract-data-from-bigquery';
 
-// Helper function to create a user-friendly title from a section ID
-const sectionIdToTitle = (id: string): string => {
-  return id
-    .replace(/_/g, ' ')
-    .replace(/-/g, ' ')
-    .split(' ')
-    .map(word => word.charAt(0).toUpperCase() + word.slice(1))
-    .join(' ');
-};
-
-// Helper function to parse sections from template text
-const extractSectionsFromTemplate = (templateText: string): TemplateSectionStatus[] => {
-  const sections: TemplateSectionStatus[] = [];
-  const sectionRegex = /<!-- SECTION_START: (.*?) -->(.*?)<!-- SECTION_END: \1 -->/gs;
-  let match;
-  while ((match = sectionRegex.exec(templateText)) !== null) {
-    const id = match[1];
-    const content = match[2].trim();
-    sections.push({
-      id,
-      title: sectionIdToTitle(id),
-      originalContent: content, // Store original content for reference or stable ID generation
-      visible: true,
-    });
-  }
-  // Filter out the logo section if it's parsed, as it's not a toggleable content section
-  return sections.filter(section => section.id !== 'logo_section');
-};
-
-
-export default function ContractEditorPage() {
-  const [selectedTemplate, setSelectedTemplate] = useState<ContractTemplate>(defaultTemplates[0]);
-  const [adHocClauses, setAdHocClauses] = useState<AdHocClause[]>([]);
-  const [contractPreviewText, setContractPreviewText] = useState<string>('');
+function ContractEditorContent() {
+  const router = useRouter();
+  const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const [bigQueryRecordId, setBigQueryRecordId] = useState<string>('');
-  const [isFetchingFromBigQuery, setIsFetchingFromBigQuery] = useState<boolean>(false);
+  const opportunityName = searchParams.get('opportunityName') || 'Unnamed Opportunity';
+  const contractId = searchParams.get('contractId');
+  const contractType = searchParams.get('contractType');
 
-  const [templateSections, setTemplateSections] = useState<TemplateSectionStatus[]>([]);
+  const [cells, setCells] = useState<ContractCell[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const validationSchema = useMemo(() => {
-    const schemaFields: Record<string, z.ZodTypeAny> = {};
-    selectedTemplate.fields.forEach(field => {
-      let zodType: z.ZodTypeAny;
-      switch (field.type) {
-        case 'text':
-        case 'textarea':
-          zodType = z.string();
-          if (field.required) zodType = zodType.min(1, `${field.label} is required.`);
-          else zodType = zodType.optional().nullable();
-          break;
-        case 'number':
-          zodType = z.preprocess(
-            (val) => (val === "" || val === undefined || val === null ? undefined : Number(val)),
-            field.required
-              ? z.number({invalid_type_error: `${field.label} must be a number.`})
-              : z.number({invalid_type_error: `${field.label} must be a number.`}).optional().nullable()
-          );
-          break;
-        case 'date':
-          zodType = z.string();
-          if (field.required) zodType = zodType.min(1, `${field.label} is required.`);
-          else zodType = zodType.optional().nullable();
-          break;
-        default:
-          zodType = z.any();
-      }
-      schemaFields[field.id] = zodType;
-    });
-    return z.object(schemaFields);
-  }, [selectedTemplate]);
-
-  const formMethods = useForm({
-    resolver: zodResolver(validationSchema),
-    defaultValues: useMemo(() => {
-      const defaultVals: Record<string, any> = {};
-      selectedTemplate.fields.forEach(field => {
-        defaultVals[field.id] = field.defaultValue || (field.type === 'number' ? undefined : '');
-      });
-      return defaultVals;
-    }, [selectedTemplate]),
-  });
-
-  const generateContractPreviewText = useCallback(() => {
-    const currentValues = formMethods.getValues();
-    return selectedTemplate.baseText(currentValues);
-  }, [formMethods, selectedTemplate]);
-
-  useEffect(() => {
-    formMethods.reset(
-      selectedTemplate.fields.reduce((acc, field) => {
-        acc[field.id] = field.defaultValue || (field.type === 'number' ? undefined : '');
-        return acc;
-      }, {} as Record<string, any>)
-    );
-
-    const initialPreviewText = generateContractPreviewText();
-    setContractPreviewText(initialPreviewText);
-
-    const rawTemplateText = selectedTemplate.baseText({}); 
-    const parsedSections = extractSectionsFromTemplate(rawTemplateText);
-    setTemplateSections(parsedSections.map(s => ({ ...s, visible: true }))); 
-
-  }, [selectedTemplate, formMethods, generateContractPreviewText]);
-
-
-  useEffect(() => {
-    const subscription = formMethods.watch((values) => {
-      setContractPreviewText(selectedTemplate.baseText(values as Record<string, any>));
-    });
-    return () => subscription.unsubscribe();
-  }, [formMethods, selectedTemplate]);
-
-
-  const handleAddAdHocClause = (clause: AdHocClause) => {
-    setAdHocClauses(prev => [...prev, clause]);
-  };
-
-  const handleRemoveAdHocClause = (clauseId: string) => {
-    setAdHocClauses(prev => prev.filter(c => c.id !== clauseId));
-    toast({ title: 'Clause Removed', description: 'The ad-hoc clause has been removed.' });
-  };
-
-  const handlePreviewContract = () => {
-    const currentValues = formMethods.getValues();
-    setContractPreviewText(selectedTemplate.baseText(currentValues));
-    toast({ title: 'Preview Updated', description: 'Contract preview has been refreshed with the latest data.' });
-  };
-
-  const handleTemplateChange = (templateId: string) => {
-    const newTemplate = defaultTemplates.find(t => t.id === templateId);
-    if (newTemplate) {
-      setSelectedTemplate(newTemplate);
-    }
-  };
-
-  const handleFetchFromBigQuery = async () => {
-    if (!bigQueryRecordId.trim()) {
-      toast({ title: 'Error', description: 'Please enter a Record ID to fetch from BigQuery.', variant: 'destructive' });
-      return;
-    }
-    setIsFetchingFromBigQuery(true);
+  const loadContract = useCallback(async () => {
+    setIsLoading(true);
     try {
-      const result: FetchContractDataOutput = await fetchContractDataFromBigQuery({ recordId: bigQueryRecordId });
-      if (result) {
-        // Create a new object for formMethods.setValue to ensure reactivity for all fields
-        const valuesToSet: Record<string, any> = {};
-        selectedTemplate.fields.forEach(field => {
-          if (result.hasOwnProperty(field.id)) {
-            let value = result[field.id as keyof FetchContractDataOutput];
-            if (field.type === 'date' && typeof value === 'string' && value) {
-              try {
-                value = new Date(value).toISOString().split('T')[0];
-              } catch (e) { console.warn(`Could not parse date for field ${field.id}: ${value}`); value = ''; }
-            }
-            if (field.type === 'number') {
-               value = value === null || value === undefined || value === '' ? undefined : Number(value);
-            }
-            valuesToSet[field.id] = value ?? (field.type === 'number' ? undefined : '');
-          } else {
-            // If BQ result doesn't have a field, set it to its default or empty
-             valuesToSet[field.id] = field.defaultValue || (field.type === 'number' ? undefined : '');
-          }
-        });
-        formMethods.reset(valuesToSet); // Use reset to update all fields and trigger re-validation/re-render
-        toast({ title: 'Data Fetched', description: 'Contract data has been pre-filled from BigQuery.' });
-        // Preview will update via useEffect watching form values
-      } else {
-        toast({ title: 'Not Found', description: `No data found in BigQuery for Record ID: ${bigQueryRecordId}`, variant: 'destructive' });
+      const template = defaultTemplates.find(t => t.name === contractType) || defaultTemplates[0];
+      let fetchedData: FetchContractDataOutput = {};
+
+      if (contractId) {
+        fetchedData = await fetchContractDataFromBigQuery({ recordId: contractId });
+        if(fetchedData) {
+            toast({ title: 'Data Loaded', description: 'Contract data has been loaded from the backend.' });
+        }
       }
+      
+      const initialCells = template.generateCells(fetchedData || {});
+      setCells(initialCells);
+
     } catch (error) {
-      console.error('Error fetching from BigQuery:', error);
-      toast({ title: 'BigQuery Fetch Failed', description: `Could not fetch data: ${error instanceof Error ? error.message : 'Unknown error'}`, variant: 'destructive' });
+        console.error("Failed to load contract data:", error);
+        toast({ title: 'Error Loading Contract', description: 'Could not load contract data. Using a blank template.', variant: 'destructive' });
+        const template = defaultTemplates.find(t => t.name === contractType) || defaultTemplates[0];
+        setCells(template.generateCells({}));
     } finally {
-      setIsFetchingFromBigQuery(false);
+        setIsLoading(false);
     }
+  }, [contractType, contractId, toast]);
+
+
+  useEffect(() => {
+    loadContract();
+  }, [loadContract]);
+  
+
+  const updateCellContent = (id: string, newContent: string) => {
+    setCells(cells.map(cell => cell.id === id ? { ...cell, content: newContent } : cell));
   };
 
-  const handleToggleSectionVisibility = (sectionId: string) => {
-    setTemplateSections(prevSections =>
-      prevSections.map(section =>
-        section.id === sectionId ? { ...section, visible: !section.visible } : section
-      )
+  const deleteCell = (id: string) => {
+    setCells(cells.filter(cell => cell.id !== id));
+    toast({ title: 'Section Deleted' });
+  };
+
+  const moveCell = (index: number, direction: 'up' | 'down') => {
+    if ((direction === 'up' && index === 0) || (direction === 'down' && index === cells.length - 1)) {
+        return;
+    }
+    
+    const newCells = [...cells];
+    const targetIndex = direction === 'up' ? index - 1 : index + 1;
+    // Simple swap
+    [newCells[index], newCells[targetIndex]] = [newCells[targetIndex], newCells[index]];
+    setCells(newCells);
+  };
+
+  const addCell = (text: string, index?: number) => {
+    const newCell: ContractCell = {
+      id: `cell-${Date.now()}-${Math.random()}`,
+      content: text,
+    };
+    const newCells = [...cells];
+    const insertAtIndex = index !== undefined ? index + 1 : cells.length;
+    newCells.splice(insertAtIndex, 0, newCell);
+    setCells(newCells);
+  };
+
+  const handleSave = () => {
+    toast({ title: 'Contract Saved', description: 'Your contract has been saved successfully.' });
+    router.push('/opportunities');
+  };
+
+  const handleAutoResizeTextarea = (event: React.FormEvent<HTMLTextAreaElement>) => {
+    const textarea = event.currentTarget;
+    textarea.style.height = 'auto';
+    textarea.style.height = `${textarea.scrollHeight}px`;
+  };
+
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center h-96">
+        <Loader2 className="h-16 w-16 animate-spin text-primary" />
+      </div>
     );
-  };
-
+  }
 
   return (
-    <div className="container mx-auto">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Column: Template, Sections */}
-        <div className="md:col-span-1 space-y-6">
-          <Card className="shadow-lg">
-            <CardHeader>
-              <CardTitle>Contract Details</CardTitle>
-              <CardDescription>Fill in the fields for your chosen contract template or fetch from BigQuery.</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                <div>
-                  <Label htmlFor="template-select">Select Template</Label>
-                  <Select value={selectedTemplate.id} onValueChange={handleTemplateChange}>
-                    <SelectTrigger id="template-select">
-                      <SelectValue placeholder="Select a contract template" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {defaultTemplates.map(template => (
-                        <SelectItem key={template.id} value={template.id}>
-                          {template.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <Separator />
-                 <div>
-                  <Label htmlFor="bigquery-record-id">Fetch by Record ID (from BigQuery)</Label>
-                  <div className="flex space-x-2 mt-1">
-                    <Input
-                      id="bigquery-record-id"
-                      placeholder="Enter Record ID"
-                      value={bigQueryRecordId}
-                      onChange={(e) => setBigQueryRecordId(e.target.value)}
-                      disabled={isFetchingFromBigQuery}
-                    />
-                    <Button onClick={handleFetchFromBigQuery} disabled={isFetchingFromBigQuery || !bigQueryRecordId.trim()} className="whitespace-nowrap">
-                      {isFetchingFromBigQuery ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <DatabaseZap className="mr-2 h-4 w-4" />}
-                      Fetch Data
-                    </Button>
-                  </div>
-                </div>
-                <Separator />
-                <FormProvider {...formMethods}>
-                  <TemplateForm template={selectedTemplate} form={formMethods} />
-                </FormProvider>
-              </div>
-            </CardContent>
-             <CardFooter>
-                <Button onClick={handlePreviewContract} className="w-full" variant="outline">
-                  <Eye className="mr-2 h-4 w-4" /> Refresh Preview
-                </Button>
-            </CardFooter>
-          </Card>
-
-          {templateSections.length > 0 && (
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <ListCollapse className="mr-2 h-6 w-6 text-accent" />
-                  Manage Template Sections
-                </CardTitle>
-                <CardDescription>Toggle visibility of predefined sections in the contract.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {templateSections.map((section) => (
-                  <div key={section.id} className="flex items-center justify-between p-2 border rounded-md bg-muted/20">
-                    <Label htmlFor={`section-toggle-${section.id}`} className="flex-1 cursor-pointer text-sm">
-                      {section.title}
-                    </Label>
-                    <Switch
-                      id={`section-toggle-${section.id}`}
-                      checked={section.visible}
-                      onCheckedChange={() => handleToggleSectionVisibility(section.id)}
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-
-          {adHocClauses.length > 0 && (
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle>Ad-Hoc Clauses</CardTitle>
-                <CardDescription>Clauses added using the AI generator.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {adHocClauses.map((clause, index) => (
-                  <div key={clause.id} className="flex justify-between items-start p-2 border rounded-md bg-muted/30">
-                    <p className="text-sm flex-1 whitespace-pre-wrap break-words"><strong>{index+1}.</strong> {clause.text}</p>
-                    <Button variant="ghost" size="sm" onClick={() => handleRemoveAdHocClause(clause.id)} aria-label="Remove clause">
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </Button>
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
-        </div>
-
-        {/* Right Column: Preview & AI Clause Generator */}
-        <div className="md:col-span-2">
-          <div className="sticky top-0">
-            <ContractPreview
-              baseText={contractPreviewText}
-              adHocClauses={adHocClauses}
-              templateSections={templateSections}
-            />
-          </div>
-          <div className="mt-6">
-            <AIClauseGenerator onAddClause={handleAddAdHocClause} />
-          </div>
-        </div>
+    <div className="max-w-4xl mx-auto py-8">
+      <div className="flex justify-between items-center mb-8">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">{opportunityName}</h1>
+        <Button onClick={handleSave}>
+            <Save className="mr-2 h-4 w-4" />
+            Save and Exit
+        </Button>
       </div>
+
+      <div className="space-y-4 contract-notebook">
+        {cells.map((cell, index) => (
+          <Card key={cell.id} className="group/cell relative transition-shadow hover:shadow-lg">
+            <div className="absolute top-2 right-2 z-10 flex items-center space-x-1 bg-background/50 backdrop-blur-sm rounded-md p-1 opacity-0 group-hover/cell:opacity-100 transition-opacity duration-200">
+               <Button variant="ghost" size="icon" className="h-7 w-7 cursor-grab" title="Reorder (Not implemented)">
+                <GripVertical className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'up')} disabled={index === 0} title="Move Up">
+                <ArrowUp className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'down')} disabled={index === cells.length - 1} title="Move Down">
+                <ArrowDown className="h-4 w-4" />
+              </Button>
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteCell(cell.id)} title="Delete Section">
+                <Trash2 className="h-4 w-4 text-destructive" />
+              </Button>
+            </div>
+             <CardContent className="p-4">
+               {cell.content.includes('<table') ? (
+                  <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: cell.content }} />
+               ) : (
+                <Textarea
+                    value={cell.content}
+                    onChange={(e) => updateCellContent(cell.id, e.target.value)}
+                    className="w-full h-auto min-h-[60px] resize-none border-0 shadow-none focus-visible:ring-0 p-0 text-base font-serif"
+                    onInput={handleAutoResizeTextarea}
+                    // This useEffect-like logic inside the component helps set initial height
+                    ref={node => {
+                        if (node) {
+                            // Run this only once on initial render
+                            if (!node.dataset.resized) {
+                                node.style.height = 'auto';
+                                node.style.height = `${node.scrollHeight}px`;
+                                node.dataset.resized = "true";
+                            }
+                        }
+                    }}
+                />
+               )}
+            </CardContent>
+            <div className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 w-full flex justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity z-10">
+                 <Button variant="outline" size="sm" className="rounded-full bg-background hover:bg-secondary shadow-md" onClick={() => addCell('New editable section...', index)}>
+                     <PlusCircle className="mr-2 h-4 w-4" /> Add Section Below
+                 </Button>
+            </div>
+          </Card>
+        ))}
+      </div>
+      
+      <div className="mt-12">
+        <AIClauseGenerator onAddCell={(text) => addCell(text)} />
+      </div>
+
     </div>
   );
+}
+
+export default function ContractEditorPage() {
+    return (
+        <Suspense fallback={
+            <div className="flex justify-center items-center h-screen">
+                <Loader2 className="h-16 w-16 animate-spin text-primary" />
+            </div>
+        }>
+            <ContractEditorContent />
+        </Suspense>
+    );
 }

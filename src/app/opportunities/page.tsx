@@ -88,7 +88,12 @@ export default function OpportunitiesPage() {
   const [searchTerm, setSearchTerm] = React.useState('');
 
   const handleSelectOpportunity = (opportunity: Opportunity) => {
-    router.push(`/editor?contractId=${opportunity.contractId}`);
+    const query = new URLSearchParams({
+      contractId: opportunity.contractId,
+      opportunityName: opportunity.clientName,
+      contractType: opportunity.contractType,
+    }).toString();
+    router.push(`/editor?${query}`);
   };
 
   const filteredOpportunities = mockOpportunitiesData.filter(opp =>
