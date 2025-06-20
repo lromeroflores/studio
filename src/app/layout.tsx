@@ -7,7 +7,6 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import AppLayout from '@/components/layout/app-layout';
 import { usePathname } from 'next/navigation';
-import { AuthProvider } from '@/hooks/use-auth';
 // import type { Metadata } from 'next'; // Import for type safety if using generateMetadata
 
 const geistSans = Geist({
@@ -26,7 +25,8 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   const pathname = usePathname();
-  const isAuthPage = pathname === '/' || pathname === '/register';
+  // The login page is now the only page without the main AppLayout
+  const isAuthPage = pathname === '/';
 
   useEffect(() => {
     // Apply theme from localStorage or system preference on initial client load
@@ -48,14 +48,10 @@ export default function RootLayout({
   let pageTitle = 'ContractEase';
   if (pathname === '/') {
     pageTitle = 'Login - ContractEase';
-  } else if (pathname === '/register') {
-    pageTitle = 'Register - ContractEase';
   } else if (pathname === '/opportunities') {
     pageTitle = 'Opportunities - ContractEase';
   } else if (pathname && pathname.startsWith('/editor')) {
     pageTitle = 'Contract Editor - ContractEase';
-  } else if (pathname === '/profile') {
-    pageTitle = 'User Profile - ContractEase';
   } else if (pathname === '/settings') {
     pageTitle = 'Settings - ContractEase';
   }
@@ -67,7 +63,6 @@ export default function RootLayout({
         <meta name="description" content="Streamline your contract management with AI-powered tools and efficient workflows." />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
-        <AuthProvider>
           {isAuthPage ? (
             children 
           ) : (
@@ -76,7 +71,6 @@ export default function RootLayout({
             </AppLayout>
           )}
           <Toaster />
-        </AuthProvider>
       </body>
     </html>
   );

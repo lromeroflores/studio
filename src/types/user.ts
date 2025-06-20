@@ -1,7 +1,1 @@
-
-export interface UserProfile {
-  id: string; // Firebase UID
-  name: string;
-  email: string;
-  alias?: string;
-}
+// This file is no longer in use as user profile management has been removed.
