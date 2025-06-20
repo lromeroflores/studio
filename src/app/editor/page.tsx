@@ -12,6 +12,7 @@ import { AIClauseGenerator } from '@/components/contract/ai-clause-generator';
 import type { ContractCell } from '@/components/contract/types';
 import { defaultTemplates } from '@/lib/templates';
 import { fetchContractDataFromBigQuery, type FetchContractDataOutput } from '@/ai/flows/fetch-contract-data-from-bigquery';
+import { ContractPreview } from '@/components/contract/contract-preview';
 
 function ContractEditorContent() {
   const router = useRouter();
@@ -24,6 +25,7 @@ function ContractEditorContent() {
 
   const [cells, setCells] = useState<ContractCell[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [contractData, setContractData] = useState<FetchContractDataOutput | null>(null);
 
   const loadContract = useCallback(async () => {
     setIsLoading(true);
@@ -33,6 +35,7 @@ function ContractEditorContent() {
 
       if (contractId) {
         fetchedData = await fetchContractDataFromBigQuery({ recordId: contractId });
+        setContractData(fetchedData);
         if(fetchedData) {
             toast({ title: 'Data Loaded', description: 'Contract data has been loaded from the backend.' });
         }
@@ -73,7 +76,6 @@ function ContractEditorContent() {
     
     const newCells = [...cells];
     const targetIndex = direction === 'up' ? index - 1 : index + 1;
-    // Simple swap
     [newCells[index], newCells[targetIndex]] = [newCells[targetIndex], newCells[index]];
     setCells(newCells);
   };
@@ -144,10 +146,8 @@ function ContractEditorContent() {
                     onChange={(e) => updateCellContent(cell.id, e.target.value)}
                     className="w-full h-auto min-h-[60px] resize-none border-0 shadow-none focus-visible:ring-0 p-0 text-base font-serif"
                     onInput={handleAutoResizeTextarea}
-                    // This useEffect-like logic inside the component helps set initial height
                     ref={node => {
                         if (node) {
-                            // Run this only once on initial render
                             if (!node.dataset.resized) {
                                 node.style.height = 'auto';
                                 node.style.height = `${node.scrollHeight}px`;
@@ -171,6 +171,9 @@ function ContractEditorContent() {
         <AIClauseGenerator onAddCell={(text) => addCell(text)} />
       </div>
 
+      <div className="mt-12">
+        <ContractPreview cells={cells} data={contractData} />
+      </div>
     </div>
   );
 }

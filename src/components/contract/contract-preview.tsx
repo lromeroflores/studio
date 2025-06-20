@@ -2,72 +2,49 @@
 'use client';
 
 import React, { useCallback, useMemo, useRef } from 'react';
-import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
-import { Download, Save } from 'lucide-react';
+import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
-import type { AdHocClause, TemplateSectionStatus } from './types';
+import type { ContractCell } from '@/components/contract/types';
+import type { FetchContractDataOutput } from '@/ai/flows/fetch-contract-data-from-bigquery';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 interface ContractPreviewProps {
-  baseText: string;
-  adHocClauses: AdHocClause[];
-  templateSections: TemplateSectionStatus[];
+  cells: ContractCell[];
+  data: FetchContractDataOutput | null;
 }
 
-export function ContractPreview({ baseText, adHocClauses, templateSections }: ContractPreviewProps) {
+// Utility to escape strings for RegExp
+function escapeRegExp(string: string) {
+  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
+}
+
+export function ContractPreview({ cells, data }: ContractPreviewProps) {
   const { toast } = useToast();
   const previewContentRef = useRef<HTMLDivElement>(null);
-  const router = useRouter();
+  const [isExporting, setIsExporting] = React.useState(false);
 
+  const finalContractHtml = useMemo(() => {
+    // Join the content from all editable cells
+    let html = cells.map(cell => cell.content).join('<br /><br />');
 
-  const processTextWithSectionVisibility = useCallback((text: string, sections: TemplateSectionStatus[]): string => {
-    let processedText = text;
-    sections.forEach(section => {
-      if (!section.visible) {
-        const sectionRegex = new RegExp(`<!-- SECTION_START: ${section.id} -->(.*?)<!-- SECTION_END: ${section.id} -->`, 'gs');
-        processedText = processedText.replace(sectionRegex, '');
-      }
-    });
-    processedText = processedText.replace(/<!-- SECTION_(START|END): .*? -->/gs, '');
-    processedText = processedText.replace(/\n\s*\n\s*\n/g, '\n\n');
-    return processedText.trim();
-  }, []);
+    // Make variables from the original data bold
+    if (data) {
+      const valuesToBold = Object.values(data)
+                                 .filter((v): v is string => typeof v === 'string' && v.length > 0)
+                                 .sort((a, b) => b.length - a.length); // Replace longer strings first
+      
+      valuesToBold.forEach(value => {
+        // Use a regex to replace the value only if it's not already inside a tag
+        const regex = new RegExp(`(?<![>])\\b${escapeRegExp(value)}\\b`, 'g');
+        html = html.replace(regex, `<b>${value}</b>`);
+      });
+    }
 
-  const formatAdHocClausesText = useCallback((clauses: AdHocClause[]): string => {
-    if (clauses.length === 0) return '';
-    let adHocText = '\n\n<hr style="margin: 20px 0; border-top: 1px solid #ccc;">\n<h3 style="font-size: 1.1em; margin-bottom: 10px;">--- AD-HOC CLAUSES ---</h3>\n';
-    clauses.forEach((clause, index) => {
-      const clauseHtml = clause.text.replace(/\n/g, '<br>');
-      adHocText += `<div style="margin-bottom: 10px;"><strong>${index + 1}.</strong> ${clauseHtml}</div>\n`;
-    });
-    return adHocText;
-  }, []);
-
-  const calculateGeneratedText = useCallback(() => {
-    const processedBase = processTextWithSectionVisibility(baseText, templateSections);
-    const adHocText = formatAdHocClausesText(adHocClauses);
-    return processedBase + adHocText;
-  }, [baseText, templateSections, adHocClauses, processTextWithSectionVisibility, formatAdHocClausesText]);
-
-  const currentTextToShow = useMemo(() => {
-    return calculateGeneratedText();
-  }, [calculateGeneratedText]);
-
-
-  const handleSave = () => {
-    // In a real app, you would have logic here to persist the contract state.
-    toast({ title: 'Contract Saved', description: 'Your changes have been saved.' });
-    router.push('/opportunities');
-  };
-  
-  const handleSaveProgress = () => {
-    // This could have different logic, e.g., saving as a draft.
-    toast({ title: 'Progress Saved', description: 'Your progress has been saved.' });
-    router.push('/opportunities');
-  };
+    return html;
+  }, [cells, data]);
 
   const handleExportPdf = async () => {
     const contentToExport = previewContentRef.current;
@@ -76,141 +53,80 @@ export function ContractPreview({ baseText, adHocClauses, templateSections }: Co
       return;
     }
 
+    setIsExporting(true);
     toast({ title: "Exporting PDF...", description: "Please wait while the PDF is being generated." });
     
     try {
       const canvas = await html2canvas(contentToExport, {
-        scale: 2, // Higher scale for better quality
+        scale: 2,
         useCORS: true,
         logging: false,
-        width: contentToExport.scrollWidth, // Capture full width of content
-        height: contentToExport.scrollHeight, // Capture full height of content
-        windowWidth: contentToExport.scrollWidth,
-        windowHeight: contentToExport.scrollHeight,
+        backgroundColor: '#ffffff',
       });
 
-      const imgWidthPx = canvas.width;
-      const imgHeightPx = canvas.height;
-
-      // PDF setup: Letter size, 1-inch margins
       const pdf = new jsPDF({
         orientation: 'p',
-        unit: 'pt', // points
-        format: 'letter', // 612pt x 792pt
+        unit: 'pt',
+        format: 'letter',
       });
 
-      const pdfPageWidthPt = pdf.internal.pageSize.getWidth();
-      const pdfPageHeightPt = pdf.internal.pageSize.getHeight();
-      const marginPt = 72; // 1 inch = 72 points
+      const pdfPageWidth = pdf.internal.pageSize.getWidth();
+      const pdfPageHeight = pdf.internal.pageSize.getHeight();
+      const margin = 72; // 1 inch
+      const contentWidth = pdfPageWidth - margin * 2;
+      
+      const imgProps = pdf.getImageProperties(canvas);
+      const contentHeight = (imgProps.height * contentWidth) / imgProps.width;
+      
+      let heightLeft = contentHeight;
+      let position = margin;
 
-      const contentBoxWidthPt = pdfPageWidthPt - 2 * marginPt;
-      const contentBoxHeightPt = pdfPageHeightPt - 2 * marginPt;
+      // Add content to first page
+      pdf.addImage(canvas, 'PNG', margin, position, contentWidth, contentHeight);
+      heightLeft -= (pdfPageHeight - margin * 2);
 
-      // Calculate scaling factor to fit image width into contentBoxWidthPt
-      const scaleFactor = contentBoxWidthPt / imgWidthPx;
-
-      let yCanvasPosPx = 0; // Current Y position on the source canvas (in pixels)
-      let pageCount = 0;
-
-      while (yCanvasPosPx < imgHeightPx) {
-        pageCount++;
-        if (pageCount > 1) {
-          pdf.addPage();
-        }
-
-        // Calculate the height of the current slice from the original canvas (in pixels)
-        let sliceHeightPx = Math.min(
-          imgHeightPx - yCanvasPosPx, // Remaining height on canvas
-          contentBoxHeightPt / scaleFactor // Max height that fits on PDF page (converted to canvas pixels)
-        );
-        
-        // Create a temporary canvas for this slice
-        const sliceCanvas = document.createElement('canvas');
-        sliceCanvas.width = imgWidthPx;
-        sliceCanvas.height = sliceHeightPx;
-        const sliceCtx = sliceCanvas.getContext('2d');
-
-        if (!sliceCtx) {
-          throw new Error("Failed to get 2D context for slice canvas");
-        }
-        
-        // Draw the slice from the original canvas to the temporary slice canvas
-        sliceCtx.drawImage(
-          canvas,
-          0,
-          yCanvasPosPx,
-          imgWidthPx,
-          sliceHeightPx,
-          0,
-          0,
-          imgWidthPx,
-          sliceHeightPx
-        );
-        
-        const sliceImgDataUrl = sliceCanvas.toDataURL('image/png');
-        const sliceDisplayHeightPt = sliceHeightPx * scaleFactor;
-
-        pdf.addImage(
-          sliceImgDataUrl,
-          'PNG',
-          marginPt,
-          marginPt,
-          contentBoxWidthPt,
-          sliceDisplayHeightPt
-        );
-
-        yCanvasPosPx += sliceHeightPx;
+      // Add new pages if content overflows
+      while (heightLeft > 0) {
+        position = heightLeft - contentHeight - margin;
+        pdf.addPage();
+        pdf.addImage(canvas, 'PNG', margin, position, contentWidth, contentHeight);
+        heightLeft -= (pdfPageHeight - margin);
       }
 
-      pdf.save('contract.pdf');
-      toast({ title: "PDF Exported", description: `Contract exported as contract.pdf (${pageCount} pages).` });
+      pdf.save('contract-document.pdf');
+      toast({ title: "PDF Exported", description: "Contract has been downloaded successfully." });
 
     } catch (error) {
       console.error("Error exporting PDF:", error);
-      toast({ title: "PDF Export Failed", description: `Could not export PDF. ${error instanceof Error ? error.message : 'Unknown error'}`, variant: "destructive" });
+      toast({ title: "PDF Export Failed", description: "Could not export PDF due to an unexpected error.", variant: "destructive" });
+    } finally {
+      setIsExporting(false);
     }
   };
 
-
   return (
-    <Card className="shadow-lg">
-      <CardHeader className="px-6 pb-6 pt-6">
-        <CardTitle>Contract Preview</CardTitle>
+    <Card className="shadow-xl">
+      <CardHeader className="px-6 pt-6 pb-4">
+        <CardTitle>Final Document Preview</CardTitle>
         <CardDescription>
-          Review the generated contract below.
+          This is a preview of the final document. The variables from the original data are shown in bold.
         </CardDescription>
       </CardHeader>
       <CardContent className="px-6 pb-6 pt-0">
-         <div className="p-4 bg-muted/20 border rounded-md min-h-[calc(300px+2rem)] overflow-hidden">
+         <div className="p-6 bg-white border rounded-md min-h-[500px] overflow-y-auto font-serif text-black" ref={previewContentRef}>
             <div
-              ref={previewContentRef}
-              className="text-sm prose prose-sm max-w-none min-h-[300px] whitespace-pre-wrap break-words" 
-              dangerouslySetInnerHTML={{ __html: currentTextToShow }}
+              className="prose prose-sm max-w-none break-words" 
+              dangerouslySetInnerHTML={{ __html: finalContractHtml }}
             />
         </div>
       </CardContent>
-      <CardFooter className="flex flex-wrap gap-2 justify-start items-center px-6 pb-6 pt-4 border-t">
-        <Button 
-          onClick={handleSave} 
-          className="w-full sm:w-auto" 
-        >
-          <Save className="mr-2 h-4 w-4" />
-          Save
-        </Button>
+      <CardFooter className="flex justify-end items-center px-6 pb-6 pt-4 border-t">
         <Button 
           onClick={handleExportPdf} 
-          variant="outline"
-          className="w-full sm:w-auto" 
+          disabled={isExporting}
         >
-          <Download className="mr-2 h-4 w-4" /> Export as PDF
-        </Button>
-        <Button 
-          onClick={handleSaveProgress} 
-          variant="secondary" 
-          className="w-full sm:w-auto" 
-        >
-          <Save className="mr-2 h-4 w-4" />
-          Guardar progreso
+          {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
+          {isExporting ? 'Exporting...' : 'Export as PDF'}
         </Button>
       </CardFooter>
     </Card>
