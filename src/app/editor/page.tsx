@@ -215,7 +215,7 @@ export default function ContractEditorPage() {
   return (
     <div className="container mx-auto">
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Left Column: Template, AI, Sections */}
+        {/* Left Column: Template, Sections */}
         <div className="md:col-span-1 space-y-6">
           <Card className="shadow-lg">
             <CardHeader>
@@ -269,36 +269,31 @@ export default function ContractEditorPage() {
             </CardFooter>
           </Card>
 
-          {/* Grouping div for Manage Template Sections and AI Clause Generator */}
-          <div className="w-full space-y-6">
-            {templateSections.length > 0 && (
-              <Card className="shadow-lg">
-                <CardHeader>
-                  <CardTitle className="flex items-center">
-                    <ListCollapse className="mr-2 h-6 w-6 text-accent" />
-                    Manage Template Sections
-                  </CardTitle>
-                  <CardDescription>Toggle visibility of predefined sections in the contract.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-3">
-                  {templateSections.map((section) => (
-                    <div key={section.id} className="flex items-center justify-between p-2 border rounded-md bg-muted/20">
-                      <Label htmlFor={`section-toggle-${section.id}`} className="flex-1 cursor-pointer text-sm">
-                        {section.title}
-                      </Label>
-                      <Switch
-                        id={`section-toggle-${section.id}`}
-                        checked={section.visible}
-                        onCheckedChange={() => handleToggleSectionVisibility(section.id)}
-                      />
-                    </div>
-                  ))}
-                </CardContent>
-              </Card>
-            )}
-
-            <AIClauseGenerator onAddClause={handleAddAdHocClause} />
-          </div>
+          {templateSections.length > 0 && (
+            <Card className="shadow-lg">
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <ListCollapse className="mr-2 h-6 w-6 text-accent" />
+                  Manage Template Sections
+                </CardTitle>
+                <CardDescription>Toggle visibility of predefined sections in the contract.</CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-3">
+                {templateSections.map((section) => (
+                  <div key={section.id} className="flex items-center justify-between p-2 border rounded-md bg-muted/20">
+                    <Label htmlFor={`section-toggle-${section.id}`} className="flex-1 cursor-pointer text-sm">
+                      {section.title}
+                    </Label>
+                    <Switch
+                      id={`section-toggle-${section.id}`}
+                      checked={section.visible}
+                      onCheckedChange={() => handleToggleSectionVisibility(section.id)}
+                    />
+                  </div>
+                ))}
+              </CardContent>
+            </Card>
+          )}
 
           {adHocClauses.length > 0 && (
             <Card className="shadow-lg">
@@ -320,7 +315,7 @@ export default function ContractEditorPage() {
           )}
         </div>
 
-        {/* Right Column: Preview */}
+        {/* Right Column: Preview & AI Clause Generator */}
         <div className="md:col-span-2">
           <div className="sticky top-0">
             <ContractPreview
@@ -328,6 +323,9 @@ export default function ContractEditorPage() {
               adHocClauses={adHocClauses}
               templateSections={templateSections}
             />
+          </div>
+          <div className="mt-6">
+            <AIClauseGenerator onAddClause={handleAddAdHocClause} />
           </div>
         </div>
       </div>
