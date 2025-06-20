@@ -6,13 +6,14 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent } from '@/components/ui/card';
-import { Loader2, Trash2, ArrowUp, ArrowDown, PlusCircle, Save, GripVertical } from 'lucide-react';
+import { Loader2, Trash2, ArrowUp, ArrowDown, PlusCircle, Save, GripVertical, RefreshCw } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { AIClauseGenerator } from '@/components/contract/ai-clause-generator';
 import type { ContractCell } from '@/components/contract/types';
 import { defaultTemplates } from '@/lib/templates';
 import { fetchContractDataFromBigQuery, type FetchContractDataOutput } from '@/ai/flows/fetch-contract-data-from-bigquery';
 import { ContractPreview } from '@/components/contract/contract-preview';
+import { renumberContract } from '@/ai/flows/renumber-contract-flow';
 
 function ContractEditorContent() {
   const router = useRouter();
@@ -25,12 +26,13 @@ function ContractEditorContent() {
 
   const [cells, setCells] = useState<ContractCell[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isRenumbering, setIsRenumbering] = useState(false);
   const [contractData, setContractData] = useState<FetchContractDataOutput | null>(null);
 
   const loadContract = useCallback(async () => {
     setIsLoading(true);
     try {
-      const template = defaultTemplates.find(t => t.name === contractType) || defaultTemplates[0];
+      const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
       let fetchedData: FetchContractDataOutput = {};
 
       if (contractId) {
@@ -47,7 +49,7 @@ function ContractEditorContent() {
     } catch (error) {
         console.error("Failed to load contract data:", error);
         toast({ title: 'Error Loading Contract', description: 'Could not load contract data. Using a blank template.', variant: 'destructive' });
-        const template = defaultTemplates.find(t => t.name === contractType) || defaultTemplates[0];
+        const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
         setCells(template.generateCells({}));
     } finally {
         setIsLoading(false);
@@ -96,6 +98,49 @@ function ContractEditorContent() {
     router.push('/opportunities');
   };
 
+  const handleRenumber = async () => {
+    setIsRenumbering(true);
+    toast({ title: 'Renumbering contract...', description: 'AI is tidying up the clause numbers.' });
+
+    const SEPARATOR = "\n\n---CELL-BREAK---\n\n";
+    const combinedText = cells.map(c => c.content).join(SEPARATOR);
+
+    try {
+        const result = await renumberContract({ contractText: combinedText });
+
+        if (!result.renumberedContractText) {
+            throw new Error("AI returned an empty response.");
+        }
+
+        const renumberedParts = result.renumberedContractText.split('---CELL-BREAK---');
+
+        if (renumberedParts.length === cells.length) {
+            const updatedCells = cells.map((cell, index) => ({
+                ...cell,
+                content: renumberedParts[index].trim(),
+            }));
+            setCells(updatedCells);
+            toast({ title: 'Contract Renumbered', description: 'Clauses and cross-references have been updated.' });
+        } else {
+            console.error("AI did not preserve cell structure. Merging into a single cell.");
+            const singleCell: ContractCell = {
+                id: `cell-${Date.now()}`,
+                content: result.renumberedContractText,
+            };
+            setCells([singleCell]);
+             toast({ 
+                title: 'Contract Renumbered & Merged', 
+                description: 'Clauses were updated but the cell structure could not be preserved.',
+            });
+        }
+    } catch (error) {
+        console.error("Failed to renumber contract:", error);
+        toast({ title: 'Renumbering Failed', description: 'Could not renumber the contract clauses.', variant: 'destructive' });
+    } finally {
+        setIsRenumbering(false);
+    }
+  };
+
   const handleAutoResizeTextarea = (event: React.FormEvent<HTMLTextAreaElement>) => {
     const textarea = event.currentTarget;
     textarea.style.height = 'auto';
@@ -114,26 +159,32 @@ function ContractEditorContent() {
     <div className="max-w-4xl mx-auto py-8">
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">{opportunityName}</h1>
-        <Button onClick={handleSave}>
-            <Save className="mr-2 h-4 w-4" />
-            Save and Exit
-        </Button>
+        <div className="flex items-center gap-2">
+            <Button onClick={handleRenumber} disabled={isRenumbering} variant="outline">
+                {isRenumbering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                Renumber Clauses
+            </Button>
+            <Button onClick={handleSave} disabled={isRenumbering}>
+                <Save className="mr-2 h-4 w-4" />
+                Save and Exit
+            </Button>
+        </div>
       </div>
 
       <div className="space-y-4 contract-notebook">
         {cells.map((cell, index) => (
           <Card key={cell.id} className="group/cell relative transition-shadow hover:shadow-lg">
             <div className="absolute top-2 right-2 z-10 flex items-center space-x-1 bg-background/50 backdrop-blur-sm rounded-md p-1 opacity-0 group-hover/cell:opacity-100 transition-opacity duration-200">
-               <Button variant="ghost" size="icon" className="h-7 w-7 cursor-grab" title="Reorder (Not implemented)">
+               <Button variant="ghost" size="icon" className="h-7 w-7 cursor-grab" title="Reorder (Not implemented)" disabled={isRenumbering}>
                 <GripVertical className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'up')} disabled={index === 0} title="Move Up">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'up')} disabled={index === 0 || isRenumbering} title="Move Up">
                 <ArrowUp className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'down')} disabled={index === cells.length - 1} title="Move Down">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'down')} disabled={index === cells.length - 1 || isRenumbering} title="Move Down">
                 <ArrowDown className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteCell(cell.id)} title="Delete Section">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteCell(cell.id)} disabled={isRenumbering} title="Delete Section">
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </div>
@@ -146,6 +197,7 @@ function ContractEditorContent() {
                     onChange={(e) => updateCellContent(cell.id, e.target.value)}
                     className="w-full h-auto min-h-[60px] resize-none border-0 shadow-none focus-visible:ring-0 p-0 text-base font-serif"
                     onInput={handleAutoResizeTextarea}
+                    disabled={isRenumbering}
                     ref={node => {
                         if (node) {
                             if (!node.dataset.resized) {
@@ -159,7 +211,7 @@ function ContractEditorContent() {
                )}
             </CardContent>
             <div className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 w-full flex justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity z-10">
-                 <Button variant="outline" size="sm" className="rounded-full bg-background hover:bg-secondary shadow-md" onClick={() => addCell('New editable section...', index)}>
+                 <Button variant="outline" size="sm" className="rounded-full bg-background hover:bg-secondary shadow-md" onClick={() => addCell('New editable section...', index)} disabled={isRenumbering}>
                      <PlusCircle className="mr-2 h-4 w-4" /> Add Section Below
                  </Button>
             </div>
@@ -168,7 +220,7 @@ function ContractEditorContent() {
       </div>
       
       <div className="mt-12">
-        <AIClauseGenerator onAddCell={(text) => addCell(text)} />
+        <AIClauseGenerator onAddCell={(text) => addCell(text)} disabled={isRenumbering} />
       </div>
 
       <div className="mt-12">

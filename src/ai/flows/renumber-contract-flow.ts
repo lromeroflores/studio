@@ -2,9 +2,9 @@
 /**
  * @fileOverview AI-powered contract re-numbering and cross-reference updating flow.
  *
- * - renumberContractFlow - A function that re-numbers clauses and updates cross-references in a contract.
- * - RenumberContractInput - The input type for the renumberContractFlow function.
- * - RenumberContractOutput - The return type for the renumberContractFlow function.
+ * - renumberContract - A function that re-numbers clauses and updates cross-references in a contract.
+ * - RenumberContractInput - The input type for the renumberContract function.
+ * - RenumberContractOutput - The return type for the renumberContract function.
  */
 
 import {ai} from '@/ai/genkit';
@@ -33,13 +33,16 @@ const prompt = ai.definePrompt({
   input: {schema: RenumberContractInputSchema},
   output: {schema: RenumberContractOutputSchema},
   prompt: `You are an expert legal document processor. Your task is to meticulously analyze the provided contract text.
-First, identify all distinct clauses, sections, or numbered/lettered paragraphs. This includes main clauses often starting with a number (e.g., "1. Purpose", "II. Confidentiality") and any sub-clauses (e.g., "(a)", "3.1"). Also consider ad-hoc clauses that might be appended, often marked like "--- AD-HOC CLAUSES --- 1. ...".
 
-Second, re-number all identified top-level clauses sequentially, starting from 1. Sub-clauses should maintain their relationship to their parent clause (e.g., if "Section 2" becomes "Clause 3", then "2.1" should become "3.1" or "3.(a)" as appropriate to the original styling).
+First, identify all distinct clauses, sections, or numbered/lettered paragraphs. This includes main clauses often starting with a number (e.g., "1. Purpose", "II. Confidentiality") and any sub-clauses (e.g., "(a)", "3.1").
 
-Third, after re-numbering, you MUST scan the entire document for any internal cross-references. These could be phrases like "as per clause 3", "see section 2.1", "refer to paragraph (b) of Article IV", "in accordance with the terms outlined in clause 1". You need to update these references to reflect the new sequential numbering you've applied. Be very careful to map old numbers to new numbers correctly.
+Second, re-number all identified top-level clauses sequentially, starting from 1. Sub-clauses should maintain their relationship to their parent clause (e.g., if "Section 2" becomes "Clause 3", then "2.1" should become "3.1").
 
-Fourth, ensure that the formatting, including ad-hoc clause markers like "--- AD-HOC CLAUSES ---", is preserved as much as possible. Only the clause numbers and the numbers within cross-references should change.
+Third, after re-numbering, you MUST scan the entire document for any internal cross-references. These could be phrases like "as per clause 3", "see section 2.1", "refer to paragraph (b) of Article IV". You need to update these references to reflect the new sequential numbering you've applied.
+
+Fourth, ensure that the formatting is preserved as much as possible. Only the clause numbers and the numbers within cross-references should change.
+
+Crucially, you may find separators in the text that look like '---CELL-BREAK---'. You MUST preserve these separators exactly where they are in your output. Do not add, remove, or modify them. They are essential for reconstructing the document structure.
 
 Provide the complete, modified contract text as your output.
 

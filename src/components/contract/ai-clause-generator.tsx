@@ -11,9 +11,10 @@ import { useToast } from '@/hooks/use-toast';
 
 interface AIClauseGeneratorProps {
   onAddCell: (text: string) => void;
+  disabled?: boolean;
 }
 
-export function AIClauseGenerator({ onAddCell }: AIClauseGeneratorProps) {
+export function AIClauseGenerator({ onAddCell, disabled }: AIClauseGeneratorProps) {
   const [clauseDescription, setClauseDescription] = useState('');
   const [suggestedClause, setSuggestedClause] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(false);
@@ -72,9 +73,9 @@ export function AIClauseGenerator({ onAddCell }: AIClauseGeneratorProps) {
           value={clauseDescription}
           onChange={(e) => setClauseDescription(e.target.value)}
           rows={3}
-          disabled={isLoading}
+          disabled={isLoading || disabled}
         />
-        <Button onClick={handleGenerateClause} disabled={isLoading || !clauseDescription.trim()} className="w-full">
+        <Button onClick={handleGenerateClause} disabled={isLoading || disabled || !clauseDescription.trim()} className="w-full">
           {isLoading ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
           Generate Section
         </Button>
