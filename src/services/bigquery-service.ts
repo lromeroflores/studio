@@ -33,8 +33,8 @@ interface ContractDataRecord {
  */
 export async function getContractDataById(recordId: string): Promise<Record<string, any> | null> {
   if (!projectId || !datasetId || !tableId) {
-    console.error('BigQuery environment variables (GOOGLE_CLOUD_PROJECT, BIGQUERY_DATASET_ID, BIGQUERY_TABLE_ID) are not set.');
-    throw new Error('BigQuery configuration is incomplete. Please check environment variables.');
+    console.warn('BigQuery environment variables not set. Skipping data fetch from BigQuery. Please set GOOGLE_CLOUD_PROJECT, BIGQUERY_DATASET_ID, and BIGQUERY_TABLE_ID in your .env file to enable this feature.');
+    return null;
   }
 
   // Dynamically generate SELECT clause based on NDA template fields
