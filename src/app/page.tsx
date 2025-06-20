@@ -11,7 +11,7 @@ import { Label } from '@/components/ui/label';
 import { Loader2, AlertTriangle } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, isFirebaseConfigured } from '@/lib/firebase';
+import { auth } from '@/lib/firebase';
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 
 
@@ -28,8 +28,8 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
-    if (!isFirebaseConfigured || !auth) {
-      setError('Firebase is not configured correctly. Please check your environment variables.');
+    if (!auth) {
+      setError('Firebase is not configured correctly. Please check the console for more details.');
       setIsLoading(false);
       return;
     }
@@ -45,8 +45,8 @@ export default function LoginPage() {
       router.push('/opportunities');
     } catch (err: any) {
       console.error("Firebase Login Error:", err.code, err.message);
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
-        setError('Invalid email or password. Please try again.');
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential' || err.code === 'auth/invalid-api-key') {
+        setError('Invalid email, password, or configuration. Please check credentials and Firebase setup.');
       } else {
         setError('An unexpected error occurred. Please try again later.');
       }
@@ -59,16 +59,6 @@ export default function LoginPage() {
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 p-4 selection:bg-primary/40 selection:text-white animate-fade-in">
       <div className="absolute inset-0 bg-[url('https://placehold.co/1920x1080/E0E7FF/003A70/png?text=Corporate+Network')] bg-cover bg-center opacity-10 dark:opacity-5" data-ai-hint="finance technology"></div>
       
-      {!isFirebaseConfigured && (
-        <Alert variant="destructive" className="max-w-md w-full mb-6 z-10">
-          <AlertTriangle className="h-4 w-4" />
-          <AlertTitle>Configuration Error</AlertTitle>
-          <AlertDescription>
-            Firebase is not configured. Please add your `NEXT_PUBLIC_FIREBASE_*` variables to your `.env` file and restart the server.
-          </AlertDescription>
-        </Alert>
-      )}
-
       <Card className="w-full max-w-md shadow-2xl bg-card/90 backdrop-blur-sm border-border/50 z-10">
         <CardHeader className="space-y-2 text-center pt-8">
           <div className="flex justify-center mb-4">
@@ -95,7 +85,7 @@ export default function LoginPage() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
-                disabled={isLoading || !isFirebaseConfigured}
+                disabled={isLoading}
                 className="bg-background/80 focus:bg-background"
               />
             </div>
@@ -108,7 +98,7 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 required
-                disabled={isLoading || !isFirebaseConfigured}
+                disabled={isLoading}
                 className="bg-background/80 focus:bg-background"
               />
             </div>
@@ -117,7 +107,7 @@ export default function LoginPage() {
             )}
           </CardContent>
           <CardFooter className="flex flex-col gap-4 pb-8">
-            <Button type="submit" className="w-full text-lg py-6" disabled={isLoading || !isFirebaseConfigured}>
+            <Button type="submit" className="w-full text-lg py-6" disabled={isLoading}>
               {isLoading ? <Loader2 className="mr-2 h-5 w-5 animate-spin" /> : null}
               {isLoading ? 'Authenticating...' : 'Secure Login'}
             </Button>
