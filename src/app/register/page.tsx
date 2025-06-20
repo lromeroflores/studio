@@ -10,6 +10,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { createUserWithEmailAndPassword, updateProfile } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+import { createUserProfile } from '@/services/firestore-service';
 
 export default function RegisterPage() {
   const router = useRouter();
@@ -32,24 +35,34 @@ export default function RegisterPage() {
       return;
     }
 
-    // Mock registration logic
-    await new Promise(resolve => setTimeout(resolve, 1500)); // Simulate API call
+    try {
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
-    // Simulate success or failure (e.g., email already exists)
-    // For this demo, we'll always simulate success
-    console.log('Mock registration successful for:', { name, email });
-    
-    toast({
-      title: 'Registro Exitoso',
-      description: 'Tu cuenta ha sido creada. Por favor, inicia sesión.',
-    });
-    router.push('/'); 
+      // Update Firebase Auth profile displayName
+      await updateProfile(user, { displayName: name });
+      
+      // Create user profile in Firestore
+      await createUserProfile(user.uid, { name, email });
 
-    // Example of error handling (could be uncommented for testing)
-    // setError('Este correo electrónico ya está registrado.');
-    // setIsLoading(false);
+      toast({
+        title: 'Registro Exitoso',
+        description: 'Tu cuenta ha sido creada. Por favor, inicia sesión.',
+      });
+      router.push('/'); 
 
-    setIsLoading(false); // This would be in the .finally() of a real API call
+    } catch (err: any) {
+      console.error("Firebase Registration Error:", err.code, err.message);
+      if (err.code === 'auth/email-already-in-use') {
+        setError('Este correo electrónico ya está registrado.');
+      } else if (err.code === 'auth/weak-password') {
+        setError('La contraseña debe tener al menos 6 caracteres.');
+      } else {
+        setError('Ocurrió un error inesperado durante el registro.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (

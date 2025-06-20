@@ -1,23 +1,17 @@
 
 "use client";
 
-import React, { useState } from 'react'; // Added useState
-import { useRouter } from 'next/navigation';
-import Link from 'next/link'; // Added Link
-import {
-  SidebarProvider,
-  Sidebar,
-  SidebarHeader,
-  SidebarContent,
-  SidebarFooter,
-  SidebarInset,
-  SidebarTrigger,
-  SidebarRail,
-} from '@/components/ui/sidebar';
+import React, { useState, useEffect } from 'react';
+import { useRouter, usePathname } from 'next/navigation';
+import Link from 'next/link';
+import { signOut } from "firebase/auth";
+import { auth } from "@/lib/firebase";
+import { useAuth } from "@/hooks/use-auth";
+
 import { Button } from '@/components/ui/button';
 import { CovaltoLogo } from '@/components/icons/covalto-logo';
 import { MainNav } from './main-nav';
-import { UserCircle, LogOut, Settings } from 'lucide-react';
+import { UserCircle, LogOut, Settings, Loader2 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -27,81 +21,125 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
+import type { UserProfile } from '@/types/user';
 
 interface AppLayoutProps {
   children: React.ReactNode;
 }
 
-export default function AppLayout({ children }: AppLayoutProps) {
+const UserMenu = () => {
   const router = useRouter();
-  // Simulating user data - in a real app, this would come from auth/context
-  const [userName, setUserName] = useState('Analista Covalto');
-  const [userAvatar, setUserAvatar] = useState('https://placehold.co/40x40.png');
+  const { user, userProfile, loading } = useAuth();
 
-  const handleLogout = () => {
+  const handleLogout = async () => {
+    await signOut(auth);
     router.push('/');
   };
 
+  if (loading) {
+    return <Loader2 className="h-6 w-6 animate-spin text-primary" />;
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  const displayName = userProfile?.name || user.email;
+  const fallback = displayName ? displayName.charAt(0).toUpperCase() : '?';
+
   return (
-    <SidebarProvider defaultOpen={true}>
-      <Sidebar collapsible="icon" variant="sidebar" className="border-r border-sidebar-border">
-        <SidebarRail />
-        <SidebarHeader className="p-4">
-          <div className="flex items-center justify-center group-data-[collapsible=icon]:justify-start">
-            <CovaltoLogo width="150" height="auto" className="group-data-[collapsible=icon]:hidden" />
-            <CovaltoLogo width="35" height="auto" className="hidden group-data-[collapsible=icon]:block" />
+    <DropdownMenu>
+      <DropdownMenuTrigger asChild>
+        <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+          <Avatar className="h-8 w-8">
+            <AvatarImage src={user.photoURL || `https://placehold.co/40x40.png/E0E7FF/003A70?text=${fallback}`} alt={displayName || 'User'}  data-ai-hint="user avatar"/>
+            <AvatarFallback>{fallback}</AvatarFallback>
+          </Avatar>
+        </Button>
+      </DropdownMenuTrigger>
+      <DropdownMenuContent className="w-56" align="end" forceMount>
+        <DropdownMenuLabel className="font-normal">
+          <div className="flex flex-col space-y-1">
+            <p className="text-sm font-medium leading-none">{displayName}</p>
+            <p className="text-xs leading-none text-muted-foreground">
+              {user.email}
+            </p>
           </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <MainNav />
-        </SidebarContent>
-        <SidebarFooter className="p-2">
-          <DropdownMenu>
-            <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                className="w-full justify-start p-2 text-sidebar-foreground hover:bg-sidebar-user-profile-hover-bg hover:text-sidebar-user-profile-hover-fg"
-              >
-                <Avatar className="h-8 w-8 mr-2">
-                  <AvatarImage src={userAvatar} alt="User Avatar" data-ai-hint="user avatar"/>
-                  <AvatarFallback>{userName.charAt(0).toUpperCase()}</AvatarFallback>
-                </Avatar>
-                <span className="group-data-[collapsible=icon]:hidden truncate">{userName}</span>
-              </Button>
-            </DropdownMenuTrigger>
-            <DropdownMenuContent side="right" align="start" className="w-56">
-              <DropdownMenuLabel>My Account</DropdownMenuLabel>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem asChild>
-                <Link href="/profile">
-                  <UserCircle className="mr-2 h-4 w-4" />
-                  <span>Profile</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuItem asChild>
-                <Link href="/settings">
-                  <Settings className="mr-2 h-4 w-4" />
-                  <span>Settings</span>
-                </Link>
-              </DropdownMenuItem>
-              <DropdownMenuSeparator />
-              <DropdownMenuItem onSelect={handleLogout}>
-                <LogOut className="mr-2 h-4 w-4" />
-                <span>Log out</span>
-              </DropdownMenuItem>
-            </DropdownMenuContent>
-          </DropdownMenu>
-        </SidebarFooter>
-      </Sidebar>
-      <SidebarInset className="bg-background">
-        <header className="sticky top-0 z-10 flex h-14 items-center gap-4 border-b bg-background/80 backdrop-blur-sm px-6 shadow-sm">
-          <SidebarTrigger className="md:hidden" />
-          {/* Header content can be dynamic based on page if needed */}
-        </header>
-        <main className="flex-1 overflow-auto p-6">
+        </DropdownMenuLabel>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={() => router.push('/profile')}>
+          <UserCircle className="mr-2 h-4 w-4" />
+          <span>Profile</span>
+        </DropdownMenuItem>
+        <DropdownMenuItem onSelect={() => router.push('/settings')}>
+          <Settings className="mr-2 h-4 w-4" />
+          <span>Settings</span>
+        </DropdownMenuItem>
+        <DropdownMenuSeparator />
+        <DropdownMenuItem onSelect={handleLogout}>
+          <LogOut className="mr-2 h-4 w-4" />
+          <span>Log out</span>
+        </DropdownMenuItem>
+      </DropdownMenuContent>
+    </DropdownMenu>
+  );
+};
+
+
+export default function AppLayout({ children }: AppLayoutProps) {
+  const { user, loading } = useAuth();
+  const router = useRouter();
+  const pathname = usePathname();
+
+  useEffect(() => {
+    // If not loading and no user, redirect to login page for protected routes
+    if (!loading && !user) {
+        if(pathname !== '/' && pathname !== '/register') {
+            router.push('/');
+        }
+    }
+  }, [user, loading, router, pathname]);
+
+  if (loading) {
+      return (
+          <div className="flex h-screen items-center justify-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </div>
+      );
+  }
+  
+  // Render children directly for auth pages, or if user is not yet available but we are on an auth page
+  if (!user || pathname === '/' || pathname === '/register') {
+      return <>{children}</>;
+  }
+
+
+  return (
+    <div className="min-h-screen flex flex-col bg-background">
+      <header className="sticky top-0 z-40 w-full border-b bg-gray-100/90 backdrop-blur-sm dark:bg-gray-950/90">
+        <div className="container flex h-14 items-center">
+          <div className="mr-4 hidden md:flex">
+            <Link href="/opportunities" className="mr-6 flex items-center space-x-2">
+              <CovaltoLogo className="h-auto w-32" />
+            </Link>
+          </div>
+          
+          <div className="flex flex-1 items-center justify-end space-x-4">
+            <UserMenu />
+          </div>
+        </div>
+      </header>
+
+      <div className="container flex-1 items-start md:grid md:grid-cols-[220px_minmax(0,1fr)] md:gap-6 lg:grid-cols-[240px_minmax(0,1fr)] lg:gap-10">
+        <aside className="fixed top-14 z-30 -ml-2 hidden h-[calc(100vh-3.5rem)] w-full shrink-0 md:sticky md:block">
+            <div className="h-full py-6 pr-6 lg:py-8">
+              <MainNav />
+            </div>
+        </aside>
+        <main className="flex-1 py-6 lg:py-8">
           {children}
         </main>
-      </SidebarInset>
-    </SidebarProvider>
+      </div>
+    </div>
   );
 }

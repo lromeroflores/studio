@@ -7,6 +7,7 @@ import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import AppLayout from '@/components/layout/app-layout';
 import { usePathname } from 'next/navigation';
+import { AuthProvider } from '@/hooks/use-auth';
 // import type { Metadata } from 'next'; // Import for type safety if using generateMetadata
 
 const geistSans = Geist({
@@ -66,14 +67,16 @@ export default function RootLayout({
         <meta name="description" content="Streamline your contract management with AI-powered tools and efficient workflows." />
       </head>
       <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
-        {isAuthPage ? (
-          children 
-        ) : (
-          <AppLayout>
-            {children}
-          </AppLayout>
-        )}
-        <Toaster />
+        <AuthProvider>
+          {isAuthPage ? (
+            children 
+          ) : (
+            <AppLayout>
+              {children}
+            </AppLayout>
+          )}
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

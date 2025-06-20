@@ -2,16 +2,21 @@
 'use client';
 
 import React from 'react';
-import Link from 'next/link'; 
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Loader2 } from 'lucide-react';
+import { useToast } from '@/hooks/use-toast';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth } from '@/lib/firebase';
+
 
 export default function LoginPage() {
   const router = useRouter();
+  const { toast } = useToast();
   const [email, setEmail] = React.useState('');
   const [password, setPassword] = React.useState('');
   const [isLoading, setIsLoading] = React.useState(false);
@@ -22,15 +27,25 @@ export default function LoginPage() {
     setIsLoading(true);
     setError('');
 
-    // Mock login logic: simple validation
-    if (email === 'analyst@example.com' && password === 'password') {
-      await new Promise(resolve => setTimeout(resolve, 1000)); // Simulate API call
-      router.push('/opportunities');
-    } else {
-      await new Promise(resolve => setTimeout(resolve, 500)); // Simulate API call
-      setError('Invalid email or password. Please try again.');
+    if (!email || !password) {
+        setError('Please enter both email and password.');
+        setIsLoading(false);
+        return;
     }
-    setIsLoading(false);
+
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+      router.push('/opportunities');
+    } catch (err: any) {
+      console.error("Firebase Login Error:", err.code, err.message);
+      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password' || err.code === 'auth/invalid-credential') {
+        setError('Invalid email or password. Please try again.');
+      } else {
+        setError('An unexpected error occurred. Please try again later.');
+      }
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -49,8 +64,6 @@ export default function LoginPage() {
           <CardTitle className="text-2xl font-bold text-foreground">Portal de Generación de Contratos</CardTitle>
           <CardDescription className="text-muted-foreground">
             Access your contract opportunities and management tools.
-            <br />
-            (Hint: analyst@example.com / password)
           </CardDescription>
         </CardHeader>
         <form onSubmit={handleLogin}>

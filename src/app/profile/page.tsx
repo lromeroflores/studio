@@ -1,34 +1,74 @@
 
 'use client';
 
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
-import { Camera, Save } from 'lucide-react';
+import { Camera, Save, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
+import { updateProfile } from 'firebase/auth';
+import { updateUserProfile } from '@/services/firestore-service';
 
 export default function ProfilePage() {
   const { toast } = useToast();
-  const [name, setName] = useState('Analista Covalto'); // Mock data
-  const [alias, setAlias] = useState('ACovalto'); // Mock data
-  const [email, setEmail] = useState('analyst@example.com'); // Mock data
-  const [avatarUrl, setAvatarUrl] = useState('https://placehold.co/128x128.png'); // Mock data
+  const { user, userProfile, loading } = useAuth();
+  
+  const [name, setName] = useState('');
+  const [alias, setAlias] = useState('');
+  const [email, setEmail] = useState('');
+  const [avatarUrl, setAvatarUrl] = useState('');
   const [isSaving, setIsSaving] = useState(false);
+
+  useEffect(() => {
+    if (user) {
+      setEmail(user.email || '');
+      setAvatarUrl(user.photoURL || '');
+      // Use display name from auth as a fallback if firestore profile is loading/missing
+      setName(user.displayName || '');
+    }
+    if (userProfile) {
+      setName(userProfile.name || user?.displayName || '');
+      setAlias(userProfile.alias || '');
+    }
+  }, [user, userProfile]);
 
   const handleSaveChanges = async (event: React.FormEvent) => {
     event.preventDefault();
+    if (!user) {
+      toast({ title: 'Error', description: 'You must be logged in to save changes.', variant: 'destructive' });
+      return;
+    }
     setIsSaving(true);
-    // Simulate API call
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    setIsSaving(false);
-    toast({
-      title: 'Profile Updated (Simulated)',
-      description: 'Your profile information has been "saved". In a real app, this would persist.',
-    });
-    // In a real app, you might update global state or refetch user data here.
+    
+    try {
+      // Update Firebase Auth profile displayName
+      if(user.displayName !== name) {
+        await updateProfile(user, { displayName: name });
+      }
+      
+      // Update Firestore profile (name and alias)
+      await updateUserProfile(user.uid, { name, alias });
+
+      toast({
+        title: 'Profile Updated',
+        description: 'Your profile information has been successfully saved.',
+      });
+      // Note: The AuthProvider will automatically refetch the profile on next load,
+      // but for instant UI update, you might use a state management library or pass a refetch function via context.
+    } catch (error) {
+      console.error("Error saving profile:", error);
+      toast({
+        title: 'Save Failed',
+        description: `Could not save your profile. ${error instanceof Error ? error.message : 'Unknown error'}`,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleAvatarChange = (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -41,17 +81,25 @@ export default function ProfilePage() {
       reader.readAsDataURL(file);
       toast({
         title: 'Avatar Updated (Simulated)',
-        description: 'New avatar previewed. Save changes to "apply".',
+        description: 'New avatar previewed. Save changes to "apply". In a real app, this would upload to Firebase Storage.',
       });
     }
   };
+  
+  if (loading) {
+      return (
+          <div className="flex h-full items-center justify-center">
+              <Loader2 className="h-12 w-12 animate-spin text-primary" />
+          </div>
+      );
+  }
 
   return (
     <div className="container mx-auto max-w-3xl">
       <Card className="shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl">User Profile</CardTitle>
-          <CardDescription>View and edit your personal information. Changes are simulated for this demo.</CardDescription>
+          <CardDescription>View and edit your personal information.</CardDescription>
         </CardHeader>
         <form onSubmit={handleSaveChanges}>
           <CardContent className="space-y-8">
@@ -115,7 +163,7 @@ export default function ProfilePage() {
           </CardContent>
           <CardFooter className="border-t pt-6">
             <Button type="submit" disabled={isSaving} className="ml-auto">
-              {isSaving ? <Save className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+              {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
               {isSaving ? 'Saving...' : 'Save Changes'}
             </Button>
           </CardFooter>

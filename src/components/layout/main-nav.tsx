@@ -3,46 +3,35 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { FileText, ListOrdered, Settings, FolderOpenDot, Wand2 } from 'lucide-react'; // Replaced LayoutDashboard with ListOrdered
-import {
-  SidebarMenu,
-  SidebarMenuItem,
-  SidebarMenuButton,
-} from '@/components/ui/sidebar';
 import { cn } from '@/lib/utils';
+import { FileText, ListOrdered } from 'lucide-react'; 
 
 const menuItems = [
   { href: '/opportunities', label: 'Opportunities', icon: ListOrdered },
   { href: '/editor', label: 'Contract Editor', icon: FileText },
-  // { href: '/templates', label: 'Templates', icon: FolderOpenDot },
-  // { href: '/ai-tools', label: 'AI Tools', icon: Wand2 },
-  // { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
 export function MainNav() {
   const pathname = usePathname();
 
   return (
-    <SidebarMenu>
-      {menuItems.map((item) => (
-        <SidebarMenuItem key={item.href}>
-          <SidebarMenuButton
-            asChild
-            className={cn(
-              (pathname === item.href || (item.href === '/editor' && pathname.startsWith('/editor')) || (item.href === '/opportunities' && pathname.startsWith('/opportunities')))
-                ? 'bg-sidebar-primary text-sidebar-primary-foreground' // Using sidebar primary for active
-                : 'text-sidebar-foreground hover:bg-sidebar-accent hover:text-sidebar-accent-foreground'
-            )}
-            isActive={pathname === item.href || (item.href === '/editor' && pathname.startsWith('/editor')) || (item.href === '/opportunities' && pathname.startsWith('/opportunities'))}
-            tooltip={{ children: item.label, className: "text-xs" }}
-          >
-            <Link href={item.href}>
-              <item.icon className={cn( (pathname === item.href || (item.href === '/editor' && pathname.startsWith('/editor')) || (item.href === '/opportunities' && pathname.startsWith('/opportunities'))) ? "text-sidebar-primary-foreground" : "text-sidebar-foreground group-hover:text-sidebar-accent-foreground")} />
-              <span className="group-data-[collapsible=icon]:hidden">{item.label}</span>
-            </Link>
-          </SidebarMenuButton>
-        </SidebarMenuItem>
-      ))}
-    </SidebarMenu>
+    <nav className="grid items-start gap-2">
+      {menuItems.map((item) => {
+        const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+        return (
+          <Link key={item.href} href={item.href}>
+            <span
+              className={cn(
+                'group flex items-center rounded-md px-3 py-2 text-sm font-medium hover:bg-accent hover:text-accent-foreground',
+                isActive ? 'bg-accent text-accent-foreground' : 'transparent',
+              )}
+            >
+              <item.icon className="mr-2 h-4 w-4" />
+              <span>{item.label}</span>
+            </span>
+          </Link>
+        );
+      })}
+    </nav>
   );
 }
