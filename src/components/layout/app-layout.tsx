@@ -17,15 +17,17 @@ export default function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="sticky top-0 z-40 w-full border-b bg-gray-100/90 backdrop-blur-sm dark:bg-gray-950/90">
-        <div className="max-w-screen-xl mx-auto flex h-16 items-center justify-between px-6">
-          <div className="flex items-center">
+        <div className="max-w-screen-xl mx-auto w-full grid grid-cols-3 h-16 items-center px-6">
+          <div className="flex items-center justify-start">
             <Link href="/opportunities" className="flex items-center space-x-2">
               <CovaltoLogo className="h-auto w-32" />
             </Link>
           </div>
           
-          <div className="flex flex-1 items-center justify-end space-x-4">
-             {/* This space can be used for other header items in the future, like a settings link */}
+          {/* This empty div acts as a spacer to center the content */}
+          <div></div>
+
+          <div className="flex items-center justify-end space-x-4">
               <Button variant="ghost" size="icon" asChild>
                 <Link href="/settings">
                     <Settings />
