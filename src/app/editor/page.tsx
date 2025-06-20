@@ -269,33 +269,36 @@ export default function ContractEditorPage() {
             </CardFooter>
           </Card>
 
-          {templateSections.length > 0 && (
-            <Card className="shadow-lg">
-              <CardHeader>
-                <CardTitle className="flex items-center">
-                  <ListCollapse className="mr-2 h-6 w-6 text-accent" />
-                  Manage Template Sections
-                </CardTitle>
-                <CardDescription>Toggle visibility of predefined sections in the contract.</CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-3">
-                {templateSections.map((section) => (
-                  <div key={section.id} className="flex items-center justify-between p-2 border rounded-md bg-muted/20">
-                    <Label htmlFor={`section-toggle-${section.id}`} className="flex-1 cursor-pointer text-sm">
-                      {section.title}
-                    </Label>
-                    <Switch
-                      id={`section-toggle-${section.id}`}
-                      checked={section.visible}
-                      onCheckedChange={() => handleToggleSectionVisibility(section.id)}
-                    />
-                  </div>
-                ))}
-              </CardContent>
-            </Card>
-          )}
+          {/* Grouping div for Manage Template Sections and AI Clause Generator */}
+          <div className="w-full space-y-6">
+            {templateSections.length > 0 && (
+              <Card className="shadow-lg">
+                <CardHeader>
+                  <CardTitle className="flex items-center">
+                    <ListCollapse className="mr-2 h-6 w-6 text-accent" />
+                    Manage Template Sections
+                  </CardTitle>
+                  <CardDescription>Toggle visibility of predefined sections in the contract.</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {templateSections.map((section) => (
+                    <div key={section.id} className="flex items-center justify-between p-2 border rounded-md bg-muted/20">
+                      <Label htmlFor={`section-toggle-${section.id}`} className="flex-1 cursor-pointer text-sm">
+                        {section.title}
+                      </Label>
+                      <Switch
+                        id={`section-toggle-${section.id}`}
+                        checked={section.visible}
+                        onCheckedChange={() => handleToggleSectionVisibility(section.id)}
+                      />
+                    </div>
+                  ))}
+                </CardContent>
+              </Card>
+            )}
 
-          <AIClauseGenerator onAddClause={handleAddAdHocClause} />
+            <AIClauseGenerator onAddClause={handleAddAdHocClause} />
+          </div>
 
           {adHocClauses.length > 0 && (
             <Card className="shadow-lg">
