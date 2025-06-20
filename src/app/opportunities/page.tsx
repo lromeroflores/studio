@@ -3,8 +3,7 @@
 
 import React from 'react';
 import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { Opportunity } from '@/types/opportunity';
 import { ArrowRight, Briefcase, FileText, Clock, Search } from 'lucide-react';
@@ -75,18 +74,13 @@ const mockOpportunitiesData: Opportunity[] = [
   },
 ];
 
-function getStatusBadgeVariant(status: Opportunity['opportunityStatus'] | Opportunity['contractStatus']): "default" | "secondary" | "destructive" | "outline" {
+function getStatusBadgeVariant(status: Opportunity['opportunityStatus']): "default" | "secondary" | "destructive" | "outline" {
   switch (status.toLowerCase()) {
     case 'new': return 'default';
-    case 'draft': return 'default';
     case 'in progress': return 'secondary';
-    case 'under review': return 'secondary';
-    case 'negotiation': return 'secondary';
     case 'pending review': return 'outline';
-    case 'completed': return 'default'; // Consider a "success" variant (e.g., green) if available
-    case 'signed': return 'default'; // Consider a "success" variant
+    case 'completed': return 'default';
     case 'closed': return 'outline';
-    case 'archived': return 'outline';
     default: return 'secondary';
   }
 }
@@ -96,7 +90,7 @@ export default function OpportunitiesPage() {
   const [searchTerm, setSearchTerm] = React.useState('');
 
   const handleSelectOpportunity = (opportunity: Opportunity) => {
-    router.push(`/editor?contractId=${opportunity.contractId}`); // Pass contractId as query param
+    router.push(`/editor?contractId=${opportunity.contractId}`);
   };
 
   const filteredOpportunities = mockOpportunitiesData.filter(opp =>
@@ -128,44 +122,40 @@ export default function OpportunitiesPage() {
 
       {filteredOpportunities.length === 0 ? (
         <Card className="text-center py-16 shadow-md">
-          <CardHeader>
-            <Briefcase className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
-            <CardTitle className="text-2xl">No Opportunities Found</CardTitle>
-            <CardDescription className="text-lg text-muted-foreground">
+          <CardContent className="flex flex-col items-center justify-center p-6">
+            <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
+            <h2 className="text-2xl font-semibold">No Opportunities Found</h2>
+            <p className="text-lg text-muted-foreground mt-2">
               {searchTerm ? "No opportunities match your search." : "There are currently no opportunities assigned to you."}
-            </CardDescription>
-          </CardHeader>
+            </p>
+          </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="space-y-4">
           {filteredOpportunities.map((opp) => (
-            <Card key={opp.id} className="flex flex-col justify-between shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out rounded-xl border hover:border-primary/50">
-              <CardHeader className="pb-3">
-                <div className="flex justify-between items-start mb-3">
-                    <CardTitle className="text-xl font-semibold text-foreground">{opp.clientName}</CardTitle>
-                    <Badge variant={getStatusBadgeVariant(opp.opportunityStatus)} className="text-xs px-2 py-1">{opp.opportunityStatus}</Badge>
+            <div
+              key={opp.id}
+              onClick={() => handleSelectOpportunity(opp)}
+              className="group flex items-center justify-between p-4 border rounded-xl hover:bg-muted/50 cursor-pointer transition-all duration-200 shadow-sm hover:shadow-md hover:border-primary/30"
+            >
+              <div className="flex flex-col sm:flex-row sm:items-center sm:gap-6 w-full min-w-0">
+                <div className="font-medium text-lg text-foreground mb-2 sm:mb-0 sm:w-56 md:w-72 truncate" title={opp.clientName}>
+                  {opp.clientName}
                 </div>
-                <div className="space-y-1.5">
-                    <CardDescription className="flex items-center text-sm text-muted-foreground">
-                        <FileText className="mr-2 h-4 w-4 flex-shrink-0" /> {opp.contractType}
-                    </CardDescription>
-                    <CardDescription className="flex items-center text-sm text-muted-foreground">
-                        <Briefcase className="mr-2 h-4 w-4 flex-shrink-0" /> Contract: <Badge variant={getStatusBadgeVariant(opp.contractStatus)} className="ml-1.5 text-xs px-2 py-1">{opp.contractStatus}</Badge>
-                    </CardDescription>
+                <div className="flex items-center gap-4 sm:gap-6 text-sm text-muted-foreground">
+                  <Badge variant={getStatusBadgeVariant(opp.opportunityStatus)}>{opp.opportunityStatus}</Badge>
+                  <div className="flex items-center gap-2">
+                    <FileText className="h-4 w-4" />
+                    <span className="truncate">{opp.contractType}</span>
+                  </div>
+                  <div className="hidden md:flex items-center gap-2">
+                    <Clock className="h-4 w-4" />
+                    <ClientFormattedDate dateString={opp.lastUpdated} />
+                  </div>
                 </div>
-              </CardHeader>
-              <CardContent className="flex-grow pb-4">
-                <p className="text-sm text-foreground/80 leading-relaxed line-clamp-3">{opp.description}</p>
-              </CardContent>
-              <CardFooter className="flex flex-col items-start pt-4 border-t mt-auto">
-                <div className="text-xs text-muted-foreground mb-4 flex items-center w-full">
-                   <Clock className="mr-1.5 h-3.5 w-3.5" /> Last Updated: <ClientFormattedDate dateString={opp.lastUpdated} loadingText="..." />
-                </div>
-                <Button onClick={() => handleSelectOpportunity(opp)} className="w-full font-medium" size="lg">
-                  Work on Opportunity <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-              </CardFooter>
-            </Card>
+              </div>
+              <ArrowRight className="h-5 w-5 text-muted-foreground group-hover:text-primary group-hover:translate-x-1 transition-all ml-4" />
+            </div>
           ))}
         </div>
       )}
