@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Trash2, ArrowUp, ArrowDown, PlusCircle, Save, RefreshCw, Wand2 } from 'lucide-react';
+import { Loader2, Trash2, ArrowUp, ArrowDown, PlusCircle, Save, RefreshCw, Wand2, ArrowLeft } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -75,9 +75,11 @@ function ContractEditorContent() {
     // --- 1. Load initial data from the source to get IDs and fallback data ---
     let contractDetails: any = null; // Initialize as null
     try {
-        const response = await fetch('https://magicloops.dev/api/loop/1c7ea39e-d598-42f8-8db7-1f84ebe37135/run');
+        const response = await fetch('https://magicloops.dev/api/loop/f4f138b7-61e0-455e-913a-e6709d111f13/run');
         if (!response.ok) throw new Error(`Error al buscar datos: ${response.statusText}`);
-        const allContracts = await response.json();
+        const apiResponse = await response.json();
+        const allContracts = apiResponse.oportunidades || [];
+
         const foundDetails = allContracts.find((c: any) => c.id_portunidad === contractId);
 
         if (foundDetails) {
@@ -103,19 +105,19 @@ function ContractEditorContent() {
     // --- 2. Try to load saved progress ---
     let progressLoaded = false;
     // Only attempt to load progress if we successfully found the base contract details
-    if (contractDetails && contractDetails.id_contrato) {
+    if (contractDetails) {
         try {
             const progressResponse = await fetch('https://magicloops.dev/api/loop/6b6a524c-dc85-401b-bcb3-a99daa6283eb/run', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
                     id_oportunidad: contractId,
-                    id_contrato: contractDetails.id_contrato
                 })
             });
 
             if (progressResponse.ok) {
                 const result = await progressResponse.json();
+                // Handle both direct object and object inside an array
                 const savedData = Array.isArray(result) ? result[0] : result;
                 
                 if (savedData && savedData.avance_json && savedData.avance_json.cells && savedData.avance_json.cells.length > 0) {
@@ -182,7 +184,7 @@ function ContractEditorContent() {
   };
 
   const handleSave = async () => {
-    if (!contractId || !contractData?.id_contrato) {
+    if (!contractId) {
       toast({ title: 'Error al Guardar', description: 'No hay un ID de contrato u oportunidad para guardar.', variant: 'destructive' });
       return;
     }
@@ -192,7 +194,6 @@ function ContractEditorContent() {
 
     const payload = {
       id_oportunidad: contractId,
-      id_contrato: contractData.id_contrato,
       avance_json: { cells },
     };
 
@@ -344,9 +345,15 @@ function ContractEditorContent() {
   return (
     <div className="max-w-4xl mx-auto py-8">
       {/* Header */}
-      <div className="mb-8">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">{opportunityName}</h1>
-        {contractId && <p className="text-sm text-muted-foreground mt-1">ID de Oportunidad: {contractId}</p>}
+      <div className="flex items-center gap-4 mb-8">
+          <Button variant="outline" size="icon" onClick={() => router.push('/opportunities')}>
+              <ArrowLeft className="h-4 w-4" />
+              <span className="sr-only">Volver a Oportunidades</span>
+          </Button>
+          <div>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{opportunityName}</h1>
+            {contractId && <p className="text-sm text-muted-foreground mt-1">ID de Oportunidad: {contractId}</p>}
+          </div>
       </div>
 
       {/* Toolbar */}
