@@ -321,9 +321,6 @@ function ContractEditorContent() {
                {cell.title && (
                   <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 border-b pb-2">{cell.title}</h3>
                 )}
-               {cell.content.includes('<table') ? (
-                  <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: cell.content }} />
-               ) : (
                 <Textarea
                     value={cell.content}
                     onChange={(e) => updateCellContent(cell.id, e.target.value)}
@@ -340,7 +337,6 @@ function ContractEditorContent() {
                         }
                     }}
                 />
-               )}
             </CardContent>
             <div className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 w-full flex justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity z-10">
                  <Button variant="outline" size="sm" className="rounded-full bg-background hover:bg-secondary shadow-md" onClick={() => addCell('New editable section...', index)} disabled={isRenumbering}>
