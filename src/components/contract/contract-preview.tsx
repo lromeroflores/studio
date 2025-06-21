@@ -7,13 +7,12 @@ import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter }
 import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ContractCell } from '@/components/contract/types';
-import type { FetchContractDataOutput } from '@/ai/flows/fetch-contract-data-from-bigquery';
 import jsPDF from 'jspdf';
 import html2canvas from 'html2canvas';
 
 interface ContractPreviewProps {
   cells: ContractCell[];
-  data: FetchContractDataOutput | null;
+  data: Record<string, any> | null;
 }
 
 // Utility to escape strings for RegExp

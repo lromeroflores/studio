@@ -11,7 +11,6 @@ import { useToast } from '@/hooks/use-toast';
 import { AIClauseGenerator } from '@/components/contract/ai-clause-generator';
 import type { ContractCell } from '@/components/contract/types';
 import { defaultTemplates } from '@/lib/templates';
-import { fetchContractDataFromBigQuery, type FetchContractDataOutput } from '@/ai/flows/fetch-contract-data-from-bigquery';
 import { ContractPreview } from '@/components/contract/contract-preview';
 import { renumberContract } from '@/ai/flows/renumber-contract-flow';
 
@@ -27,28 +26,38 @@ function ContractEditorContent() {
   const [cells, setCells] = useState<ContractCell[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isRenumbering, setIsRenumbering] = useState(false);
-  const [contractData, setContractData] = useState<FetchContractDataOutput | null>(null);
+  const [contractData, setContractData] = useState<Record<string, any> | null>(null);
 
   const loadContract = useCallback(async () => {
     setIsLoading(true);
     try {
-      const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
-      let fetchedData: FetchContractDataOutput = {};
+        const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
+        let fetchedData: Record<string, any> = {};
 
-      if (contractId) {
-        fetchedData = await fetchContractDataFromBigQuery({ recordId: contractId });
-        setContractData(fetchedData);
-        if(fetchedData) {
-            toast({ title: 'Data Loaded', description: 'Contract data has been loaded from the backend.' });
+        if (contractId) {
+            const response = await fetch('https://magicloops.dev/api/loop/1c7ea39e-d598-42f8-8db7-1f84ebe37135/run');
+            if (!response.ok) {
+                throw new Error(`Error fetching data: ${response.statusText}`);
+            }
+            const allContracts = await response.json();
+            const contractDetails = allContracts.find((c: any) => c.id_portunidad === contractId);
+
+            if (contractDetails) {
+                fetchedData = contractDetails;
+                setContractData(fetchedData);
+                toast({ title: 'Data Loaded', description: 'Contract data has been loaded from the backend.' });
+            } else {
+                toast({ title: 'Contract Not Found', description: `No contract data found for opportunity ID ${contractId}. Using a blank template.`, variant: 'destructive' });
+            }
         }
-      }
-      
-      const initialCells = template.generateCells(fetchedData || {});
-      setCells(initialCells);
+        
+        const initialCells = template.generateCells(fetchedData || {});
+        setCells(initialCells);
 
     } catch (error) {
         console.error("Failed to load contract data:", error);
-        toast({ title: 'Error Loading Contract', description: 'Could not load contract data. Using a blank template.', variant: 'destructive' });
+        const errorMessage = error instanceof Error ? error.message : 'Could not load contract data.';
+        toast({ title: 'Error Loading Contract', description: `${errorMessage} Using a blank template.`, variant: 'destructive' });
         const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
         setCells(template.generateCells({}));
     } finally {
