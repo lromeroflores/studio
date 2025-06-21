@@ -14,9 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 
 function getStatusBadgeVariant(status: Opportunity['opportunityStatus']): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
-    case 'New': return 'default';
-    case 'In Progress': return 'secondary';
-    case 'Completed': return 'outline';
+    case 'Nuevo': return 'default';
+    case 'En Progreso': return 'secondary';
+    case 'Completado': return 'outline';
     default: return 'secondary';
   }
 }
@@ -25,22 +25,22 @@ function getStatusBadgeVariant(status: Opportunity['opportunityStatus']): "defau
 const mapApiStatusToOpportunityStatus = (apiStatus: string): Opportunity['opportunityStatus'] => {
   switch (apiStatus.toLowerCase()) {
     case 'prospecto':
-      return 'New';
+      return 'Nuevo';
     case 'negociación':
-      return 'In Progress';
+      return 'En Progreso';
     case 'cerrado':
-      return 'Completed';
+      return 'Completado';
     default:
-      return 'New'; // Default fallback
+      return 'Nuevo'; // Default fallback
   }
 };
 
 const mapApiStatusToContractStatus = (apiStatus: string): Opportunity['contractStatus'] => {
     switch (apiStatus.toLowerCase()) {
-        case 'prospecto': return 'Draft';
-        case 'negociación': return 'Under Review';
-        case 'cerrado': return 'Signed';
-        default: return 'Draft';
+        case 'prospecto': return 'Borrador';
+        case 'negociación': return 'En Revisión';
+        case 'cerrado': return 'Firmado';
+        default: return 'Borrador';
     }
 };
 
@@ -171,7 +171,7 @@ export default function OpportunitiesPage() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search by name, type, ID..."
+            placeholder="Buscar por nombre, tipo, ID..."
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
@@ -180,22 +180,22 @@ export default function OpportunitiesPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full lg:w-auto">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Filter by Status" />
+              <SelectValue placeholder="Filtrar por estatus" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Statuses</SelectItem>
-              <SelectItem value="New">New</SelectItem>
-              <SelectItem value="In Progress">In Progress</SelectItem>
-              <SelectItem value="Completed">Completed</SelectItem>
+              <SelectItem value="all">Todos los estatus</SelectItem>
+              <SelectItem value="Nuevo">Nuevo</SelectItem>
+              <SelectItem value="En Progreso">En Progreso</SelectItem>
+              <SelectItem value="Completado">Completado</SelectItem>
             </SelectContent>
           </Select>
 
           <Select value={contractTypeFilter} onValueChange={setContractTypeFilter}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Filter by Type" />
+              <SelectValue placeholder="Filtrar por tipo" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="all">All Types</SelectItem>
+              <SelectItem value="all">Todos los tipos</SelectItem>
               {uniqueContractTypes.map(type => (
                 <SelectItem key={type} value={type}>{type}</SelectItem>
               ))}
@@ -204,11 +204,11 @@ export default function OpportunitiesPage() {
 
           <Select value={sortOrder} onValueChange={setSortOrder}>
             <SelectTrigger className="w-full">
-              <SelectValue placeholder="Sort by Date" />
+              <SelectValue placeholder="Ordenar por fecha" />
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="desc">Newest First</SelectItem>
-              <SelectItem value="asc">Oldest First</SelectItem>
+              <SelectItem value="desc">Más recientes primero</SelectItem>
+              <SelectItem value="asc">Más antiguos primero</SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -230,11 +230,11 @@ export default function OpportunitiesPage() {
         <Card className="text-center py-16 shadow-md">
           <CardContent className="flex flex-col items-center justify-center p-6">
             <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
-            <h2 className="text-2xl font-semibold">No Opportunities Found</h2>
+            <h2 className="text-2xl font-semibold">No se encontraron oportunidades</h2>
             <p className="text-lg text-muted-foreground mt-2">
               {searchTerm || statusFilter !== 'all' || contractTypeFilter !== 'all'
-                ? "No opportunities match your current filters."
-                : "There are currently no opportunities assigned to you."}
+                ? "No hay oportunidades que coincidan con tus filtros actuales."
+                : "Actualmente no tienes oportunidades asignadas."}
             </p>
           </CardContent>
         </Card>
