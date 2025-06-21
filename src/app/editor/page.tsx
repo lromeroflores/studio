@@ -65,29 +65,51 @@ function ContractEditorContent() {
     if (!contractId) {
         setIsLoading(false);
         toast({ title: 'Error', description: 'No se proporcionó un ID de oportunidad.', variant: 'destructive' });
-        // Load a blank template if no ID is present
         const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
         setCells(template.generateCells({}));
         return;
     }
 
     setIsLoading(true);
-    let progressLoaded = false;
 
-    // --- 1. Try to load saved progress ---
+    // --- 1. Load initial data from the source to get IDs and fallback data ---
+    let contractDetails: any;
     try {
-        const progressResponse = await fetch(`/api/load-progress?contractId=${contractId}`); // Replace with YOUR_LOAD_ENDPOINT_URL
+        const response = await fetch('https://magicloops.dev/api/loop/1c7ea39e-d598-42f8-8db7-1f84ebe37135/run');
+        if (!response.ok) throw new Error(`Error al buscar datos: ${response.statusText}`);
+        const allContracts = await response.json();
+        contractDetails = allContracts.find((c: any) => c.id_portunidad === contractId);
+
+        if (!contractDetails) {
+            throw new Error(`No se encontraron datos para el ID ${contractId}.`);
+        }
+        setContractData(contractDetails);
+    } catch (error) {
+        console.error("Failed to load initial contract data:", error);
+        const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar los datos del contrato.';
+        toast({ title: 'Error al Cargar Contrato', description: `${errorMessage} Usando plantilla en blanco.`, variant: 'destructive' });
+        const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
+        setCells(template.generateCells({}));
+        setIsLoading(false);
+        return;
+    }
+
+    // --- 2. Try to load saved progress ---
+    let progressLoaded = false;
+    try {
+        const progressResponse = await fetch('https://magicloops.dev/api/loop/6b6a524c-dc85-401b-bcb3-a99daa6283eb/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                id_oportunidad: contractId,
+                id_contrato: contractDetails.id_contrato
+            })
+        });
+
         if (progressResponse.ok) {
             const savedData = await progressResponse.json();
-            if (savedData && savedData.cells && savedData.cells.length > 0) {
-                setCells(savedData.cells);
-                // Also fetch the original data for context (e.g., preview)
-                const initialDataResponse = await fetch('https://magicloops.dev/api/loop/1c7ea39e-d598-42f8-8db7-1f84ebe37135/run');
-                const allContracts = await initialDataResponse.json();
-                const contractDetails = allContracts.find((c: any) => c.id_portunidad === contractId);
-                if (contractDetails) {
-                    setContractData(contractDetails);
-                }
+            if (savedData && savedData.avance_json && savedData.avance_json.cells && savedData.avance_json.cells.length > 0) {
+                setCells(savedData.avance_json.cells);
                 toast({ title: 'Progreso Cargado', description: 'Se ha restaurado tu último avance guardado.' });
                 progressLoaded = true;
             }
@@ -96,45 +118,21 @@ function ContractEditorContent() {
         console.warn("No saved progress found or failed to load, proceeding to generate new contract.", error);
     }
 
-    // --- 2. If no progress was loaded, generate from template ---
+    // --- 3. If no progress was loaded, generate from template ---
     if (!progressLoaded) {
-        try {
-            const response = await fetch('https://magicloops.dev/api/loop/1c7ea39e-d598-42f8-8db7-1f84ebe37135/run');
-            if (!response.ok) {
-                throw new Error(`Error fetching data: ${response.statusText}`);
-            }
-            const allContracts = await response.json();
-            const contractDetails = allContracts.find((c: any) => c.id_portunidad === contractId);
-
-            if (contractDetails) {
-                setContractData(contractDetails);
-                const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
-                const initialCells = template.generateCells(contractDetails);
-                setCells(initialCells);
-                toast({ title: 'Contrato Generado', description: 'Se ha generado un nuevo contrato desde la plantilla.' });
-            } else {
-                toast({ title: 'Contrato No Encontrado', description: `No se encontraron datos para el ID ${contractId}. Usando plantilla en blanco.`, variant: 'destructive' });
-                const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
-                setCells(template.generateCells({}));
-            }
-        } catch (error) {
-            console.error("Failed to load initial contract data:", error);
-            const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar los datos del contrato.';
-            toast({ title: 'Error al Cargar Contrato', description: `${errorMessage} Usando plantilla en blanco.`, variant: 'destructive' });
-            const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
-            setCells(template.generateCells({}));
-        }
+        const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
+        const initialCells = template.generateCells(contractDetails);
+        setCells(initialCells);
+        toast({ title: 'Contrato Generado', description: 'Se ha generado un nuevo contrato desde la plantilla.' });
     }
 
     setIsLoading(false);
   }, [contractId, contractType, toast]);
 
-
   useEffect(() => {
     loadContract();
   }, [loadContract]);
   
-
   const updateCellContent = (id: string, newContent: string) => {
     setCells(cells.map(cell => cell.id === id ? { ...cell, content: newContent } : cell));
   };
@@ -168,8 +166,8 @@ function ContractEditorContent() {
   };
 
   const handleSave = async () => {
-    if (!contractId) {
-      toast({ title: 'Error al Guardar', description: 'No hay un ID de contrato para guardar.', variant: 'destructive' });
+    if (!contractId || !contractData?.id_contrato) {
+      toast({ title: 'Error al Guardar', description: 'No hay un ID de contrato u oportunidad para guardar.', variant: 'destructive' });
       return;
     }
     
@@ -177,12 +175,13 @@ function ContractEditorContent() {
     toast({ title: 'Guardando...', description: 'Tu progreso está siendo guardado.' });
 
     const payload = {
-      contractId,
-      cells,
+      id_oportunidad: contractId,
+      id_contrato: contractData.id_contrato,
+      avance_json: { cells },
     };
 
     try {
-      const response = await fetch('/api/save-progress', { // Replace with YOUR_SAVE_ENDPOINT_URL
+      const response = await fetch('https://magicloops.dev/api/loop/d3200bc0-87ba-431e-a93b-e2245b612d09/run', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -193,8 +192,6 @@ function ContractEditorContent() {
       }
       
       toast({ title: 'Contrato Guardado', description: 'Tu avance ha sido guardado exitosamente.' });
-      // We don't exit automatically anymore, user can continue working.
-      // router.push('/opportunities'); 
     } catch (error) {
       console.error("Failed to save contract:", error);
       const errorMessage = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
