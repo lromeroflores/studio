@@ -72,9 +72,9 @@ function ContractEditorContent() {
 
     setIsLoading(true);
 
-    let finalData: Record<string, any> | null = null;
+    let templateDataSource: Record<string, any> = {};
 
-    // --- 1. Load ALL contract data from the primary detailed endpoint ---
+    // --- 1. Fetch detailed data for populating the contract template ---
     try {
         const detailedResponse = await fetch('https://magicloops.dev/api/loop/1c7ea39e-d598-42f8-8db7-1f84ebe37135/run', {
             method: 'POST',
@@ -83,42 +83,23 @@ function ContractEditorContent() {
         });
         
         if (detailedResponse.ok) {
-             finalData = await detailedResponse.json();
+             const data = await detailedResponse.json();
+             if (data && Object.keys(data).length > 0) {
+                templateDataSource = data;
+             }
         } else {
-            console.error(`Error al buscar datos detallados: ${detailedResponse.statusText}`);
-            toast({ title: 'Error de Red', description: `No se pudieron cargar los datos del contrato.`, variant: 'destructive' });
+            console.warn(`Could not fetch detailed data (Status: ${detailedResponse.status}), will generate from a blank template.`);
         }
     } catch (error) {
-        console.error("Failed to load detailed contract data:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
-        toast({ title: 'Error de Red', description: errorMessage, variant: 'destructive' });
-    }
-
-    // --- 2. If no detailed data, try fallback to generic list to get at least the name ---
-    if (!finalData) {
-         try {
-            const response = await fetch('https://magicloops.dev/api/loop/f4f138b7-61e0-455e-913a-e6709d111f13/run');
-            if (response.ok) {
-                const apiResponse = await response.json();
-                finalData = (apiResponse.oportunidades || []).find((c: any) => c.id_portunidad === contractId) || null;
-            }
-         } catch(e) {
-            console.error("Error fetching fallback data", e);
-         }
-    }
-
-    // --- 3. Final check and set data, or show critical error ---
-    if (!finalData || Object.keys(finalData).length === 0) {
-        toast({ title: 'Error Crítico', description: `No se encontraron datos para la oportunidad ${contractId} en ninguna fuente.`, variant: 'destructive' });
-        const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
-        setCells(template.generateCells({}));
-        setIsLoading(false);
-        return;
+        console.error("Error fetching detailed contract data. A blank template will be generated.", error);
     }
     
-    setContractData(finalData);
+    // Set contractData for display purposes (e.g., header title)
+    // We can merge data from a general source if needed in the future, but for now template data is enough.
+    setContractData(templateDataSource);
 
-    // --- 4. Try to load saved progress ---
+
+    // --- 2. Try to load saved progress ---
     let progressLoaded = false;
     try {
         const progressResponse = await fetch('https://magicloops.dev/api/loop/6b6a524c-dc85-401b-bcb3-a99daa6283eb/run', {
@@ -141,13 +122,15 @@ function ContractEditorContent() {
         console.warn("No saved progress found or failed to load, proceeding to generate new contract.", error);
     }
 
-    // --- 5. If no progress was loaded, generate from template ---
+    // --- 3. If no progress was loaded, generate from template ---
     if (!progressLoaded) {
         const template = defaultTemplates.find(t => t.name.includes(currentContractType || '')) || defaultTemplates[0];
-        const initialCells = template.generateCells(finalData || {});
+        const initialCells = template.generateCells(templateDataSource);
         setCells(initialCells);
-        if (Object.keys(finalData).length > 0) {
+        if (Object.keys(templateDataSource).length > 0) {
             toast({ title: 'Contrato Generado', description: `Se ha generado un nuevo contrato para ${template.name}.` });
+        } else {
+             toast({ title: 'Plantilla Cargada', description: `Inicia un nuevo contrato para ${template.name}.` });
         }
     }
 
