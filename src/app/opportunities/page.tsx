@@ -69,11 +69,11 @@ export default function OpportunitiesPage() {
         const data = await response.json();
         
         const mappedData: Opportunity[] = data.oportunidades
-          .filter((opp: any) => opp.id_oportunidad) // Filter out opportunities without a valid ID
+          .filter((opp: any) => opp.id_portunidad) // Filter out opportunities without a valid ID
           .map((opp: any) => ({
-            id: `opp-${opp.id_oportunidad}`,
+            id: `opp-${opp.id_portunidad}`,
             clientName: opp.nombre_oportunidad,
-            contractId: `${opp.id_oportunidad}`, // Use raw ID for contract linking
+            contractId: `${opp.id_portunidad}`, // Use raw ID for contract linking
             contractType: opp.tipo_contrato,
             opportunityStatus: mapApiStatusToOpportunityStatus(opp.estatus),
             contractStatus: mapApiStatusToContractStatus(opp.estatus),

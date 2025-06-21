@@ -78,7 +78,7 @@ function ContractEditorContent() {
         const response = await fetch('https://magicloops.dev/api/loop/1c7ea39e-d598-42f8-8db7-1f84ebe37135/run');
         if (!response.ok) throw new Error(`Error al buscar datos: ${response.statusText}`);
         const allContracts = await response.json();
-        const foundDetails = allContracts.find((c: any) => c.id_oportunidad === contractId);
+        const foundDetails = allContracts.find((c: any) => c.id_portunidad === contractId);
 
         if (foundDetails) {
             setContractData(foundDetails);
