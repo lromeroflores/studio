@@ -1,91 +1,87 @@
 
 'use client';
 
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import type { Opportunity } from '@/types/opportunity';
-import { ArrowRight, Briefcase, FileText, Clock, Search } from 'lucide-react';
+import { ArrowRight, Briefcase, FileText, Clock, Search, Loader2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { ClientFormattedDate } from '@/components/common/client-formatted-date';
-
-// Mock Data
-const mockOpportunitiesData: Opportunity[] = [
-  {
-    id: 'opp-001',
-    clientName: 'Tech Solutions Inc.',
-    contractId: 'nda-v1-tech',
-    contractType: 'Non-Disclosure Agreement',
-    opportunityStatus: 'New',
-    contractStatus: 'Draft',
-    lastUpdated: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString(),
-    description: 'Review and finalize NDA for potential partnership discussions with new AI vendor.',
-  },
-  {
-    id: 'opp-002',
-    clientName: 'Global Innovations Ltd.',
-    contractId: 'sa-v1-global',
-    contractType: 'Service Agreement',
-    opportunityStatus: 'In Progress',
-    contractStatus: 'Under Review',
-    lastUpdated: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000).toISOString(),
-    description: 'Negotiate terms for the new software development service agreement, focusing on IP rights.',
-  },
-  {
-    id: 'opp-003',
-    clientName: 'Alpha Builders Co.',
-    contractId: 'const-v2-alpha',
-    contractType: 'Construction Contract',
-    opportunityStatus: 'In Progress',
-    contractStatus: 'Negotiation',
-    lastUpdated: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000).toISOString(),
-    description: 'Final legal review of the construction contract for the new HQ project, check liability clauses.',
-  },
-  {
-    id: 'opp-004',
-    clientName: 'MediCare Health',
-    contractId: 'hipaa-v1-medi',
-    contractType: 'HIPAA BAA',
-    opportunityStatus: 'Completed',
-    contractStatus: 'Signed',
-    lastUpdated: new Date(Date.now() - 10 * 24 * 60 * 60 * 1000).toISOString(),
-    description: 'HIPAA Business Associate Agreement successfully executed and archived with new imaging partner.',
-  },
-  {
-    id: 'opp-005',
-    clientName: 'FinTech Future Group',
-    contractId: 'invest-s1-fin',
-    contractType: 'Investment Agreement',
-    opportunityStatus: 'New',
-    contractStatus: 'Draft',
-    lastUpdated: new Date(Date.now() - 0.5 * 24 * 60 * 60 * 1000).toISOString(),
-    description: 'Draft Series A investment agreement for upcoming funding round.',
-  },
-  {
-    id: 'opp-006',
-    clientName: 'Eco Renewables Corp.',
-    contractId: 'supply-v3-eco',
-    contractType: 'Supply Agreement',
-    opportunityStatus: 'Completed',
-    contractStatus: 'Archived',
-    lastUpdated: new Date(Date.now() - 30 * 24 * 60 * 60 * 1000).toISOString(),
-    description: 'Long-term supply agreement for solar panels, successfully concluded and archived.',
-  },
-];
+import { Skeleton } from '@/components/ui/skeleton';
 
 function getStatusBadgeVariant(status: Opportunity['opportunityStatus']): "default" | "secondary" | "destructive" | "outline" {
-  switch (status.toLowerCase()) {
-    case 'new': return 'default';
-    case 'in progress': return 'secondary';
-    case 'completed': return 'outline';
+  switch (status) {
+    case 'New': return 'default';
+    case 'In Progress': return 'secondary';
+    case 'Completed': return 'outline';
     default: return 'secondary';
   }
 }
 
+// Maps backend status strings to frontend OpportunityStatus type
+const mapApiStatusToOpportunityStatus = (apiStatus: string): Opportunity['opportunityStatus'] => {
+  switch (apiStatus.toLowerCase()) {
+    case 'prospecto':
+      return 'New';
+    case 'negociación':
+      return 'In Progress';
+    case 'cerrado':
+      return 'Completed';
+    default:
+      return 'New'; // Default fallback
+  }
+};
+
+const mapApiStatusToContractStatus = (apiStatus: string): Opportunity['contractStatus'] => {
+    switch (apiStatus.toLowerCase()) {
+        case 'prospecto': return 'Draft';
+        case 'negociación': return 'Under Review';
+        case 'cerrado': return 'Signed';
+        default: return 'Draft';
+    }
+};
+
 export default function OpportunitiesPage() {
   const router = useRouter();
+  const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = React.useState('');
+
+  useEffect(() => {
+    const fetchOpportunities = async () => {
+      setIsLoading(true);
+      setError(null);
+      try {
+        const response = await fetch('https://magicloops.dev/api/loop/f4f138b7-61e0-455e-913a-e6709d111f13/run');
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        const data = await response.json();
+        
+        const mappedData: Opportunity[] = data.oportunidades.map((opp: any) => ({
+          id: `opp-${opp.id_portunidad}`,
+          clientName: opp.nombre_oportunidad,
+          contractId: `contract-${opp.id_portunidad}-${opp.nombre_oportunidad.toLowerCase().replace(/\s+/g, '-')}`,
+          contractType: opp.tipo_contrato,
+          opportunityStatus: mapApiStatusToOpportunityStatus(opp.estatus),
+          contractStatus: mapApiStatusToContractStatus(opp.estatus),
+          lastUpdated: opp.fecha,
+          description: `Contract opportunity with ${opp.nombre_oportunidad}`,
+        }));
+        setOpportunities(mappedData);
+      } catch (e: any) {
+        setError(e.message || "An unexpected error occurred.");
+        console.error("Failed to fetch opportunities:", e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    fetchOpportunities();
+  }, []);
 
   const handleSelectOpportunity = (opportunity: Opportunity) => {
     const query = new URLSearchParams({
@@ -96,10 +92,28 @@ export default function OpportunitiesPage() {
     router.push(`/editor?${query}`);
   };
 
-  const filteredOpportunities = mockOpportunitiesData.filter(opp =>
+  const filteredOpportunities = opportunities.filter(opp =>
     opp.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
     opp.contractType.toLowerCase().includes(searchTerm.toLowerCase()) ||
     opp.description.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+  
+  const renderLoadingSkeletons = () => (
+    <div className="space-y-4">
+      {[...Array(5)].map((_, i) => (
+        <div key={i} className="flex items-center justify-between p-4 border rounded-xl shadow-sm">
+          <div className="flex flex-1 flex-col sm:flex-row sm:items-center sm:gap-6 min-w-0">
+            <Skeleton className="h-6 w-2/5 mb-2 sm:mb-0" />
+            <div className="flex items-center gap-4 sm:gap-6 text-sm">
+              <Skeleton className="h-6 w-28" />
+              <Skeleton className="h-6 w-44" />
+              <Skeleton className="h-6 w-32 hidden md:block" />
+            </div>
+          </div>
+          <Skeleton className="h-5 w-5 ml-4" />
+        </div>
+      ))}
+    </div>
   );
 
   return (
@@ -123,7 +137,19 @@ export default function OpportunitiesPage() {
         </div>
       </div>
 
-      {filteredOpportunities.length === 0 ? (
+      {isLoading ? (
+        renderLoadingSkeletons()
+      ) : error ? (
+         <Card className="text-center py-16 shadow-md bg-destructive/10">
+          <CardContent className="flex flex-col items-center justify-center p-6">
+            <Briefcase className="h-12 w-12 text-destructive mb-4" />
+            <h2 className="text-2xl font-semibold text-destructive-foreground">Failed to Load Opportunities</h2>
+            <p className="text-lg text-muted-foreground mt-2">
+              There was an error fetching data: {error}
+            </p>
+          </CardContent>
+        </Card>
+      ) : filteredOpportunities.length === 0 ? (
         <Card className="text-center py-16 shadow-md">
           <CardContent className="flex flex-col items-center justify-center p-6">
             <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
