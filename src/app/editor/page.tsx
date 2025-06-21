@@ -47,6 +47,7 @@ function ContractEditorContent() {
 
   const [cells, setCells] = useState<ContractCell[]>([]);
   const [isLoading, setIsLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
   const [isRenumbering, setIsRenumbering] = useState(false);
   const [contractData, setContractData] = useState<Record<string, any> | null>(null);
   
@@ -60,14 +61,44 @@ function ContractEditorContent() {
   const [isClauseRewriting, setIsClauseRewriting] = useState(false);
   const [rewrittenText, setRewrittenText] = useState<string | null>(null);
 
-
   const loadContract = useCallback(async () => {
-    setIsLoading(true);
-    try {
+    if (!contractId) {
+        setIsLoading(false);
+        toast({ title: 'Error', description: 'No se proporcionó un ID de oportunidad.', variant: 'destructive' });
+        // Load a blank template if no ID is present
         const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
-        let fetchedData: Record<string, any> = {};
+        setCells(template.generateCells({}));
+        return;
+    }
 
-        if (contractId) {
+    setIsLoading(true);
+    let progressLoaded = false;
+
+    // --- 1. Try to load saved progress ---
+    try {
+        const progressResponse = await fetch(`/api/load-progress?contractId=${contractId}`); // Replace with YOUR_LOAD_ENDPOINT_URL
+        if (progressResponse.ok) {
+            const savedData = await progressResponse.json();
+            if (savedData && savedData.cells && savedData.cells.length > 0) {
+                setCells(savedData.cells);
+                // Also fetch the original data for context (e.g., preview)
+                const initialDataResponse = await fetch('https://magicloops.dev/api/loop/1c7ea39e-d598-42f8-8db7-1f84ebe37135/run');
+                const allContracts = await initialDataResponse.json();
+                const contractDetails = allContracts.find((c: any) => c.id_portunidad === contractId);
+                if (contractDetails) {
+                    setContractData(contractDetails);
+                }
+                toast({ title: 'Progreso Cargado', description: 'Se ha restaurado tu último avance guardado.' });
+                progressLoaded = true;
+            }
+        }
+    } catch (error) {
+        console.warn("No saved progress found or failed to load, proceeding to generate new contract.", error);
+    }
+
+    // --- 2. If no progress was loaded, generate from template ---
+    if (!progressLoaded) {
+        try {
             const response = await fetch('https://magicloops.dev/api/loop/1c7ea39e-d598-42f8-8db7-1f84ebe37135/run');
             if (!response.ok) {
                 throw new Error(`Error fetching data: ${response.statusText}`);
@@ -76,27 +107,27 @@ function ContractEditorContent() {
             const contractDetails = allContracts.find((c: any) => c.id_portunidad === contractId);
 
             if (contractDetails) {
-                fetchedData = contractDetails;
-                setContractData(fetchedData);
-                toast({ title: 'Datos Cargados', description: 'Los datos del contrato han sido cargados desde el backend.' });
+                setContractData(contractDetails);
+                const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
+                const initialCells = template.generateCells(contractDetails);
+                setCells(initialCells);
+                toast({ title: 'Contrato Generado', description: 'Se ha generado un nuevo contrato desde la plantilla.' });
             } else {
-                toast({ title: 'Contrato No Encontrado', description: `No se encontraron datos del contrato para el ID de oportunidad ${contractId}. Usando una plantilla en blanco.`, variant: 'destructive' });
+                toast({ title: 'Contrato No Encontrado', description: `No se encontraron datos para el ID ${contractId}. Usando plantilla en blanco.`, variant: 'destructive' });
+                const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
+                setCells(template.generateCells({}));
             }
+        } catch (error) {
+            console.error("Failed to load initial contract data:", error);
+            const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar los datos del contrato.';
+            toast({ title: 'Error al Cargar Contrato', description: `${errorMessage} Usando plantilla en blanco.`, variant: 'destructive' });
+            const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
+            setCells(template.generateCells({}));
         }
-        
-        const initialCells = template.generateCells(fetchedData || {});
-        setCells(initialCells);
-
-    } catch (error) {
-        console.error("Failed to load contract data:", error);
-        const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar los datos del contrato.';
-        toast({ title: 'Error al Cargar Contrato', description: `${errorMessage} Usando una plantilla en blanco.`, variant: 'destructive' });
-        const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
-        setCells(template.generateCells({}));
-    } finally {
-        setIsLoading(false);
     }
-  }, [contractType, contractId, toast]);
+
+    setIsLoading(false);
+  }, [contractId, contractType, toast]);
 
 
   useEffect(() => {
@@ -136,9 +167,41 @@ function ContractEditorContent() {
     setCells(newCells);
   };
 
-  const handleSave = () => {
-    toast({ title: 'Contrato Guardado', description: 'Su contrato ha sido guardado exitosamente.' });
-    router.push('/opportunities');
+  const handleSave = async () => {
+    if (!contractId) {
+      toast({ title: 'Error al Guardar', description: 'No hay un ID de contrato para guardar.', variant: 'destructive' });
+      return;
+    }
+    
+    setIsSaving(true);
+    toast({ title: 'Guardando...', description: 'Tu progreso está siendo guardado.' });
+
+    const payload = {
+      contractId,
+      cells,
+    };
+
+    try {
+      const response = await fetch('/api/save-progress', { // Replace with YOUR_SAVE_ENDPOINT_URL
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      });
+
+      if (!response.ok) {
+        throw new Error(`El servidor respondió con el estado ${response.status}`);
+      }
+      
+      toast({ title: 'Contrato Guardado', description: 'Tu avance ha sido guardado exitosamente.' });
+      // We don't exit automatically anymore, user can continue working.
+      // router.push('/opportunities'); 
+    } catch (error) {
+      console.error("Failed to save contract:", error);
+      const errorMessage = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
+      toast({ title: 'Falló el Guardado', description: `No se pudo guardar el progreso. ${errorMessage}`, variant: 'destructive' });
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleRenumber = async () => {
@@ -289,13 +352,13 @@ function ContractEditorContent() {
               </Select>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-center">
-              <Button onClick={handleRenumber} disabled={isRenumbering} variant="outline">
+              <Button onClick={handleRenumber} disabled={isRenumbering || isSaving} variant="outline">
                   {isRenumbering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                   Renumerar
               </Button>
-              <Button onClick={handleSave} disabled={isRenumbering}>
-                  <Save className="mr-2 h-4 w-4" />
-                  Guardar y Salir
+              <Button onClick={handleSave} disabled={isRenumbering || isSaving}>
+                  {isSaving ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save className="mr-2 h-4 w-4" />}
+                  Guardar Avance
               </Button>
           </div>
       </div>
@@ -305,16 +368,16 @@ function ContractEditorContent() {
         {cells.map((cell, index) => (
           <Card key={cell.id} className="group/cell relative transition-shadow hover:shadow-lg">
             <div className="absolute top-2 right-2 z-10 flex items-center space-x-1 bg-background/50 backdrop-blur-sm rounded-md p-1 opacity-0 group-hover/cell:opacity-100 transition-opacity duration-200">
-               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenRewriteDialog(cell)} disabled={isRenumbering} title="Reescribir con IA">
+               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenRewriteDialog(cell)} disabled={isRenumbering || isSaving} title="Reescribir con IA">
                   <Wand2 className="h-4 w-4 text-accent" />
                </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'up')} disabled={index === 0 || isRenumbering} title="Mover Arriba">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'up')} disabled={index === 0 || isRenumbering || isSaving} title="Mover Arriba">
                 <ArrowUp className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'down')} disabled={index === cells.length - 1 || isRenumbering} title="Mover Abajo">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'down')} disabled={index === cells.length - 1 || isRenumbering || isSaving} title="Mover Abajo">
                 <ArrowDown className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteCell(cell.id)} disabled={isRenumbering} title="Eliminar Sección">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteCell(cell.id)} disabled={isRenumbering || isSaving} title="Eliminar Sección">
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </div>
@@ -326,7 +389,7 @@ function ContractEditorContent() {
                   <EditableTable
                     htmlContent={cell.content}
                     onContentChange={(newContent) => updateCellContent(cell.id, newContent)}
-                    disabled={isRenumbering}
+                    disabled={isRenumbering || isSaving}
                   />
                 ) : (
                   <Textarea
@@ -334,7 +397,7 @@ function ContractEditorContent() {
                       onChange={(e) => updateCellContent(cell.id, e.target.value)}
                       className="w-full h-auto min-h-[60px] resize-none border-0 shadow-none focus-visible:ring-0 p-0 text-base font-serif"
                       onInput={handleAutoResizeTextarea}
-                      disabled={isRenumbering}
+                      disabled={isRenumbering || isSaving}
                       ref={node => {
                           if (node) {
                               if (!node.dataset.resized) {
@@ -348,7 +411,7 @@ function ContractEditorContent() {
                 )}
             </CardContent>
             <div className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 w-full flex justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity z-10">
-                 <Button variant="outline" size="sm" className="rounded-full bg-background hover:bg-secondary shadow-md" onClick={() => addCell('Nueva sección editable...', index)} disabled={isRenumbering}>
+                 <Button variant="outline" size="sm" className="rounded-full bg-background hover:bg-secondary shadow-md" onClick={() => addCell('Nueva sección editable...', index)} disabled={isRenumbering || isSaving}>
                      <PlusCircle className="mr-2 h-4 w-4" /> Añadir Sección Abajo
                  </Button>
             </div>
