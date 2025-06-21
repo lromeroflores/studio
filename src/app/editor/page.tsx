@@ -78,7 +78,7 @@ function ContractEditorContent() {
         const response = await fetch('https://magicloops.dev/api/loop/1c7ea39e-d598-42f8-8db7-1f84ebe37135/run');
         if (!response.ok) throw new Error(`Error al buscar datos: ${response.statusText}`);
         const allContracts = await response.json();
-        contractDetails = allContracts.find((c: any) => c.id_portunidad === contractId);
+        contractDetails = allContracts.find((c: any) => c.id_oportunidad === contractId);
 
         if (!contractDetails) {
             throw new Error(`No se encontraron datos para el ID ${contractId}.`);
@@ -107,7 +107,10 @@ function ContractEditorContent() {
         });
 
         if (progressResponse.ok) {
-            const savedData = await progressResponse.json();
+            const result = await progressResponse.json();
+            // API might return an array with one object, or just the object. Handle both.
+            const savedData = Array.isArray(result) ? result[0] : result;
+            
             if (savedData && savedData.avance_json && savedData.avance_json.cells && savedData.avance_json.cells.length > 0) {
                 setCells(savedData.avance_json.cells);
                 toast({ title: 'Progreso Cargado', description: 'Se ha restaurado tu último avance guardado.' });
