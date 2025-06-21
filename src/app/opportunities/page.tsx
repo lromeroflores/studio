@@ -159,9 +159,9 @@ export default function OpportunitiesPage() {
   return (
     <div className="container mx-auto">
       <div className="mb-6">
-        <h1 className="text-3xl font-bold tracking-tight text-foreground">Your Opportunities</h1>
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Tus Oportunidades</h1>
         <p className="text-muted-foreground">
-          Filter, sort, and select an opportunity to manage its contract.
+          Filtra, ordena y selecciona una oportunidad para gestionar su contrato.
         </p>
       </div>
 
