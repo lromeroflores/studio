@@ -66,7 +66,7 @@ export function EditableTable({ htmlContent, onContentChange, disabled }: Editab
     const newHtml = `<table style="width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; font-family: sans-serif;">${headerHtml}${bodyHtml}</table>`;
 
     onContentChange(newHtml);
-  }, [headers, rows, isInitialized, onContentChange]);
+  }, [headers, rows, isInitialized]);
 
   // --- Handler Functions ---
   const handleHeaderChange = (colIndex: number, value: string) => {
