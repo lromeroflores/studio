@@ -10,6 +10,7 @@ export interface ContractField {
 
 export interface ContractCell {
   id: string;
+  title?: string;
   content: string;
 }
 

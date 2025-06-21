@@ -198,6 +198,9 @@ function ContractEditorContent() {
               </Button>
             </div>
              <CardContent className="p-4">
+               {cell.title && (
+                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 border-b pb-2">{cell.title}</h3>
+                )}
                {cell.content.includes('<table') ? (
                   <div className="prose prose-sm max-w-none" dangerouslySetInnerHTML={{ __html: cell.content }} />
                ) : (
