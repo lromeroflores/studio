@@ -7,7 +7,7 @@ import { Button } from '@/components/ui/button';
 import { Switch } from '@/components/ui/switch';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Sun, Moon, Info, Palette, LogOut } from 'lucide-react';
+import { Sun, Moon, Info, Palette, ArrowLeft } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 
 export default function SettingsPage() {
@@ -48,17 +48,16 @@ export default function SettingsPage() {
     });
   };
 
-  const handleLogout = () => {
-    toast({
-      title: 'Logged Out',
-      description: 'You have been successfully logged out.',
-    });
-    router.push('/');
-  };
-
-
   return (
     <div className="container mx-auto max-w-3xl space-y-8">
+       <div className="flex items-center gap-4 mb-4">
+        <Button variant="outline" size="icon" onClick={() => router.back()}>
+          <ArrowLeft className="h-4 w-4" />
+          <span className="sr-only">Back</span>
+        </Button>
+        <h1 className="text-3xl font-bold tracking-tight">Settings</h1>
+      </div>
+
       <Card className="shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center"><Palette className="mr-3 h-6 w-6 text-primary" /> Appearance</CardTitle>
@@ -112,25 +111,7 @@ export default function SettingsPage() {
           </div>
         </CardContent>
       </Card>
-
-      <Card className="shadow-xl border-destructive/50">
-        <CardHeader>
-          <CardTitle className="text-2xl flex items-center text-destructive"><LogOut className="mr-3 h-6 w-6" /> Account</CardTitle>
-          <CardDescription>End your current session.</CardDescription>
-        </CardHeader>
-        <CardContent>
-            <Button variant="destructive" onClick={handleLogout} className="w-full sm:w-auto">
-                <LogOut className="mr-2 h-4 w-4" />
-                Log Out
-            </Button>
-        </CardContent>
-         <CardFooter>
-            <p className="text-xs text-muted-foreground">
-              You will be returned to the main login page.
-            </p>
-        </CardFooter>
-      </Card>
-
+      
       <Card className="shadow-xl">
         <CardHeader>
           <CardTitle className="text-2xl flex items-center"><Info className="mr-3 h-6 w-6 text-primary" /> About</CardTitle>
