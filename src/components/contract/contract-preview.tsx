@@ -27,8 +27,8 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
   const [isExporting, setIsExporting] = React.useState(false);
 
   const finalContractHtml = useMemo(() => {
-    // Join the content from all editable cells
-    let html = cells.map(cell => cell.content).join('<br /><br />');
+    // Join the content from all editable cells, replacing newlines with <br> for HTML rendering
+    let html = cells.map(cell => cell.content.replace(/\n/g, '<br />')).join('<br /><br />');
 
     // Make variables from the original data bold
     if (data) {
@@ -81,7 +81,16 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
       let heightLeft = contentHeight;
       let position = margin;
 
+      // Add header/logo on each page (optional)
+      const addHeader = (pdfInstance: jsPDF) => {
+         const logoUrl = "https://bancaenlinea.covalto.com/feb/common/styles/themes/images/covalto-login.png";
+         // This is a simplified way to add a logo. For complex headers, more logic is needed.
+         // Note: Due to CORS, this image might not render if the browser blocks it.
+         // Using it via html2canvas is more reliable.
+      };
+
       // Add content to first page
+      // addHeader(pdf);
       pdf.addImage(canvas, 'PNG', margin, position, contentWidth, contentHeight);
       heightLeft -= (pdfPageHeight - margin * 2);
 
@@ -89,6 +98,7 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
       while (heightLeft > 0) {
         position = heightLeft - contentHeight - margin;
         pdf.addPage();
+        // addHeader(pdf);
         pdf.addImage(canvas, 'PNG', margin, position, contentWidth, contentHeight);
         heightLeft -= (pdfPageHeight - margin);
       }
@@ -113,7 +123,12 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="px-6 pb-6 pt-0">
-         <div className="p-6 bg-white border rounded-md min-h-[500px] overflow-y-auto font-serif text-black" ref={previewContentRef}>
+         <div className="p-10 bg-white border rounded-md min-h-[500px] overflow-y-auto font-serif text-black" ref={previewContentRef}>
+            <img 
+              src="https://bancaenlinea.covalto.com/feb/common/styles/themes/images/covalto-login.png" 
+              alt="Covalto Logo"
+              style={{ width: '150px', marginBottom: '2rem' }}
+            />
             <div
               className="prose prose-sm max-w-none break-words" 
               dangerouslySetInnerHTML={{ __html: finalContractHtml }}

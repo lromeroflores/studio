@@ -47,7 +47,7 @@ export const defaultTemplates: ContractTemplate[] = [
         `3. Confidential Information. "Confidential Information" means any information disclosed by one Party (the "Disclosing Party") to the other Party (the "Receiving Party"), either directly or indirectly, in writing, orally, or by inspection of tangible objects, which is designated as "Confidential," "Proprietary," or some similar designation, or which should reasonably be understood to be confidential given the nature of the information and the circumstances of disclosure.`,
         `4. Obligations. The Receiving Party agrees:\n   (a) to hold the Confidential Information in strict confidence and to take all reasonable precautions to protect such Confidential Information;\n   (b) not to disclose any Confidential Information to any third party without the prior written consent of the Disclosing Party;\n   (c) not to use any Confidential Information for any purpose except the Purpose.`,
         `5. Term. This Agreement shall remain in effect for a period of ${data.term} years from the Effective Date.`,
-        `IN WITOSSS WHEREOF, the Parties have executed this Agreement as of the Effective Date.\n\nPARTY ONE:\nBy: _________________________\nName: ${data.partyOneName}\nTitle: _________________________\n\nPARTY TWO:\nBy: _________________________\nName: ${data.partyTwoName}\nTitle: _________________________`
+        `IN WITNESS WHEREOF, the Parties have executed this Agreement as of the Effective Date.\n\nPARTY ONE:\nBy: _________________________\nName: ${data.partyOneName}\nTitle: _________________________\n\nPARTY TWO:\nBy: _________________________\nName: ${data.partyTwoName}\nTitle: _________________________`
       ];
 
       return cellsContent.map((content, index) => ({
