@@ -6,8 +6,6 @@
 'use server';
 
 import { BigQuery } from '@google-cloud/bigquery';
-import type { ContractTemplate } from '@/components/contract/types'; // Assuming this path might be useful later
-import { defaultTemplates } from '@/lib/templates'; // To get field names for select query
 
 // Initialize BigQuery client
 // The client will use Application Default Credentials (ADC)
@@ -27,7 +25,7 @@ interface ContractDataRecord {
 
 /**
  * Fetches contract data from BigQuery for a given record ID.
- * Assumes the table has an 'id' column for querying and columns matching contract field IDs.
+ * Assumes the table has an 'id' column for querying.
  * @param recordId The ID of the record to fetch.
  * @returns A promise that resolves to the contract data object or null if not found.
  */
@@ -37,18 +35,9 @@ export async function getContractDataById(recordId: string): Promise<Record<stri
     return null;
   }
 
-  // Dynamically generate SELECT clause based on NDA template fields
-  // This is a simplification; a more robust solution might involve schema mapping
-  const ndaTemplate = defaultTemplates.find(t => t.id === 'nda-v1');
-  if (!ndaTemplate) {
-    console.error('NDA template not found, cannot construct BigQuery SELECT clause.');
-    throw new Error('Default NDA template not found.');
-  }
-
-  const selectFields = ndaTemplate.fields.map(field => field.id).join(', ');
-
+  // Fetch all columns to support any contract template.
   const query = `
-    SELECT id, ${selectFields}
+    SELECT *
     FROM \`${projectId}.${datasetId}.${tableId}\`
     WHERE id = @recordId
     LIMIT 1;

@@ -16,21 +16,39 @@ const FetchContractDataInputSchema = z.object({
 });
 export type FetchContractDataInput = z.infer<typeof FetchContractDataInputSchema>;
 
-// Define an output schema that matches the fields of the NDA template.
-// This makes the output predictable and type-safe.
-// All fields are optional as they might not exist in BigQuery or be null.
+// This schema combines all possible fields from all templates to be robust.
+// It uses the exact 'id' from the template definitions.
 const FetchContractDataOutputSchema = z.object({
   id: z.string().optional(),
-  partyOneName: z.string().optional().nullable(),
-  partyOneAddress: z.string().optional().nullable(),
-  partyTwoName: z.string().optional().nullable(),
-  partyTwoAddress: z.string().optional().nullable(),
-  effectiveDate: z.string().optional().nullable(), // Dates from BQ might be strings
-  term: z.union([z.string(), z.number()]).optional().nullable(), // Term could be number or string if BQ stores it as such
-  purpose: z.string().optional().nullable(),
-  serviceDescription: z.string().optional().nullable(),
-  serviceQuantity: z.union([z.string(), z.number()]).optional().nullable(),
-  serviceUnitPrice: z.union([z.string(), z.number()]).optional().nullable(),
+  
+  // Fields from NDA, Services, and/or SaaS templates
+  nombre_parte_uno: z.string().optional().nullable(),
+  direccion_parte_uno: z.string().optional().nullable(),
+  nombre_parte_dos: z.string().optional().nullable(),
+  direccion_parte_dos: z.string().optional().nullable(),
+  fecha_efectiva: z.string().optional().nullable(),
+  precio_total: z.union([z.string(), z.number()]).optional().nullable(),
+
+  // NDA specific fields
+  vigencia_en_anios: z.union([z.string(), z.number()]).optional().nullable(),
+  proposito_divulgacion: z.string().optional().nullable(),
+  descripcion_servicio: z.string().optional().nullable(),
+  cantidad: z.union([z.string(), z.number()]).optional().nullable(),
+  precio_unitario: z.union([z.string(), z.number()]).optional().nullable(),
+
+  // Services specific fields
+  descripcion_detallada_servicios: z.string().optional().nullable(),
+  entregables: z.string().optional().nullable(),
+  plazo_ejecucion: z.string().optional().nullable(),
+  condiciones_pago: z.string().optional().nullable(),
+
+  // SaaS specific fields
+  nombre_software: z.string().optional().nullable(),
+  nivel_servicio_sla: z.string().optional().nullable(),
+  usuarios_permitidos: z.union([z.string(), z.number()]).optional().nullable(),
+  politica_soporte: z.string().optional().nullable(),
+  frecuencia_pago: z.string().optional().nullable(),
+
 }).nullable(); // The entire object can be null if no record is found
 
 export type FetchContractDataOutput = z.infer<typeof FetchContractDataOutputSchema>;
@@ -54,14 +72,11 @@ const fetchContractDataFromBigQueryFlow = ai.defineFlow(
         return null;
       }
       // Ensure data conforms to the output schema.
-      // BigQuery might return numbers as strings, dates as ISO strings etc.
-      // Zod will attempt to coerce if types don't match exactly, based on schema.
+      // Zod will parse the data, and any fields not in the schema will be stripped.
       const parsedData = FetchContractDataOutputSchema.parse(data);
       return parsedData;
     } catch (error) {
       console.error('Error in fetchContractDataFromBigQueryFlow:', error);
-      // Optionally re-throw or return a structured error object
-      // For now, re-throwing will let the client handle it.
       throw error; 
     }
   }

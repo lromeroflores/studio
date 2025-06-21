@@ -34,6 +34,7 @@ import { rewriteContractClause } from '@/ai/flows/rewrite-contract-clause';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { EditableTable } from '@/components/contract/editable-table';
+import { fetchContractDataFromBigQuery } from '@/ai/flows/fetch-contract-data-from-bigquery';
 
 
 function ContractEditorContent() {
@@ -41,7 +42,7 @@ function ContractEditorContent() {
   const searchParams = useSearchParams();
   const { toast } = useToast();
 
-  const opportunityName = searchParams.get('opportunityName') || 'Unnamed Opportunity';
+  const opportunityName = searchParams.get('opportunityName') || 'Oportunidad sin Nombre';
   const contractId = searchParams.get('contractId');
   const contractType = searchParams.get('contractType');
 
@@ -72,79 +73,85 @@ function ContractEditorContent() {
 
     setIsLoading(true);
 
-    // --- 1. Load initial data from the source to get IDs and fallback data ---
-    let contractDetails: any = null; // Initialize as null
+    let finalData: Record<string, any> = {};
+
+    // --- 1. Load detailed data from BigQuery ---
+    try {
+        const bqData = await fetchContractDataFromBigQuery({ recordId: contractId });
+        if (bqData) {
+            finalData = { ...finalData, ...bqData };
+        } else {
+            console.warn(`No detailed data found in BigQuery for ID ${contractId}.`);
+        }
+    } catch (error) {
+        console.error("Failed to load detailed contract data from BigQuery:", error);
+        // This is not a critical failure; we can fall back to other sources.
+    }
+    
+    // --- 2. Load generic data from the source and merge ---
     try {
         const response = await fetch('https://magicloops.dev/api/loop/f4f138b7-61e0-455e-913a-e6709d111f13/run');
         if (!response.ok) throw new Error(`Error al buscar datos: ${response.statusText}`);
         const apiResponse = await response.json();
         const allContracts = apiResponse.oportunidades || [];
-
         const foundDetails = allContracts.find((c: any) => c.id_portunidad === contractId);
 
         if (foundDetails) {
-            setContractData(foundDetails);
-            contractDetails = foundDetails; // Also store in local var for use below
+            // Merge data: generic data is the fallback for detailed data.
+            finalData = { ...foundDetails, ...finalData };
         } else {
-            // This is the case from the error log. Handle it gracefully.
-            console.warn(`No se encontraron datos para el ID ${contractId}. Se cargará una plantilla en blanco.`);
-            toast({ title: 'Error al Cargar Datos', description: `No se encontraron datos para la oportunidad ${contractId}. Se usará una plantilla.`, variant: 'destructive' });
-            // Let contractDetails remain null, the logic below will handle it.
+            console.warn(`No se encontraron datos de oportunidad para el ID ${contractId} en la API genérica.`);
+            if (Object.keys(finalData).length === 0) {
+                toast({ title: 'Error Crítico', description: `No se encontraron datos para la oportunidad ${contractId} en ninguna fuente.`, variant: 'destructive' });
+                const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
+                setCells(template.generateCells({}));
+                setIsLoading(false);
+                return;
+            }
         }
     } catch (error) {
         console.error("Failed to load initial contract data:", error);
         const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar los datos del contrato.';
-        toast({ title: 'Error de Red', description: `${errorMessage} Usando plantilla en blanco.`, variant: 'destructive' });
-        // On critical failure, load a blank template and stop.
-        const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
-        setCells(template.generateCells({}));
-        setIsLoading(false);
-        return;
+        toast({ title: 'Error de Red', description: errorMessage, variant: 'destructive' });
     }
+    
+    setContractData(finalData);
 
-    // --- 2. Try to load saved progress ---
+    // --- 3. Try to load saved progress ---
     let progressLoaded = false;
-    // Only attempt to load progress if we successfully found the base contract details
-    if (contractDetails) {
-        try {
-            const progressResponse = await fetch('https://magicloops.dev/api/loop/6b6a524c-dc85-401b-bcb3-a99daa6283eb/run', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    id_oportunidad: contractId,
-                })
-            });
+    try {
+        const progressResponse = await fetch('https://magicloops.dev/api/loop/6b6a524c-dc85-401b-bcb3-a99daa6283eb/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_oportunidad: contractId })
+        });
 
-            if (progressResponse.ok) {
-                const result = await progressResponse.json();
-                // Handle both direct object and object inside an array
-                const savedData = Array.isArray(result) ? result[0] : result;
-                
-                if (savedData && savedData.avance_json && savedData.avance_json.cells && savedData.avance_json.cells.length > 0) {
-                    setCells(savedData.avance_json.cells);
-                    toast({ title: 'Progreso Cargado', description: 'Se ha restaurado tu último avance guardado.' });
-                    progressLoaded = true;
-                }
+        if (progressResponse.ok) {
+            const result = await progressResponse.json();
+            const savedData = Array.isArray(result) ? result[0] : result;
+            
+            if (savedData && savedData.avance_json && savedData.avance_json.cells && savedData.avance_json.cells.length > 0) {
+                setCells(savedData.avance_json.cells);
+                toast({ title: 'Progreso Cargado', description: 'Se ha restaurado tu último avance guardado.' });
+                progressLoaded = true;
             }
-        } catch (error) {
-            console.warn("No saved progress found or failed to load, proceeding to generate new contract.", error);
         }
+    } catch (error) {
+        console.warn("No saved progress found or failed to load, proceeding to generate new contract.", error);
     }
 
-    // --- 3. If no progress was loaded, generate from template ---
+    // --- 4. If no progress was loaded, generate from template ---
     if (!progressLoaded) {
-        const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
-        // Use contractDetails if we have them, otherwise use an empty object.
-        const initialCells = template.generateCells(contractDetails || {});
+        const template = defaultTemplates.find(t => t.name.includes(currentContractType || '')) || defaultTemplates[0];
+        const initialCells = template.generateCells(finalData || {});
         setCells(initialCells);
-        // Avoid showing "Contrato Generado" toast if we already showed the "Datos no Encontrados" error.
-        if (contractDetails) {
-            toast({ title: 'Contrato Generado', description: 'Se ha generado un nuevo contrato desde la plantilla.' });
+        if (Object.keys(finalData).length > 0) {
+            toast({ title: 'Contrato Generado', description: `Se ha generado un nuevo contrato para ${template.name}.` });
         }
     }
 
     setIsLoading(false);
-  }, [contractId, contractType, toast]);
+  }, [contractId, currentContractType, toast]);
 
 
   useEffect(() => {
@@ -276,19 +283,19 @@ function ContractEditorContent() {
 
   const confirmContractTypeChange = () => {
     if (!nextContractType) return;
-
-    const newTemplate = defaultTemplates.find(t => t.name.includes(nextContractType)) || defaultTemplates[0];
-    const newCells = newTemplate.generateCells(contractData || {});
-    setCells(newCells);
+    
+    // Set the new contract type state. This will trigger the useEffect hook
+    // to re-run loadContract with the new type.
     setCurrentContractType(nextContractType);
     
     const newParams = new URLSearchParams(searchParams.toString());
     newParams.set('contractType', nextContractType);
     router.replace(`/editor?${newParams.toString()}`, { scroll: false });
     
+    const newTemplate = defaultTemplates.find(t => t.name.includes(nextContractType)) || defaultTemplates[0];
     toast({
       title: 'Plantilla Cambiada',
-      description: `Se ha cargado la plantilla para ${newTemplate.name}.`
+      description: `Cargando la plantilla para ${newTemplate.name}.`
     });
 
     setIsConfirmDialogOpen(false);
