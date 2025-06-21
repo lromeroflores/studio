@@ -34,7 +34,6 @@ import { rewriteContractClause } from '@/ai/flows/rewrite-contract-clause';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { EditableTable } from '@/components/contract/editable-table';
-import { fetchContractDataFromBigQuery } from '@/ai/flows/fetch-contract-data-from-bigquery';
 
 
 function ContractEditorContent() {
@@ -73,51 +72,53 @@ function ContractEditorContent() {
 
     setIsLoading(true);
 
-    let finalData: Record<string, any> = {};
+    let finalData: Record<string, any> | null = null;
 
-    // --- 1. Load detailed data from BigQuery ---
+    // --- 1. Load ALL contract data from the primary detailed endpoint ---
     try {
-        const bqData = await fetchContractDataFromBigQuery({ recordId: contractId });
-        if (bqData) {
-            finalData = { ...finalData, ...bqData };
+        const detailedResponse = await fetch('https://magicloops.dev/api/loop/1c7ea39e-d598-42f8-8db7-1f84ebe37135/run', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id_portunidad: contractId }),
+        });
+        
+        if (detailedResponse.ok) {
+             finalData = await detailedResponse.json();
         } else {
-            console.warn(`No detailed data found in BigQuery for ID ${contractId}.`);
+            console.error(`Error al buscar datos detallados: ${detailedResponse.statusText}`);
+            toast({ title: 'Error de Red', description: `No se pudieron cargar los datos del contrato.`, variant: 'destructive' });
         }
     } catch (error) {
-        console.error("Failed to load detailed contract data from BigQuery:", error);
-        // This is not a critical failure; we can fall back to other sources.
-    }
-    
-    // --- 2. Load generic data from the source and merge ---
-    try {
-        const response = await fetch('https://magicloops.dev/api/loop/f4f138b7-61e0-455e-913a-e6709d111f13/run');
-        if (!response.ok) throw new Error(`Error al buscar datos: ${response.statusText}`);
-        const apiResponse = await response.json();
-        const allContracts = apiResponse.oportunidades || [];
-        const foundDetails = allContracts.find((c: any) => c.id_portunidad === contractId);
-
-        if (foundDetails) {
-            // Merge data: generic data is the fallback for detailed data.
-            finalData = { ...foundDetails, ...finalData };
-        } else {
-            console.warn(`No se encontraron datos de oportunidad para el ID ${contractId} en la API genérica.`);
-            if (Object.keys(finalData).length === 0) {
-                toast({ title: 'Error Crítico', description: `No se encontraron datos para la oportunidad ${contractId} en ninguna fuente.`, variant: 'destructive' });
-                const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
-                setCells(template.generateCells({}));
-                setIsLoading(false);
-                return;
-            }
-        }
-    } catch (error) {
-        console.error("Failed to load initial contract data:", error);
-        const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar los datos del contrato.';
+        console.error("Failed to load detailed contract data:", error);
+        const errorMessage = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
         toast({ title: 'Error de Red', description: errorMessage, variant: 'destructive' });
+    }
+
+    // --- 2. If no detailed data, try fallback to generic list to get at least the name ---
+    if (!finalData) {
+         try {
+            const response = await fetch('https://magicloops.dev/api/loop/f4f138b7-61e0-455e-913a-e6709d111f13/run');
+            if (response.ok) {
+                const apiResponse = await response.json();
+                finalData = (apiResponse.oportunidades || []).find((c: any) => c.id_portunidad === contractId) || null;
+            }
+         } catch(e) {
+            console.error("Error fetching fallback data", e);
+         }
+    }
+
+    // --- 3. Final check and set data, or show critical error ---
+    if (!finalData || Object.keys(finalData).length === 0) {
+        toast({ title: 'Error Crítico', description: `No se encontraron datos para la oportunidad ${contractId} en ninguna fuente.`, variant: 'destructive' });
+        const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
+        setCells(template.generateCells({}));
+        setIsLoading(false);
+        return;
     }
     
     setContractData(finalData);
 
-    // --- 3. Try to load saved progress ---
+    // --- 4. Try to load saved progress ---
     let progressLoaded = false;
     try {
         const progressResponse = await fetch('https://magicloops.dev/api/loop/6b6a524c-dc85-401b-bcb3-a99daa6283eb/run', {
@@ -140,7 +141,7 @@ function ContractEditorContent() {
         console.warn("No saved progress found or failed to load, proceeding to generate new contract.", error);
     }
 
-    // --- 4. If no progress was loaded, generate from template ---
+    // --- 5. If no progress was loaded, generate from template ---
     if (!progressLoaded) {
         const template = defaultTemplates.find(t => t.name.includes(currentContractType || '')) || defaultTemplates[0];
         const initialCells = template.generateCells(finalData || {});
@@ -358,7 +359,7 @@ function ContractEditorContent() {
               <span className="sr-only">Volver a Oportunidades</span>
           </Button>
           <div>
-            <h1 className="text-3xl font-bold tracking-tight text-foreground">{opportunityName}</h1>
+            <h1 className="text-3xl font-bold tracking-tight text-foreground">{contractData?.nombre_oportunidad || opportunityName}</h1>
             {contractId && <p className="text-sm text-muted-foreground mt-1">ID de Oportunidad: {contractId}</p>}
           </div>
       </div>
