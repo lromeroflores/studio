@@ -15,36 +15,17 @@ interface ContractPreviewProps {
   data: Record<string, any> | null;
 }
 
-// Utility to escape strings for RegExp
-function escapeRegExp(string: string) {
-  return string.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'); // $& means the whole matched string
-}
-
 export function ContractPreview({ cells, data }: ContractPreviewProps) {
   const { toast } = useToast();
   const previewContentRef = useRef<HTMLDivElement>(null);
   const [isExporting, setIsExporting] = React.useState(false);
 
   const finalContractHtml = useMemo(() => {
-    // Join the content from all editable cells, replacing newlines with <br> for HTML rendering
-    let html = cells.map(cell => cell.content.replace(/\n/g, '<br />')).join('<br /><br />');
+    // The styling is now pre-applied in the cell content from the template.
+    // We just need to join the cells and handle newlines.
+    return cells.map(cell => cell.content.replace(/\n/g, '<br />')).join('<br /><br />');
+  }, [cells]);
 
-    // Make variables from the original data bold and red
-    if (data) {
-      const valuesToStyle = Object.values(data)
-                                 .filter((v): v is string | number => (typeof v === 'string' || typeof v === 'number') && String(v).length > 0)
-                                 .map(String) // Ensure all values are strings
-                                 .sort((a, b) => b.length - a.length); // Replace longer strings first
-      
-      valuesToStyle.forEach(value => {
-        // Use a regex to replace the value only if it's not already inside a tag
-        const regex = new RegExp(`(?<![>])\\b${escapeRegExp(value)}\\b`, 'g');
-        html = html.replace(regex, `<strong style="color: red;">${value}</strong>`);
-      });
-    }
-
-    return html;
-  }, [cells, data]);
 
   const handleExportPdf = async () => {
     const contentToExport = previewContentRef.current;
