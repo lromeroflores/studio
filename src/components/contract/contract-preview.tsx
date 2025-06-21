@@ -29,16 +29,17 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
     // Join the content from all editable cells, replacing newlines with <br> for HTML rendering
     let html = cells.map(cell => cell.content.replace(/\n/g, '<br />')).join('<br /><br />');
 
-    // Make variables from the original data bold
+    // Make variables from the original data bold and red
     if (data) {
-      const valuesToBold = Object.values(data)
-                                 .filter((v): v is string => typeof v === 'string' && v.length > 0)
+      const valuesToStyle = Object.values(data)
+                                 .filter((v): v is string | number => (typeof v === 'string' || typeof v === 'number') && String(v).length > 0)
+                                 .map(String) // Ensure all values are strings
                                  .sort((a, b) => b.length - a.length); // Replace longer strings first
       
-      valuesToBold.forEach(value => {
+      valuesToStyle.forEach(value => {
         // Use a regex to replace the value only if it's not already inside a tag
         const regex = new RegExp(`(?<![>])\\b${escapeRegExp(value)}\\b`, 'g');
-        html = html.replace(regex, `<b>${value}</b>`);
+        html = html.replace(regex, `<strong style="color: red;">${value}</strong>`);
       });
     }
 
@@ -118,7 +119,7 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
       <CardHeader className="px-6 pt-6 pb-4">
         <CardTitle>Final Document Preview</CardTitle>
         <CardDescription>
-          This is a preview of the final document. The variables from the original data are shown in bold.
+          This is a preview of the final document. The variables from the original data are shown in bold and red.
         </CardDescription>
       </CardHeader>
       <CardContent className="px-6 pb-6 pt-0">
