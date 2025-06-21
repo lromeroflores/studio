@@ -4,31 +4,31 @@ import type { ContractTemplate, ContractCell } from '@/components/contract/types
 export const defaultTemplates: ContractTemplate[] = [
   {
     id: 'nda-v1',
-    name: 'Non-Disclosure Agreement (NDA)',
-    description: 'A standard mutual non-disclosure agreement.',
+    name: 'Acuerdo de Confidencialidad (NDA)',
+    description: 'Un acuerdo de confidencialidad mutuo estándar.',
     fields: [
-      { id: 'partyOneName', label: 'Party One Name', type: 'text', placeholder: 'e.g., Acme Corp', required: true },
-      { id: 'partyOneAddress', label: 'Party One Address', type: 'text', placeholder: 'e.g., 123 Main St, Anytown', required: true },
-      { id: 'partyTwoName', label: 'Party Two Name', type: 'text', placeholder: 'e.g., Beta LLC', required: true },
-      { id: 'partyTwoAddress', label: 'Party Two Address', type: 'text', placeholder: 'e.g., 456 Oak Ave, Otherville', required: true },
-      { id: 'effectiveDate', label: 'Effective Date', type: 'date', required: true },
-      { id: 'term', label: 'Term of Agreement (years)', type: 'number', defaultValue: '2', required: true },
-      { id: 'purpose', label: 'Purpose of Disclosure', type: 'textarea', placeholder: 'e.g., Evaluation of potential business relationship', required: true },
-      { id: 'serviceDescription', label: 'Service/Item Description', type: 'text', placeholder: 'e.g., Consulting Services', defaultValue: 'Initial Consultation' },
-      { id: 'serviceQuantity', label: 'Quantity', type: 'number', placeholder: 'e.g., 10', defaultValue: '1' },
-      { id: 'serviceUnitPrice', label: 'Unit Price ($)', type: 'number', placeholder: 'e.g., 100', defaultValue: '500' },
+      { id: 'partyOneName', label: 'Nombre de la Primera Parte', type: 'text', placeholder: 'Ej: Acme Corp', required: true },
+      { id: 'partyOneAddress', label: 'Dirección de la Primera Parte', type: 'text', placeholder: 'Ej: Av. Principal 123, Ciudad de México', required: true },
+      { id: 'partyTwoName', label: 'Nombre de la Segunda Parte', type: 'text', placeholder: 'Ej: Beta LLC', required: true },
+      { id: 'partyTwoAddress', label: 'Dirección de la Segunda Parte', type: 'text', placeholder: 'Ej: Calle Roble 456, Otra Ciudad', required: true },
+      { id: 'effectiveDate', label: 'Fecha de Entrada en Vigor', type: 'date', required: true },
+      { id: 'term', label: 'Vigencia del Acuerdo (años)', type: 'number', defaultValue: '2', required: true },
+      { id: 'purpose', label: 'Propósito de la Divulgación', type: 'textarea', placeholder: 'Ej: Evaluación de una posible relación comercial', required: true },
+      { id: 'serviceDescription', label: 'Descripción del Servicio/Artículo', type: 'text', placeholder: 'Ej: Servicios de Consultoría', defaultValue: 'Consulta Inicial' },
+      { id: 'serviceQuantity', label: 'Cantidad', type: 'number', placeholder: 'Ej: 10', defaultValue: '1' },
+      { id: 'serviceUnitPrice', label: 'Precio Unitario ($)', type: 'number', placeholder: 'Ej: 100', defaultValue: '500' },
     ],
     generateCells: (formData): ContractCell[] => {
       // If no data is provided, use placeholders
       const data = {
-        partyOneName: '[Party One Name]',
-        partyOneAddress: '[Party One Address]',
-        partyTwoName: '[Party Two Name]',
-        partyTwoAddress: '[Party Two Address]',
-        effectiveDate: '[Effective Date]',
-        term: '[Term]',
-        purpose: '[Purpose of Disclosure]',
-        serviceDescription: '[Service/Item Description]',
+        partyOneName: '[Nombre de la Primera Parte]',
+        partyOneAddress: '[Dirección de la Primera Parte]',
+        partyTwoName: '[Nombre de la Segunda Parte]',
+        partyTwoAddress: '[Dirección de la Segunda Parte]',
+        effectiveDate: '[Fecha de Entrada en Vigor]',
+        term: '[Vigencia]',
+        purpose: '[Propósito de la Divulgación]',
+        serviceDescription: '[Descripción del Servicio/Artículo]',
         serviceQuantity: '1',
         serviceUnitPrice: '0',
         ...formData, // fetched data will override placeholders
@@ -37,17 +37,17 @@ export const defaultTemplates: ContractTemplate[] = [
       const serviceTotal = (parseFloat(data.serviceQuantity) || 0) * (parseFloat(data.serviceUnitPrice) || 0);
 
       const cellsContent = [
-        `NON-DISCLOSURE AGREEMENT`,
-        `This Non-Disclosure Agreement (the "Agreement") is entered into as of ${data.effectiveDate} ("Effective Date") by and between:`,
-        `Party One:\n${data.partyOneName}\n${data.partyOneAddress}`,
-        `and\n\nParty Two:\n${data.partyTwoName}\n${data.partyTwoAddress}`,
-        `(each a "Party" and collectively the "Parties").`,
-        `1. Purpose. The Parties wish to explore a potential business relationship related to ${data.purpose} (the "Purpose"). In connection with the Purpose, each Party may disclose certain confidential information to the other.`,
-        `2. Service Summary. The following services/items are contemplated under this relationship:\n<table style="width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; font-family: sans-serif;"><thead><tr><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Description</th><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Quantity</th><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Unit Price</th><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Total Price</th></tr></thead><tbody><tr><td style="border: 1px solid #ccc; padding: 8px;">${data.serviceDescription}</td><td style="border: 1px solid #ccc; padding: 8px;">${data.serviceQuantity}</td><td style="border: 1px solid #ccc; padding: 8px;">$${data.serviceUnitPrice}</td><td style="border: 1px solid #ccc; padding: 8px;">$${serviceTotal.toFixed(2)}</td></tr></tbody></table>`,
-        `3. Confidential Information. "Confidential Information" means any information disclosed by one Party (the "Disclosing Party") to the other Party (the "Receiving Party"), either directly or indirectly, in writing, orally, or by inspection of tangible objects, which is designated as "Confidential," "Proprietary," or some similar designation, or which should reasonably be understood to be confidential given the nature of the information and the circumstances of disclosure.`,
-        `4. Obligations. The Receiving Party agrees:\n   (a) to hold the Confidential Information in strict confidence and to take all reasonable precautions to protect such Confidential Information;\n   (b) not to disclose any Confidential Information to any third party without the prior written consent of the Disclosing Party;\n   (c) not to use any Confidential Information for any purpose except the Purpose.`,
-        `5. Term. This Agreement shall remain in effect for a period of ${data.term} years from the Effective Date.`,
-        `IN WITNESS WHEREOF, the Parties have executed this Agreement as of the Effective Date.\n\nPARTY ONE:\nBy: _________________________\nName: ${data.partyOneName}\nTitle: _________________________\n\nPARTY TWO:\nBy: _________________________\nName: ${data.partyTwoName}\nTitle: _________________________`
+        `Acuerdo de Confidencialidad`,
+        `Este Acuerdo de Confidencialidad (el "Acuerdo") se celebra con fecha de entrada en vigor el ${data.effectiveDate} ("Fecha de Entrada en Vigor") entre:`,
+        `Primera Parte:\n${data.partyOneName}\n${data.partyOneAddress}`,
+        `y\n\nSegunda Parte:\n${data.partyTwoName}\n${data.partyTwoAddress}`,
+        `(cada una, una "Parte", y conjuntamente, las "Partes").`,
+        `1. Propósito\nLas Partes desean explorar una posible relación comercial relacionada con ${data.purpose} (el "Propósito"). En relación con dicho Propósito, cada Parte podrá divulgar cierta información confidencial a la otra.`,
+        `2. Resumen del Servicio\nLos siguientes servicios/artículos están contemplados bajo esta relación:\n<table style="width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; font-family: sans-serif;"><thead><tr><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Descripción del Servicio/Artículo</th><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Cantidad</th><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Precio Unitario</th><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Precio Total</th></tr></thead><tbody><tr><td style="border: 1px solid #ccc; padding: 8px;">${data.serviceDescription}</td><td style="border: 1px solid #ccc; padding: 8px;">${data.serviceQuantity}</td><td style="border: 1px solid #ccc; padding: 8px;">$${data.serviceUnitPrice}</td><td style="border: 1px solid #ccc; padding: 8px;">$${serviceTotal.toFixed(2)}</td></tr></tbody></table>`,
+        `3. Información Confidencial\n"Información Confidencial" se refiere a cualquier información divulgada por una Parte (la "Parte Reveladora") a la otra Parte (la "Parte Receptora"), ya sea directa o indirectamente, por escrito, verbalmente o mediante la inspección de objetos tangibles, que esté designada como "Confidencial", "Propietaria" o con alguna designación similar, o que razonablemente deba entenderse como confidencial dado el carácter de la información y las circunstancias de la divulgación.`,
+        `4. Obligaciones\nLa Parte Receptora se compromete:\n   (a) a mantener la Información Confidencial en estricta confidencialidad y a tomar todas las precauciones razonables para proteger dicha información;\n   (b) a no divulgar ninguna Información Confidencial a terceros sin el consentimiento previo por escrito de la Parte Reveladora;\n   (c) a no utilizar ninguna Información Confidencial para ningún propósito distinto al Propósito.`,
+        `5. Vigencia\nEl presente Acuerdo permanecerá en vigor durante un período de ${data.term} años a partir de la Fecha de Entrada en Vigor.`,
+        `EN FE DE LO CUAL, las Partes han firmado este Acuerdo en la fecha indicada al inicio.\n\nPRIMERA PARTE:\nPor: _________________________\nNombre: ${data.partyOneName}\nCargo: _________________________\n\nSEGUNDA PARTE:\nPor: _________________________\nNombre: ${data.partyTwoName}\nCargo: _________________________`
       ];
 
       return cellsContent.map((content, index) => ({
