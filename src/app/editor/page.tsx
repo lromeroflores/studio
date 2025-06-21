@@ -16,7 +16,6 @@ import {
   DialogFooter,
 } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { AIClauseGenerator } from '@/components/contract/ai-clause-generator';
 import type { ContractCell } from '@/components/contract/types';
 import { defaultTemplates } from '@/lib/templates';
 import { ContractPreview } from '@/components/contract/contract-preview';
@@ -111,6 +110,7 @@ function ContractEditorContent() {
   const addCell = (text: string, index?: number) => {
     const newCell: ContractCell = {
       id: `cell-${Date.now()}-${Math.random()}`,
+      title: 'New Section',
       content: text,
     };
     const newCells = [...cells];
@@ -286,10 +286,6 @@ function ContractEditorContent() {
         ))}
       </div>
       
-      <div className="mt-12">
-        <AIClauseGenerator onAddCell={(text) => addCell(text)} disabled={isRenumbering} />
-      </div>
-
       <div className="mt-12">
         <ContractPreview cells={cells} data={contractData} />
       </div>
