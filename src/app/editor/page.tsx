@@ -15,6 +15,16 @@ import {
   DialogDescription,
   DialogFooter,
 } from '@/components/ui/dialog';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
 import type { ContractCell } from '@/components/contract/types';
 import { defaultTemplates } from '@/lib/templates';
@@ -38,6 +48,10 @@ function ContractEditorContent() {
   const [isLoading, setIsLoading] = useState(true);
   const [isRenumbering, setIsRenumbering] = useState(false);
   const [contractData, setContractData] = useState<Record<string, any> | null>(null);
+  
+  const [currentContractType, setCurrentContractType] = useState(contractType);
+  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
+  const [nextContractType, setNextContractType] = useState<string | null>(null);
 
   // State for the AI rewriter
   const [rewritingCell, setRewritingCell] = useState<ContractCell | null>(null);
@@ -175,6 +189,35 @@ function ContractEditorContent() {
     textarea.style.height = `${textarea.scrollHeight}px`;
   };
 
+  const handleContractTypeChange = (newType: string) => {
+    if (newType !== currentContractType) {
+      setNextContractType(newType);
+      setIsConfirmDialogOpen(true);
+    }
+  };
+
+  const confirmContractTypeChange = () => {
+    if (!nextContractType) return;
+
+    const newTemplate = defaultTemplates.find(t => t.name.includes(nextContractType)) || defaultTemplates[0];
+    const newCells = newTemplate.generateCells(contractData || {});
+    setCells(newCells);
+    setCurrentContractType(nextContractType);
+    
+    const newParams = new URLSearchParams(searchParams.toString());
+    newParams.set('contractType', nextContractType);
+    router.replace(`/editor?${newParams.toString()}`, { scroll: false });
+    
+    toast({
+      title: 'Plantilla Cambiada',
+      description: `Se ha cargado la plantilla para ${newTemplate.name}.`
+    });
+
+    setIsConfirmDialogOpen(false);
+    setNextContractType(null);
+  };
+
+
   // Handlers for the rewriter dialog
   const handleOpenRewriteDialog = (cell: ContractCell) => {
     setRewritingCell(cell);
@@ -233,7 +276,7 @@ function ContractEditorContent() {
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
           <div className="flex items-center gap-3">
               <Label htmlFor="contract-type-select" className="font-medium">Tipo de Contrato:</Label>
-              <Select defaultValue={contractType || undefined} disabled>
+              <Select value={currentContractType || undefined} onValueChange={handleContractTypeChange}>
                   <SelectTrigger id="contract-type-select" className="w-[300px]">
                       <SelectValue placeholder="Seleccionar tipo..." />
                   </SelectTrigger>
@@ -365,6 +408,22 @@ function ContractEditorContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Confirmar cambio de plantilla?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esto reemplazará el contenido actual del contrato con la nueva plantilla seleccionada. Cualquier cambio no guardado se perderá. ¿Deseas continuar?
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setNextContractType(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmContractTypeChange}>Confirmar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
     </div>
   );
 }
