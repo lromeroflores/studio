@@ -66,7 +66,11 @@ export const defaultTemplates: ContractTemplate[] = [
         },
         {
           title: 'Resumen del Servicio',
-          content: `2. Resumen del Servicio\nLos siguientes servicios/artículos están contemplados bajo esta relación:\n<table style="width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; font-family: sans-serif;"><thead><tr><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Descripción del Servicio/Artículo</th><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Cantidad</th><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Precio Unitario</th><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Precio Total</th></tr></thead><tbody><tr><td style="border: 1px solid #ccc; padding: 8px;">${styleVar(data.descripcion_servicio)}</td><td style="border: 1px solid #ccc; padding: 8px;">${styleVar(data.cantidad)}</td><td style="border: 1px solid #ccc; padding: 8px;">$${styleVar(data.precio_unitario)}</td><td style="border: 1px solid #ccc; padding: 8px;">$${styleVar(precio_total_display)}</td></tr></tbody></table>`,
+          content: `2. Resumen del Servicio\nLos siguientes servicios/artículos están contemplados bajo esta relación:`,
+        },
+        {
+          title: 'Detalles del Servicio',
+          content: `<table style="width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; font-family: sans-serif;"><thead><tr><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Descripción del Servicio/Artículo</th><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Cantidad</th><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Precio Unitario</th><th style="border: 1px solid #ccc; padding: 8px; text-align: left; background-color: #f2f2f2;">Precio Total</th></tr></thead><tbody><tr><td style="border: 1px solid #ccc; padding: 8px;">${styleVar(data.descripcion_servicio)}</td><td style="border: 1px solid #ccc; padding: 8px;">${styleVar(data.cantidad)}</td><td style="border: 1px solid #ccc; padding: 8px;">$${styleVar(data.precio_unitario)}</td><td style="border: 1px solid #ccc; padding: 8px;">$${styleVar(precio_total_display)}</td></tr></tbody></table>`,
         },
         {
           title: 'Información Confidencial',

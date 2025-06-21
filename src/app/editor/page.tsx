@@ -33,6 +33,7 @@ import { renumberContract } from '@/ai/flows/renumber-contract-flow';
 import { rewriteContractClause } from '@/ai/flows/rewrite-contract-clause';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
+import { EditableTable } from '@/components/contract/editable-table';
 
 
 function ContractEditorContent() {
@@ -321,22 +322,30 @@ function ContractEditorContent() {
                {cell.title && (
                   <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 border-b pb-2">{cell.title}</h3>
                 )}
-                <Textarea
-                    value={cell.content}
-                    onChange={(e) => updateCellContent(cell.id, e.target.value)}
-                    className="w-full h-auto min-h-[60px] resize-none border-0 shadow-none focus-visible:ring-0 p-0 text-base font-serif"
-                    onInput={handleAutoResizeTextarea}
+                {cell.content.trim().startsWith('<table') ? (
+                  <EditableTable
+                    htmlContent={cell.content}
+                    onContentChange={(newContent) => updateCellContent(cell.id, newContent)}
                     disabled={isRenumbering}
-                    ref={node => {
-                        if (node) {
-                            if (!node.dataset.resized) {
-                                node.style.height = 'auto';
-                                node.style.height = `${node.scrollHeight}px`;
-                                node.dataset.resized = "true";
-                            }
-                        }
-                    }}
-                />
+                  />
+                ) : (
+                  <Textarea
+                      value={cell.content}
+                      onChange={(e) => updateCellContent(cell.id, e.target.value)}
+                      className="w-full h-auto min-h-[60px] resize-none border-0 shadow-none focus-visible:ring-0 p-0 text-base font-serif"
+                      onInput={handleAutoResizeTextarea}
+                      disabled={isRenumbering}
+                      ref={node => {
+                          if (node) {
+                              if (!node.dataset.resized) {
+                                  node.style.height = 'auto';
+                                  node.style.height = `${node.scrollHeight}px`;
+                                  node.dataset.resized = "true";
+                              }
+                          }
+                      }}
+                  />
+                )}
             </CardContent>
             <div className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 w-full flex justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity z-10">
                  <Button variant="outline" size="sm" className="rounded-full bg-background hover:bg-secondary shadow-md" onClick={() => addCell('New editable section...', index)} disabled={isRenumbering}>
