@@ -12,14 +12,12 @@ export default function LoginPage() {
   const router = useRouter();
 
   const handleLogin = () => {
-    // Placeholder for future OAuth login
-    // For now, just navigate to the main app page
+
     router.push('/opportunities');
   };
 
   return (
     <div className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-slate-100 to-slate-200 dark:from-slate-900 dark:to-slate-800 p-4 selection:bg-primary/40 selection:text-white animate-fade-in">
-      <div className="absolute inset-0 bg-[url('https://placehold.co/1920x1080/E0E7FF/003A70/png?text=Corporate+Network')] bg-cover bg-center opacity-10 dark:opacity-5" data-ai-hint="finance technology"></div>
       
       <Card className="w-full max-w-md shadow-2xl bg-card/90 backdrop-blur-sm border-border/50 z-10">
         <CardHeader className="space-y-2 text-center pt-8">
@@ -33,7 +31,7 @@ export default function LoginPage() {
           </div>
           <CardTitle className="text-2xl font-bold text-foreground">Portal de Generación de Contratos</CardTitle>
           <CardDescription className="text-muted-foreground">
-            Access your contract opportunities and management tools.
+          Acceda a sus oportunidades de contrato y herramientas de gestión.
           </CardDescription>
         </CardHeader>
           <CardContent className="py-6">
