@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -31,7 +31,9 @@ const styleVar = (text: string | number | undefined | null) => {
 export function EditableTable({ htmlContent, onContentChange, disabled }: EditableTableProps) {
   const [headers, setHeaders] = useState<string[]>([]);
   const [rows, setRows] = useState<string[][]>([]);
-  const [isInitialized, setIsInitialized] = useState(false);
+  
+  const isInitialized = useMemo(() => headers.length > 0 || rows.length > 0, [headers, rows]);
+
 
   // 1. Parse incoming HTML to populate the table state
   useEffect(() => {
@@ -43,10 +45,14 @@ export function EditableTable({ htmlContent, onContentChange, disabled }: Editab
     const parsedRows = Array.from(doc.querySelectorAll('tbody tr')).map(tr => 
       Array.from(tr.querySelectorAll('td')).map(td => stripHtml(td.innerHTML))
     );
-
-    setHeaders(parsedHeaders);
-    setRows(parsedRows);
-    setIsInitialized(true);
+    
+    // Only update state if parsed content is different to avoid loops
+    if (JSON.stringify(parsedHeaders) !== JSON.stringify(headers)) {
+        setHeaders(parsedHeaders);
+    }
+    if (JSON.stringify(parsedRows) !== JSON.stringify(rows)) {
+        setRows(parsedRows);
+    }
   }, [htmlContent]);
 
   // 2. Reconstruct HTML table when state changes and notify parent
@@ -66,7 +72,8 @@ export function EditableTable({ htmlContent, onContentChange, disabled }: Editab
     const newHtml = `<table style="width: 100%; border-collapse: collapse; margin-top: 10px; margin-bottom: 20px; font-family: sans-serif;">${headerHtml}${bodyHtml}</table>`;
 
     onContentChange(newHtml);
-  }, [headers, rows, isInitialized]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [headers, rows]);
 
   // --- Handler Functions ---
   const handleHeaderChange = (colIndex: number, value: string) => {
@@ -95,7 +102,7 @@ export function EditableTable({ htmlContent, onContentChange, disabled }: Editab
   };
 
   const addColumn = () => {
-    setHeaders(currentHeaders => [...currentHeaders, 'New Column']);
+    setHeaders(currentHeaders => [...currentHeaders, 'Nueva Columna']);
     setRows(currentRows => currentRows.map(row => [...row, '']));
   };
 
@@ -108,13 +115,13 @@ export function EditableTable({ htmlContent, onContentChange, disabled }: Editab
   return (
     <Card className="bg-muted/30 border-dashed">
       <CardHeader className="py-4 px-4 flex-row items-center justify-between">
-        <CardTitle className="text-sm font-medium">Editable Table</CardTitle>
+        <CardTitle className="text-sm font-medium">Tabla Editable</CardTitle>
         <div className="flex gap-2 flex-wrap">
           <Button size="sm" onClick={addRow} disabled={disabled} variant="outline" className="bg-background h-8">
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Row
+            <PlusCircle className="mr-2 h-4 w-4" /> Añadir Fila
           </Button>
           <Button size="sm" onClick={addColumn} disabled={disabled} variant="outline" className="bg-background h-8">
-            <PlusCircle className="mr-2 h-4 w-4" /> Add Column
+            <PlusCircle className="mr-2 h-4 w-4" /> Añadir Columna
           </Button>
         </div>
       </CardHeader>
@@ -131,9 +138,9 @@ export function EditableTable({ htmlContent, onContentChange, disabled }: Editab
                         onChange={(e) => handleHeaderChange(colIndex, e.target.value)}
                         className="bg-background font-semibold"
                         disabled={disabled}
-                        placeholder={`Header ${colIndex + 1}`}
+                        placeholder={`Encabezado ${colIndex + 1}`}
                       />
-                       <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => removeColumn(colIndex)} disabled={disabled || headers.length <= 1} title="Remove Column">
+                       <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => removeColumn(colIndex)} disabled={disabled || headers.length <= 1} title="Eliminar Columna">
                         <Trash2 className="h-4 w-4 text-destructive" />
                       </Button>
                     </div>
@@ -157,7 +164,7 @@ export function EditableTable({ htmlContent, onContentChange, disabled }: Editab
                     </td>
                   ))}
                   <td className="p-0 align-top text-right">
-                    <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => removeRow(rowIndex)} disabled={disabled} title="Remove Row">
+                    <Button variant="ghost" size="icon" className="h-9 w-9 shrink-0" onClick={() => removeRow(rowIndex)} disabled={disabled} title="Eliminar Fila">
                       <Trash2 className="h-4 w-4 text-destructive" />
                     </Button>
                   </td>

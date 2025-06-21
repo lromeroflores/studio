@@ -30,12 +30,12 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
   const handleExportPdf = async () => {
     const contentToExport = previewContentRef.current;
     if (!contentToExport) {
-      toast({ title: "Export Error", description: "Preview content not found.", variant: "destructive" });
+      toast({ title: "Error de Exportación", description: "Contenido de la vista previa no encontrado.", variant: "destructive" });
       return;
     }
 
     setIsExporting(true);
-    toast({ title: "Exporting PDF...", description: "Please wait while the PDF is being generated." });
+    toast({ title: "Exportando PDF...", description: "Por favor, espere mientras se genera el PDF." });
     
     try {
       const canvas = await html2canvas(contentToExport, {
@@ -85,11 +85,11 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
       }
 
       pdf.save('contract-document.pdf');
-      toast({ title: "PDF Exported", description: "Contract has been downloaded successfully." });
+      toast({ title: "PDF Exportado", description: "El contrato ha sido descargado exitosamente." });
 
     } catch (error) {
       console.error("Error exporting PDF:", error);
-      toast({ title: "PDF Export Failed", description: "Could not export PDF due to an unexpected error.", variant: "destructive" });
+      toast({ title: "Error al Exportar PDF", description: "No se pudo exportar el PDF debido a un error inesperado.", variant: "destructive" });
     } finally {
       setIsExporting(false);
     }
@@ -98,9 +98,9 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
   return (
     <Card className="shadow-xl">
       <CardHeader className="px-6 pt-6 pb-4">
-        <CardTitle>Final Document Preview</CardTitle>
+        <CardTitle>Vista Previa del Documento Final</CardTitle>
         <CardDescription>
-          This is a preview of the final document. The variables from the original data are shown in bold and red.
+          Esta es una vista previa del documento final. Las variables de los datos originales se muestran en negrita y rojo.
         </CardDescription>
       </CardHeader>
       <CardContent className="px-6 pb-6 pt-0">
@@ -122,7 +122,7 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
           disabled={isExporting}
         >
           {isExporting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Download className="mr-2 h-4 w-4" />}
-          {isExporting ? 'Exporting...' : 'Export as PDF'}
+          {isExporting ? 'Exportando...' : 'Exportar como PDF'}
         </Button>
       </CardFooter>
     </Card>

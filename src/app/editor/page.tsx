@@ -78,9 +78,9 @@ function ContractEditorContent() {
             if (contractDetails) {
                 fetchedData = contractDetails;
                 setContractData(fetchedData);
-                toast({ title: 'Data Loaded', description: 'Contract data has been loaded from the backend.' });
+                toast({ title: 'Datos Cargados', description: 'Los datos del contrato han sido cargados desde el backend.' });
             } else {
-                toast({ title: 'Contract Not Found', description: `No contract data found for opportunity ID ${contractId}. Using a blank template.`, variant: 'destructive' });
+                toast({ title: 'Contrato No Encontrado', description: `No se encontraron datos del contrato para el ID de oportunidad ${contractId}. Usando una plantilla en blanco.`, variant: 'destructive' });
             }
         }
         
@@ -89,8 +89,8 @@ function ContractEditorContent() {
 
     } catch (error) {
         console.error("Failed to load contract data:", error);
-        const errorMessage = error instanceof Error ? error.message : 'Could not load contract data.';
-        toast({ title: 'Error Loading Contract', description: `${errorMessage} Using a blank template.`, variant: 'destructive' });
+        const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar los datos del contrato.';
+        toast({ title: 'Error al Cargar Contrato', description: `${errorMessage} Usando una plantilla en blanco.`, variant: 'destructive' });
         const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
         setCells(template.generateCells({}));
     } finally {
@@ -110,7 +110,7 @@ function ContractEditorContent() {
 
   const deleteCell = (id: string) => {
     setCells(cells.filter(cell => cell.id !== id));
-    toast({ title: 'Section Deleted' });
+    toast({ title: 'Sección Eliminada' });
   };
 
   const moveCell = (index: number, direction: 'up' | 'down') => {
@@ -127,7 +127,7 @@ function ContractEditorContent() {
   const addCell = (text: string, index?: number) => {
     const newCell: ContractCell = {
       id: `cell-${Date.now()}-${Math.random()}`,
-      title: 'New Section',
+      title: 'Nueva Sección',
       content: text,
     };
     const newCells = [...cells];
@@ -137,13 +137,13 @@ function ContractEditorContent() {
   };
 
   const handleSave = () => {
-    toast({ title: 'Contract Saved', description: 'Your contract has been saved successfully.' });
+    toast({ title: 'Contrato Guardado', description: 'Su contrato ha sido guardado exitosamente.' });
     router.push('/opportunities');
   };
 
   const handleRenumber = async () => {
     setIsRenumbering(true);
-    toast({ title: 'Renumbering contract...', description: 'AI is tidying up the clause numbers.' });
+    toast({ title: 'Renumerando contrato...', description: 'La IA está reordenando los números de las cláusulas.' });
 
     const SEPARATOR = "\n\n---CELL-BREAK---\n\n";
     const combinedText = cells.map(c => c.content).join(SEPARATOR);
@@ -152,7 +152,7 @@ function ContractEditorContent() {
         const result = await renumberContract({ contractText: combinedText });
 
         if (!result.renumberedContractText) {
-            throw new Error("AI returned an empty response.");
+            throw new Error("La IA devolvió una respuesta vacía.");
         }
 
         const renumberedParts = result.renumberedContractText.split('---CELL-BREAK---');
@@ -163,22 +163,22 @@ function ContractEditorContent() {
                 content: renumberedParts[index].trim(),
             }));
             setCells(updatedCells);
-            toast({ title: 'Contract Renumbered', description: 'Clauses and cross-references have been updated.' });
+            toast({ title: 'Contrato Renumerado', description: 'Las cláusulas y referencias cruzadas han sido actualizadas.' });
         } else {
-            console.error("AI did not preserve cell structure. Merging into a single cell.");
+            console.error("La IA no preservó la estructura de las celdas. Fusionando en una sola celda.");
             const singleCell: ContractCell = {
                 id: `cell-${Date.now()}`,
                 content: result.renumberedContractText,
             };
             setCells([singleCell]);
              toast({ 
-                title: 'Contract Renumbered & Merged', 
-                description: 'Clauses were updated but the cell structure could not be preserved.',
+                title: 'Contrato Renumerado y Fusionado', 
+                description: 'Las cláusulas fueron actualizadas pero la estructura de celdas no pudo ser preservada.',
             });
         }
     } catch (error) {
         console.error("Failed to renumber contract:", error);
-        toast({ title: 'Renumbering Failed', description: 'Could not renumber the contract clauses.', variant: 'destructive' });
+        toast({ title: 'Falló la Renumeración', description: 'No se pudieron renumerar las cláusulas del contrato.', variant: 'destructive' });
     } finally {
         setIsRenumbering(false);
     }
@@ -243,7 +243,7 @@ function ContractEditorContent() {
       setRewrittenText(result.rewrittenClauseText);
     } catch (error) {
       console.error("Failed to rewrite clause:", error);
-      toast({ title: 'Rewrite Failed', description: 'Could not rewrite the clause.', variant: 'destructive' });
+      toast({ title: 'Falló la Reescritura', description: 'No se pudo reescribir la cláusula.', variant: 'destructive' });
     } finally {
       setIsClauseRewriting(false);
     }
@@ -253,7 +253,7 @@ function ContractEditorContent() {
     if (rewritingCell && rewrittenText) {
       updateCellContent(rewritingCell.id, rewrittenText);
       handleCloseRewriteDialog();
-      toast({ title: 'Section Updated', description: 'The section has been updated with the AI suggestion.' });
+      toast({ title: 'Sección Actualizada', description: 'La sección ha sido actualizada con la sugerencia de la IA.' });
     }
   };
 
@@ -291,11 +291,11 @@ function ContractEditorContent() {
           <div className="flex items-center gap-2 self-start sm:self-center">
               <Button onClick={handleRenumber} disabled={isRenumbering} variant="outline">
                   {isRenumbering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                  Renumber
+                  Renumerar
               </Button>
               <Button onClick={handleSave} disabled={isRenumbering}>
                   <Save className="mr-2 h-4 w-4" />
-                  Save & Exit
+                  Guardar y Salir
               </Button>
           </div>
       </div>
@@ -305,16 +305,16 @@ function ContractEditorContent() {
         {cells.map((cell, index) => (
           <Card key={cell.id} className="group/cell relative transition-shadow hover:shadow-lg">
             <div className="absolute top-2 right-2 z-10 flex items-center space-x-1 bg-background/50 backdrop-blur-sm rounded-md p-1 opacity-0 group-hover/cell:opacity-100 transition-opacity duration-200">
-               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenRewriteDialog(cell)} disabled={isRenumbering} title="Rewrite with AI">
+               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenRewriteDialog(cell)} disabled={isRenumbering} title="Reescribir con IA">
                   <Wand2 className="h-4 w-4 text-accent" />
                </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'up')} disabled={index === 0 || isRenumbering} title="Move Up">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'up')} disabled={index === 0 || isRenumbering} title="Mover Arriba">
                 <ArrowUp className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'down')} disabled={index === cells.length - 1 || isRenumbering} title="Move Down">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'down')} disabled={index === cells.length - 1 || isRenumbering} title="Mover Abajo">
                 <ArrowDown className="h-4 w-4" />
               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteCell(cell.id)} disabled={isRenumbering} title="Delete Section">
+              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteCell(cell.id)} disabled={isRenumbering} title="Eliminar Sección">
                 <Trash2 className="h-4 w-4 text-destructive" />
               </Button>
             </div>
@@ -348,8 +348,8 @@ function ContractEditorContent() {
                 )}
             </CardContent>
             <div className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 w-full flex justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity z-10">
-                 <Button variant="outline" size="sm" className="rounded-full bg-background hover:bg-secondary shadow-md" onClick={() => addCell('New editable section...', index)} disabled={isRenumbering}>
-                     <PlusCircle className="mr-2 h-4 w-4" /> Add Section Below
+                 <Button variant="outline" size="sm" className="rounded-full bg-background hover:bg-secondary shadow-md" onClick={() => addCell('Nueva sección editable...', index)} disabled={isRenumbering}>
+                     <PlusCircle className="mr-2 h-4 w-4" /> Añadir Sección Abajo
                  </Button>
             </div>
           </Card>
@@ -365,16 +365,16 @@ function ContractEditorContent() {
           <DialogHeader>
             <DialogTitle className="flex items-center">
               <Wand2 className="mr-2 h-6 w-6 text-accent" />
-              Rewrite Section with AI
+              Reescribir Sección con IA
             </DialogTitle>
             <DialogDescription>
-              Describe how you'd like to change this section, and the AI will suggest a revision.
+              Describe cómo te gustaría cambiar esta sección, y la IA sugerirá una revisión.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
             <Card className="bg-muted/50">
               <CardHeader className="pb-2 pt-4">
-                <CardTitle className="text-sm font-medium">Original Text</CardTitle>
+                <CardTitle className="text-sm font-medium">Texto Original</CardTitle>
               </CardHeader>
               <CardContent>
                 <p className="text-sm text-muted-foreground max-h-32 overflow-y-auto">{rewritingCell?.content}</p>
@@ -383,7 +383,7 @@ function ContractEditorContent() {
             
             <Textarea
               id="rewrite-instruction"
-              placeholder="e.g., 'Make this more formal' or 'Add a sentence about termination fees.'"
+              placeholder="Ej: 'Hacer esto más formal' o 'Añadir una frase sobre las penalizaciones por terminación.'"
               value={rewriteInstruction}
               onChange={(e) => setRewriteInstruction(e.target.value)}
               rows={3}
@@ -391,13 +391,13 @@ function ContractEditorContent() {
             />
             <Button onClick={handleRewriteClause} disabled={isClauseRewriting || !rewriteInstruction.trim()}>
               {isClauseRewriting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-              Generate Suggestion
+              Generar Sugerencia
             </Button>
 
             {rewrittenText && (
               <Card>
                 <CardHeader className="pb-2 pt-4">
-                  <CardTitle className="text-sm font-medium">Suggested Revision</CardTitle>
+                  <CardTitle className="text-sm font-medium">Revisión Sugerida</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <p className="text-sm whitespace-pre-wrap">{rewrittenText}</p>
@@ -406,9 +406,9 @@ function ContractEditorContent() {
             )}
           </div>
           <DialogFooter>
-            <Button variant="ghost" onClick={handleCloseRewriteDialog}>Cancel</Button>
+            <Button variant="ghost" onClick={handleCloseRewriteDialog}>Cancelar</Button>
             <Button onClick={handleAcceptRewrite} disabled={!rewrittenText || isClauseRewriting}>
-              Accept and Update Section
+              Aceptar y Actualizar Sección
             </Button>
           </DialogFooter>
         </DialogContent>
