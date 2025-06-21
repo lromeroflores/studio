@@ -68,15 +68,17 @@ export default function OpportunitiesPage() {
         }
         const data = await response.json();
         
-        const mappedData: Opportunity[] = data.oportunidades.map((opp: any) => ({
-          id: `opp-${opp.id_oportunidad}`,
-          clientName: opp.nombre_oportunidad,
-          contractId: `${opp.id_oportunidad}`, // Use raw ID for contract linking
-          contractType: opp.tipo_contrato,
-          opportunityStatus: mapApiStatusToOpportunityStatus(opp.estatus),
-          contractStatus: mapApiStatusToContractStatus(opp.estatus),
-          lastUpdated: opp.fecha,
-          description: `Contract opportunity with ${opp.nombre_oportunidad}`,
+        const mappedData: Opportunity[] = data.oportunidades
+          .filter((opp: any) => opp.id_oportunidad) // Filter out opportunities without a valid ID
+          .map((opp: any) => ({
+            id: `opp-${opp.id_oportunidad}`,
+            clientName: opp.nombre_oportunidad,
+            contractId: `${opp.id_oportunidad}`, // Use raw ID for contract linking
+            contractType: opp.tipo_contrato,
+            opportunityStatus: mapApiStatusToOpportunityStatus(opp.estatus),
+            contractStatus: mapApiStatusToContractStatus(opp.estatus),
+            lastUpdated: opp.fecha,
+            description: `Contract opportunity with ${opp.nombre_oportunidad}`,
         }));
         setOpportunities(mappedData);
       } catch (e: any) {
