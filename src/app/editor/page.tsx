@@ -21,6 +21,8 @@ import { defaultTemplates } from '@/lib/templates';
 import { ContractPreview } from '@/components/contract/contract-preview';
 import { renumberContract } from '@/ai/flows/renumber-contract-flow';
 import { rewriteContractClause } from '@/ai/flows/rewrite-contract-clause';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 
 
 function ContractEditorContent() {
@@ -221,19 +223,39 @@ function ContractEditorContent() {
 
   return (
     <div className="max-w-4xl mx-auto py-8">
-      <div className="flex justify-between items-center mb-8">
+      {/* Header */}
+      <div className="mb-8">
         <h1 className="text-3xl font-bold tracking-tight text-foreground">{opportunityName}</h1>
-        <div className="flex items-center gap-2">
-            <Button onClick={handleRenumber} disabled={isRenumbering} variant="outline">
-                {isRenumbering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
-                Renumber Clauses
-            </Button>
-            <Button onClick={handleSave} disabled={isRenumbering}>
-                <Save className="mr-2 h-4 w-4" />
-                Save and Exit
-            </Button>
-        </div>
+        {contractId && <p className="text-sm text-muted-foreground mt-1">ID de Oportunidad: {contractId}</p>}
       </div>
+
+      {/* Toolbar */}
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+          <div className="flex items-center gap-3">
+              <Label htmlFor="contract-type-select" className="font-medium">Tipo de Contrato:</Label>
+              <Select defaultValue={contractType || undefined} disabled>
+                  <SelectTrigger id="contract-type-select" className="w-[300px]">
+                      <SelectValue placeholder="Seleccionar tipo..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="NDA">Acuerdo de Confidencialidad (NDA)</SelectItem>
+                      <SelectItem value="Servicios">Contrato de Servicios</SelectItem>
+                      <SelectItem value="SaaS">Contrato SaaS</SelectItem>
+                  </SelectContent>
+              </Select>
+          </div>
+          <div className="flex items-center gap-2 self-start sm:self-center">
+              <Button onClick={handleRenumber} disabled={isRenumbering} variant="outline">
+                  {isRenumbering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
+                  Renumber
+              </Button>
+              <Button onClick={handleSave} disabled={isRenumbering}>
+                  <Save className="mr-2 h-4 w-4" />
+                  Save & Exit
+              </Button>
+          </div>
+      </div>
+
 
       <div className="space-y-4 contract-notebook">
         {cells.map((cell, index) => (
