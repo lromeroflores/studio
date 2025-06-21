@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useRouter } from 'next/navigation';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -10,6 +10,7 @@ import { ArrowRight, Briefcase, FileText, Clock, Search, Loader2 } from 'lucide-
 import { Input } from '@/components/ui/input';
 import { ClientFormattedDate } from '@/components/common/client-formatted-date';
 import { Skeleton } from '@/components/ui/skeleton';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 function getStatusBadgeVariant(status: Opportunity['opportunityStatus']): "default" | "secondary" | "destructive" | "outline" {
   switch (status) {
@@ -48,7 +49,13 @@ export default function OpportunitiesPage() {
   const [opportunities, setOpportunities] = useState<Opportunity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = React.useState('');
+
+  // State for filters and sorting
+  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState('all');
+  const [contractTypeFilter, setContractTypeFilter] = useState('all');
+  const [sortOrder, setSortOrder] = useState('desc'); // 'desc' for newest, 'asc' for oldest
+
 
   useEffect(() => {
     const fetchOpportunities = async () => {
@@ -64,7 +71,7 @@ export default function OpportunitiesPage() {
         const mappedData: Opportunity[] = data.oportunidades.map((opp: any) => ({
           id: `opp-${opp.id_portunidad}`,
           clientName: opp.nombre_oportunidad,
-          contractId: `contract-${opp.id_portunidad}-${opp.nombre_oportunidad.toLowerCase().replace(/\s+/g, '-')}`,
+          contractId: `${opp.id_portunidad}`, // Use raw ID for contract linking
           contractType: opp.tipo_contrato,
           opportunityStatus: mapApiStatusToOpportunityStatus(opp.estatus),
           contractStatus: mapApiStatusToContractStatus(opp.estatus),
@@ -92,11 +99,42 @@ export default function OpportunitiesPage() {
     router.push(`/editor?${query}`);
   };
 
-  const filteredOpportunities = opportunities.filter(opp =>
-    opp.clientName.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    opp.contractType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    opp.description.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const uniqueContractTypes = useMemo(() => {
+    if (!opportunities) return [];
+    const types = new Set(opportunities.map(opp => opp.contractType));
+    return Array.from(types);
+  }, [opportunities]);
+
+  const filteredAndSortedOpportunities = useMemo(() => {
+    let filtered = opportunities.filter(opp => {
+      const searchTermLower = searchTerm.toLowerCase();
+      // Search by name, contract type, description, or ID
+      return (
+        opp.clientName.toLowerCase().includes(searchTermLower) ||
+        opp.id.toLowerCase().includes(searchTermLower) ||
+        opp.contractType.toLowerCase().includes(searchTermLower) ||
+        opp.description.toLowerCase().includes(searchTermLower)
+      );
+    });
+
+    if (statusFilter !== 'all') {
+      filtered = filtered.filter(opp => opp.opportunityStatus === statusFilter);
+    }
+
+    if (contractTypeFilter !== 'all') {
+      filtered = filtered.filter(opp => opp.contractType === contractTypeFilter);
+    }
+
+    return filtered.sort((a, b) => {
+      const dateA = new Date(a.lastUpdated).getTime();
+      const dateB = new Date(b.lastUpdated).getTime();
+      if (sortOrder === 'desc') {
+        return dateB - dateA;
+      }
+      return dateA - dateB;
+    });
+  }, [opportunities, searchTerm, statusFilter, contractTypeFilter, sortOrder]);
+
   
   const renderLoadingSkeletons = () => (
     <div className="space-y-4">
@@ -118,22 +156,59 @@ export default function OpportunitiesPage() {
 
   return (
     <div className="container mx-auto">
-      <div className="mb-6 flex flex-col sm:flex-row justify-between items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Your Opportunities</h1>
-          <p className="text-muted-foreground">
-            Select an opportunity to view and edit the associated contract.
-          </p>
-        </div>
-        <div className="relative w-full sm:w-72">
+      <div className="mb-6">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">Your Opportunities</h1>
+        <p className="text-muted-foreground">
+          Filter, sort, and select an opportunity to manage its contract.
+        </p>
+      </div>
+
+      {/* Filter and Search Section */}
+      <div className="flex flex-col lg:flex-row gap-4 mb-6 p-4 border rounded-xl bg-card shadow-sm">
+        <div className="relative w-full flex-grow">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-5 w-5 text-muted-foreground" />
           <Input
             type="search"
-            placeholder="Search opportunities..."
+            placeholder="Search by name, type, ID..."
             className="pl-10"
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
           />
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full lg:w-auto">
+          <Select value={statusFilter} onValueChange={setStatusFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Filter by Status" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Statuses</SelectItem>
+              <SelectItem value="New">New</SelectItem>
+              <SelectItem value="In Progress">In Progress</SelectItem>
+              <SelectItem value="Completed">Completed</SelectItem>
+            </SelectContent>
+          </Select>
+
+          <Select value={contractTypeFilter} onValueChange={setContractTypeFilter}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Filter by Type" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="all">All Types</SelectItem>
+              {uniqueContractTypes.map(type => (
+                <SelectItem key={type} value={type}>{type}</SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select value={sortOrder} onValueChange={setSortOrder}>
+            <SelectTrigger className="w-full">
+              <SelectValue placeholder="Sort by Date" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="desc">Newest First</SelectItem>
+              <SelectItem value="asc">Oldest First</SelectItem>
+            </SelectContent>
+          </Select>
         </div>
       </div>
 
@@ -149,19 +224,21 @@ export default function OpportunitiesPage() {
             </p>
           </CardContent>
         </Card>
-      ) : filteredOpportunities.length === 0 ? (
+      ) : filteredAndSortedOpportunities.length === 0 ? (
         <Card className="text-center py-16 shadow-md">
           <CardContent className="flex flex-col items-center justify-center p-6">
             <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
             <h2 className="text-2xl font-semibold">No Opportunities Found</h2>
             <p className="text-lg text-muted-foreground mt-2">
-              {searchTerm ? "No opportunities match your search." : "There are currently no opportunities assigned to you."}
+              {searchTerm || statusFilter !== 'all' || contractTypeFilter !== 'all'
+                ? "No opportunities match your current filters."
+                : "There are currently no opportunities assigned to you."}
             </p>
           </CardContent>
         </Card>
       ) : (
         <div className="space-y-4">
-          {filteredOpportunities.map((opp) => (
+          {filteredAndSortedOpportunities.map((opp) => (
             <div
               key={opp.id}
               onClick={() => handleSelectOpportunity(opp)}
