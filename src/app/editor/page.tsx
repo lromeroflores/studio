@@ -38,6 +38,7 @@ import { EditableTable } from '@/components/contract/editable-table';
 import { Switch } from '@/components/ui/switch';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { RichTextEditor } from '@/components/contract/rich-text-editor';
 
 
 function ContractEditorContent() {
@@ -279,12 +280,6 @@ function ContractEditorContent() {
     }
   };
 
-  const handleAutoResizeTextarea = (event: React.FormEvent<HTMLTextAreaElement>) => {
-    const textarea = event.currentTarget;
-    textarea.style.height = 'auto';
-    textarea.style.height = `${textarea.scrollHeight}px`;
-  };
-
   // Handlers for the rewriter dialog
   const handleOpenRewriteDialog = (cell: ContractCell) => {
     setRewritingCell(cell);
@@ -491,21 +486,10 @@ function ContractEditorContent() {
                         disabled={isRenumbering || isSaving}
                       />
                     ) : (
-                      <Textarea
+                      <RichTextEditor
                           value={cell.content}
-                          onChange={(e) => updateCellContent(cell.id, e.target.value)}
-                          className="w-full h-auto min-h-[60px] resize-none border-0 shadow-none focus-visible:ring-0 p-0 text-base font-serif"
-                          onInput={handleAutoResizeTextarea}
+                          onChange={(newContent) => updateCellContent(cell.id, newContent)}
                           disabled={isRenumbering || isSaving}
-                          ref={node => {
-                              if (node) {
-                                  if (!node.dataset.resized) {
-                                      node.style.height = 'auto';
-                                      node.style.height = `${node.scrollHeight}px`;
-                                      node.dataset.resized = "true";
-                                  }
-                              }
-                          }}
                       />
                     )}
                 </CardContent>
