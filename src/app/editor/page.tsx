@@ -334,7 +334,7 @@ function ContractEditorContent() {
   }
 
   return (
-    <div className="max-w-4xl mx-auto py-8">
+    <div className="max-w-screen-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
           <Button variant="outline" size="icon" onClick={() => router.push('/opportunities')}>
@@ -374,64 +374,67 @@ function ContractEditorContent() {
           </div>
       </div>
 
-
-      <div className="space-y-4 contract-notebook">
-        {cells.map((cell, index) => (
-          <Card key={cell.id} className="group/cell relative transition-shadow hover:shadow-lg">
-            <div className="absolute top-2 right-2 z-10 flex items-center space-x-1 bg-background/50 backdrop-blur-sm rounded-md p-1 opacity-0 group-hover/cell:opacity-100 transition-opacity duration-200">
-               <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenRewriteDialog(cell)} disabled={isRenumbering || isSaving} title="Reescribir con IA">
-                  <Wand2 className="h-4 w-4 text-accent" />
-               </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'up')} disabled={index === 0 || isRenumbering || isSaving} title="Mover Arriba">
-                <ArrowUp className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'down')} disabled={index === cells.length - 1 || isRenumbering || isSaving} title="Mover Abajo">
-                <ArrowDown className="h-4 w-4" />
-              </Button>
-              <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteCell(cell.id)} disabled={isRenumbering || isSaving} title="Eliminar Sección">
-                <Trash2 className="h-4 w-4 text-destructive" />
-              </Button>
-            </div>
-             <CardContent className="p-4">
-               {cell.title && (
-                  <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 border-b pb-2">{cell.title}</h3>
-                )}
-                {cell.content.trim().startsWith('<table') ? (
-                  <EditableTable
-                    htmlContent={cell.content}
-                    onContentChange={(newContent) => updateCellContent(cell.id, newContent)}
-                    disabled={isRenumbering || isSaving}
-                  />
-                ) : (
-                  <Textarea
-                      value={cell.content}
-                      onChange={(e) => updateCellContent(cell.id, e.target.value)}
-                      className="w-full h-auto min-h-[60px] resize-none border-0 shadow-none focus-visible:ring-0 p-0 text-base font-serif"
-                      onInput={handleAutoResizeTextarea}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-8 items-start">
+        {/* Editor Column */}
+        <div className="space-y-4 contract-notebook">
+          {cells.map((cell, index) => (
+            <Card key={cell.id} className="group/cell relative transition-shadow hover:shadow-lg">
+              <div className="absolute top-2 right-2 z-10 flex items-center space-x-1 bg-background/50 backdrop-blur-sm rounded-md p-1 opacity-0 group-hover/cell:opacity-100 transition-opacity duration-200">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenRewriteDialog(cell)} disabled={isRenumbering || isSaving} title="Reescribir con IA">
+                    <Wand2 className="h-4 w-4 text-accent" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'up')} disabled={index === 0 || isRenumbering || isSaving} title="Mover Arriba">
+                  <ArrowUp className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'down')} disabled={index === cells.length - 1 || isRenumbering || isSaving} title="Mover Abajo">
+                  <ArrowDown className="h-4 w-4" />
+                </Button>
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteCell(cell.id)} disabled={isRenumbering || isSaving} title="Eliminar Sección">
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+              <CardContent className="p-4">
+                {cell.title && (
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 border-b pb-2">{cell.title}</h3>
+                  )}
+                  {cell.content.trim().startsWith('<table') ? (
+                    <EditableTable
+                      htmlContent={cell.content}
+                      onContentChange={(newContent) => updateCellContent(cell.id, newContent)}
                       disabled={isRenumbering || isSaving}
-                      ref={node => {
-                          if (node) {
-                              if (!node.dataset.resized) {
-                                  node.style.height = 'auto';
-                                  node.style.height = `${node.scrollHeight}px`;
-                                  node.dataset.resized = "true";
-                              }
-                          }
-                      }}
-                  />
-                )}
-            </CardContent>
-            <div className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 w-full flex justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity z-10">
-                 <Button variant="outline" size="sm" className="rounded-full bg-background hover:bg-secondary shadow-md" onClick={() => addCell('Nueva sección editable...', index)} disabled={isRenumbering || isSaving}>
-                     <PlusCircle className="mr-2 h-4 w-4" /> Añadir Sección Abajo
-                 </Button>
-            </div>
-          </Card>
-        ))}
-      </div>
-      
-      <div className="mt-12">
-        <ContractPreview cells={cells} data={contractData} />
+                    />
+                  ) : (
+                    <Textarea
+                        value={cell.content}
+                        onChange={(e) => updateCellContent(cell.id, e.target.value)}
+                        className="w-full h-auto min-h-[60px] resize-none border-0 shadow-none focus-visible:ring-0 p-0 text-base font-serif"
+                        onInput={handleAutoResizeTextarea}
+                        disabled={isRenumbering || isSaving}
+                        ref={node => {
+                            if (node) {
+                                if (!node.dataset.resized) {
+                                    node.style.height = 'auto';
+                                    node.style.height = `${node.scrollHeight}px`;
+                                    node.dataset.resized = "true";
+                                }
+                            }
+                        }}
+                    />
+                  )}
+              </CardContent>
+              <div className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 w-full flex justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity z-10">
+                  <Button variant="outline" size="sm" className="rounded-full bg-background hover:bg-secondary shadow-md" onClick={() => addCell('Nueva sección editable...', index)} disabled={isRenumbering || isSaving}>
+                      <PlusCircle className="mr-2 h-4 w-4" /> Añadir Sección Abajo
+                  </Button>
+              </div>
+            </Card>
+          ))}
+        </div>
+        
+        {/* Preview Column */}
+        <div className="lg:sticky lg:top-24">
+          <ContractPreview cells={cells} data={contractData} />
+        </div>
       </div>
 
       <Dialog open={!!rewritingCell} onOpenChange={(isOpen) => !isOpen && handleCloseRewriteDialog()}>
