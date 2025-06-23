@@ -244,7 +244,7 @@ const ClauseSuggesterDialog = memo(function ClauseSuggesterDialog({
             Describe la cláusula que necesitas, asígnale un título y elige dónde insertarla en el contrato.
           </DialogDescription>
         </DialogHeader>
-        <div className="grid gap-6 py-4">
+        <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto pr-4">
           <div className="space-y-2">
               <Label htmlFor="new-clause-title">Título de la Sección</Label>
               <Input
@@ -783,3 +783,5 @@ export default function ContractEditorPage() {
         </Suspense>
     );
 }
+
+    
