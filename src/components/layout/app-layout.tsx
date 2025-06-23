@@ -16,7 +16,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <header className="sticky top-0 z-40 w-full border-b bg-gray-100/90 backdrop-blur-sm dark:bg-gray-950/90">
-        <div className="max-w-screen-xl mx-auto w-full grid grid-cols-3 h-16 items-center px-6">
+        <div className="max-w-screen-2xl mx-auto w-full grid grid-cols-3 h-16 items-center px-6">
           <div className="flex items-center justify-start">
             <Link href="/opportunities" className="flex items-center space-x-2">
               <CovaltoLogo className="h-auto w-32" />
@@ -37,7 +37,7 @@ export default function AppLayout({ children }: AppLayoutProps) {
         </div>
       </header>
 
-      <div className="w-full max-w-screen-xl mx-auto px-6 flex-1">
+      <div className="w-full max-w-screen-2xl mx-auto px-6 flex-1">
         <main className="py-6 lg:py-8">
           {children}
         </main>

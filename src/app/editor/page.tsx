@@ -334,7 +334,7 @@ function ContractEditorContent() {
   }
 
   return (
-    <div className="max-w-screen-2xl mx-auto py-8 px-4 sm:px-6 lg:px-8">
+    <div className="">
       {/* Header */}
       <div className="flex items-center gap-4 mb-8">
           <Button variant="outline" size="icon" onClick={() => router.push('/opportunities')}>
