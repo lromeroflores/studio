@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
+import React, { useState, useEffect, Suspense, useCallback, useMemo, memo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -40,6 +40,291 @@ import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { RichTextEditor } from '@/components/contract/rich-text-editor';
 
+// New component for the Rewrite dialog, memoized for performance
+const RewriteClauseDialog = memo(function RewriteClauseDialog({
+  cell,
+  onClose,
+  onAccept,
+  toast,
+}: {
+  cell: ContractCell | null;
+  onClose: () => void;
+  onAccept: (newText: string) => void;
+  toast: (options: any) => void;
+}) {
+  const [rewriteInstruction, setRewriteInstruction] = useState('');
+  const [isClauseRewriting, setIsClauseRewriting] = useState(false);
+  const [rewrittenText, setRewrittenText] = useState<string | null>(null);
+
+  // Reset state when the dialog is opened for a new cell
+  useEffect(() => {
+    if (cell) {
+      setRewriteInstruction('');
+      setRewrittenText(null);
+    }
+  }, [cell]);
+
+  const handleRewriteClause = async () => {
+    if (!cell || !rewriteInstruction) return;
+
+    setIsClauseRewriting(true);
+    setRewrittenText(null);
+    try {
+      const result = await rewriteContractClause({
+        clauseText: cell.content,
+        rewriteInstruction: rewriteInstruction,
+      });
+      setRewrittenText(result.rewrittenClauseText);
+    } catch (error) {
+      console.error("Failed to rewrite clause:", error);
+      toast({ title: 'Falló la Reescritura', description: 'No se pudo reescribir la cláusula.', variant: 'destructive' });
+    } finally {
+      setIsClauseRewriting(false);
+    }
+  };
+
+  const handleAcceptAndClose = () => {
+    if (rewrittenText) {
+      onAccept(rewrittenText);
+    }
+  };
+  
+  return (
+    <Dialog open={!!cell} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center">
+            <Wand2 className="mr-2 h-6 w-6 text-accent" />
+            Reescribir Sección con IA
+          </DialogTitle>
+          <DialogDescription>
+            Describe cómo te gustaría cambiar esta sección, y la IA sugerirá una revisión.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-4 py-4">
+          <Card className="bg-muted/50">
+            <CardHeader className="pb-2 pt-4">
+              <CardTitle className="text-sm font-medium">Texto Original</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <p className="text-sm text-muted-foreground max-h-32 overflow-y-auto">{cell?.content}</p>
+            </CardContent>
+          </Card>
+          
+          <Textarea
+            id="rewrite-instruction"
+            placeholder="Ej: 'Hacer esto más formal' o 'Añadir una frase sobre las penalizaciones por terminación.'"
+            value={rewriteInstruction}
+            onChange={(e) => setRewriteInstruction(e.target.value)}
+            rows={3}
+            disabled={isClauseRewriting}
+          />
+          <Button onClick={handleRewriteClause} disabled={isClauseRewriting || !rewriteInstruction.trim()}>
+            {isClauseRewriting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+            Generar Sugerencia
+          </Button>
+
+          {rewrittenText && (
+            <Card>
+              <CardHeader className="pb-2 pt-4">
+                <CardTitle className="text-sm font-medium">Revisión Sugerida</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm whitespace-pre-wrap">{rewrittenText}</p>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={onClose}>Cancelar</Button>
+          <Button onClick={handleAcceptAndClose} disabled={!rewrittenText || isClauseRewriting}>
+            Aceptar y Actualizar Sección
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+});
+RewriteClauseDialog.displayName = 'RewriteClauseDialog';
+
+
+// New component for the Suggester dialog, memoized for performance
+const ClauseSuggesterDialog = memo(function ClauseSuggesterDialog({
+  open,
+  onOpenChange,
+  cells,
+  onAddClause,
+  toast,
+}: {
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+  cells: ContractCell[];
+  onAddClause: (newCell: ContractCell, position: string) => void;
+  toast: (options: any) => void;
+}) {
+  const [clauseSuggestionDescription, setClauseSuggestionDescription] = useState('');
+  const [isSuggestingClause, setIsSuggestingClause] = useState(false);
+  const [suggestedClauseText, setSuggestedClauseText] = useState<string | null>(null);
+  const [newClauseTitle, setNewClauseTitle] = useState('');
+  const [insertAfterCellId, setInsertAfterCellId] = useState<string>('end');
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [audioDataUri, setAudioDataUri] = useState<string | null>(null);
+
+  // Reset local state when dialog is closed to ensure it's fresh on next open
+  useEffect(() => {
+    if (!open) {
+      setClauseSuggestionDescription('');
+      setSuggestedClauseText(null);
+      setNewClauseTitle('');
+      setInsertAfterCellId('end');
+      setAudioDataUri(null);
+    }
+  }, [open]);
+
+  const handleSuggestClause = async () => {
+    if (!clauseSuggestionDescription) return;
+    setIsSuggestingClause(true);
+    setSuggestedClauseText(null);
+    setAudioDataUri(null);
+    try {
+      const { suggestedClause } = await suggestContractClause({ clauseDescription: clauseSuggestionDescription });
+      setSuggestedClauseText(suggestedClause);
+    } catch (error) {
+      console.error("Failed to suggest clause:", error);
+      toast({ title: 'Falló la Sugerencia', description: 'No se pudo generar la cláusula.', variant: 'destructive' });
+    } finally {
+      setIsSuggestingClause(false);
+    }
+  };
+
+  const handleListenToClause = async () => {
+    if (!suggestedClauseText) return;
+    setIsGeneratingAudio(true);
+    setAudioDataUri(null);
+    try {
+      const { media } = await textToSpeech(suggestedClauseText);
+      setAudioDataUri(media);
+    } catch (error) {
+      console.error("Failed to generate audio:", error);
+      toast({ title: 'Falló el Audio', description: 'No se pudo generar el audio para la cláusula.', variant: 'destructive' });
+    } finally {
+      setIsGeneratingAudio(false);
+    }
+  }
+
+  const handleAddAndClose = () => {
+    if (!suggestedClauseText) {
+      toast({ title: 'Error', description: 'Primero debe generar una sugerencia de cláusula.', variant: 'destructive' });
+      return;
+    }
+    if (!newClauseTitle.trim()) {
+        toast({ title: 'Falta el Título', description: 'Por favor, asígnale un título a la nueva sección.', variant: 'destructive' });
+        return;
+    }
+
+    const newCell: ContractCell = {
+      id: `cell-${Date.now()}-${Math.random()}`,
+      title: newClauseTitle,
+      content: suggestedClauseText,
+      visible: true,
+    };
+
+    onAddClause(newCell, insertAfterCellId);
+  };
+  
+  return (
+    <Dialog open={open} onOpenChange={onOpenChange}>
+      <DialogContent className="sm:max-w-[600px]">
+        <DialogHeader>
+          <DialogTitle className="flex items-center">
+            <Wand2 className="mr-2 h-6 w-6 text-accent" />
+            Añadir Cláusula con IA
+          </DialogTitle>
+          <DialogDescription>
+            Describe la cláusula que necesitas, asígnale un título y elige dónde insertarla en el contrato.
+          </DialogDescription>
+        </DialogHeader>
+        <div className="grid gap-6 py-4">
+          <div className="space-y-2">
+              <Label htmlFor="new-clause-title">Título de la Sección</Label>
+              <Input
+                  id="new-clause-title"
+                  value={newClauseTitle}
+                  onChange={(e) => setNewClauseTitle(e.target.value)}
+                  placeholder="Ej: Cláusula de Jurisdicción Aplicable"
+                  disabled={isSuggestingClause}
+              />
+          </div>
+
+          <div className="space-y-2">
+              <Label htmlFor="insertion-point">Posición de la nueva sección</Label>
+              <Select value={insertAfterCellId} onValueChange={setInsertAfterCellId} disabled={isSuggestingClause}>
+                  <SelectTrigger id="insertion-point">
+                      <SelectValue placeholder="Seleccionar posición..." />
+                  </SelectTrigger>
+                  <SelectContent>
+                      <SelectItem value="start">Al principio del contrato</SelectItem>
+                      {cells.filter(c => c.visible).map((cell) => (
+                          <SelectItem key={cell.id} value={cell.id}>
+                              Después de: {cell.title || "Sección sin título"}
+                          </SelectItem>
+                      ))}
+                      <SelectItem value="end">Al final del contrato</SelectItem>
+                  </SelectContent>
+              </Select>
+          </div>
+          
+          <div className="space-y-2">
+              <Label htmlFor="suggestion-description">Descripción para la IA</Label>
+              <Textarea
+                  id="suggestion-description"
+                  placeholder="Ej: 'Una cláusula que especifique que cualquier disputa se resolverá en los tribunales de la Ciudad de México.'"
+                  value={clauseSuggestionDescription}
+                  onChange={(e) => setClauseSuggestionDescription(e.target.value)}
+                  rows={3}
+                  disabled={isSuggestingClause}
+              />
+          </div>
+          
+          <Button onClick={handleSuggestClause} disabled={isSuggestingClause || !clauseSuggestionDescription.trim()}>
+              {isSuggestingClause ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+              Generar Sugerencia
+          </Button>
+
+          {suggestedClauseText && (
+            <Card>
+              <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4">
+                <CardTitle className="text-sm font-medium">Cláusula Sugerida</CardTitle>
+                <Button onClick={handleListenToClause} size="sm" variant="ghost" disabled={isGeneratingAudio}>
+                    {isGeneratingAudio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                    Escuchar
+                </Button>
+              </CardHeader>
+              <CardContent>
+                <p className="text-sm whitespace-pre-wrap">{suggestedClauseText}</p>
+                {audioDataUri && (
+                    <div className="mt-4">
+                        <audio controls autoPlay src={audioDataUri} className="w-full">
+                            Tu navegador no soporta el elemento de audio.
+                        </audio>
+                    </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </div>
+        <DialogFooter>
+          <Button variant="ghost" onClick={() => onOpenChange(false)}>Cancelar</Button>
+          <Button onClick={handleAddAndClose} disabled={!suggestedClauseText || !newClauseTitle.trim() || isSuggestingClause}>
+            Añadir al Contrato
+          </Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
+  );
+});
+ClauseSuggesterDialog.displayName = 'ClauseSuggesterDialog';
+
 
 function ContractEditorContent() {
   const router = useRouter();
@@ -58,21 +343,11 @@ function ContractEditorContent() {
   // State for delete confirmation
   const [cellToDeleteId, setCellToDeleteId] = useState<string | null>(null);
 
-  // State for the AI rewriter
+  // State to manage which cell is being rewritten to open the dialog
   const [rewritingCell, setRewritingCell] = useState<ContractCell | null>(null);
-  const [rewriteInstruction, setRewriteInstruction] = useState('');
-  const [isClauseRewriting, setIsClauseRewriting] = useState(false);
-  const [rewrittenText, setRewrittenText] = useState<string | null>(null);
   
-  // State for the AI clause suggester
+  // State to manage the clause suggester dialog
   const [isClauseSuggesterOpen, setIsClauseSuggesterOpen] = useState(false);
-  const [clauseSuggestionDescription, setClauseSuggestionDescription] = useState('');
-  const [isSuggestingClause, setIsSuggestingClause] = useState(false);
-  const [suggestedClauseText, setSuggestedClauseText] = useState<string | null>(null);
-  const [newClauseTitle, setNewClauseTitle] = useState('');
-  const [insertAfterCellId, setInsertAfterCellId] = useState<string>('end');
-  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
-  const [audioDataUri, setAudioDataUri] = useState<string | null>(null);
 
   // State for section manager
   const [isSectionManagerOpen, setIsSectionManagerOpen] = useState(false);
@@ -280,109 +555,30 @@ function ContractEditorContent() {
     }
   };
 
-  // Handlers for the rewriter dialog
   const handleOpenRewriteDialog = (cell: ContractCell) => {
     setRewritingCell(cell);
-    setRewriteInstruction('');
-    setRewrittenText(null);
   };
 
   const handleCloseRewriteDialog = () => {
     setRewritingCell(null);
   };
 
-  const handleRewriteClause = async () => {
-    if (!rewritingCell || !rewriteInstruction) return;
-
-    setIsClauseRewriting(true);
-    setRewrittenText(null);
-    try {
-      const result = await rewriteContractClause({
-        clauseText: rewritingCell.content,
-        rewriteInstruction: rewriteInstruction,
-      });
-      setRewrittenText(result.rewrittenClauseText);
-    } catch (error) {
-      console.error("Failed to rewrite clause:", error);
-      toast({ title: 'Falló la Reescritura', description: 'No se pudo reescribir la cláusula.', variant: 'destructive' });
-    } finally {
-      setIsClauseRewriting(false);
-    }
-  };
-
-  const handleAcceptRewrite = () => {
-    if (rewritingCell && rewrittenText) {
-      updateCellContent(rewritingCell.id, rewrittenText);
+  const handleAcceptRewrite = (newText: string) => {
+    if (rewritingCell) {
+      updateCellContent(rewritingCell.id, newText);
       handleCloseRewriteDialog();
       toast({ title: 'Sección Actualizada', description: 'La sección ha sido actualizada con la sugerencia de la IA.' });
     }
   };
-  
-    // Handlers for the new clause suggester dialog
-  const handleOpenClauseSuggester = () => {
-    setClauseSuggestionDescription('');
-    setSuggestedClauseText(null);
-    setNewClauseTitle('');
-    setInsertAfterCellId('end');
-    setAudioDataUri(null);
-    setIsClauseSuggesterOpen(true);
-  };
 
-  const handleSuggestClause = async () => {
-    if (!clauseSuggestionDescription) return;
-    setIsSuggestingClause(true);
-    setSuggestedClauseText(null);
-    setAudioDataUri(null);
-    try {
-      const { suggestedClause } = await suggestContractClause({ clauseDescription: clauseSuggestionDescription });
-      setSuggestedClauseText(suggestedClause);
-    } catch (error) {
-      console.error("Failed to suggest clause:", error);
-      toast({ title: 'Falló la Sugerencia', description: 'No se pudo generar la cláusula.', variant: 'destructive' });
-    } finally {
-      setIsSuggestingClause(false);
-    }
-  };
-
-  const handleListenToClause = async () => {
-    if (!suggestedClauseText) return;
-    setIsGeneratingAudio(true);
-    setAudioDataUri(null);
-    try {
-      const { media } = await textToSpeech(suggestedClauseText);
-      setAudioDataUri(media);
-    } catch (error) {
-      console.error("Failed to generate audio:", error);
-      toast({ title: 'Falló el Audio', description: 'No se pudo generar el audio para la cláusula.', variant: 'destructive' });
-    } finally {
-      setIsGeneratingAudio(false);
-    }
-  }
-
-  const handleAddSuggestedClause = () => {
-    if (!suggestedClauseText) {
-      toast({ title: 'Error', description: 'Primero debe generar una sugerencia de cláusula.', variant: 'destructive' });
-      return;
-    }
-    if (!newClauseTitle.trim()) {
-        toast({ title: 'Falta el Título', description: 'Por favor, asígnale un título a la nueva sección.', variant: 'destructive' });
-        return;
-    }
-
-    const newCell: ContractCell = {
-      id: `cell-${Date.now()}-${Math.random()}`,
-      title: newClauseTitle,
-      content: suggestedClauseText,
-      visible: true,
-    };
-
+  const handleAddSuggestedClause = (newCell: ContractCell, position: string) => {
     let newCells = [...cells];
-    if (insertAfterCellId === 'end') {
+    if (position === 'end') {
       newCells.push(newCell);
-    } else if (insertAfterCellId === 'start') {
+    } else if (position === 'start') {
       newCells.unshift(newCell);
     } else {
-      const targetIndex = cells.findIndex(c => c.id === insertAfterCellId);
+      const targetIndex = cells.findIndex(c => c.id === position);
       if (targetIndex !== -1) {
         newCells.splice(targetIndex + 1, 0, newCell);
       } else {
@@ -432,7 +628,7 @@ function ContractEditorContent() {
               </div>
           </div>
           <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 w-full sm:w-auto">
-              <Button onClick={handleOpenClauseSuggester} variant="outline">
+              <Button onClick={() => setIsClauseSuggesterOpen(true)} variant="outline">
                 <Wand2 className="mr-2 h-4 w-4" />
                 Sugerir Cláusula
               </Button>
@@ -541,150 +737,22 @@ function ContractEditorContent() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      <Dialog open={isClauseSuggesterOpen} onOpenChange={setIsClauseSuggesterOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <Wand2 className="mr-2 h-6 w-6 text-accent" />
-              Añadir Cláusula con IA
-            </DialogTitle>
-            <DialogDescription>
-              Describe la cláusula que necesitas, asígnale un título y elige dónde insertarla en el contrato.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-6 py-4">
-            <div className="space-y-2">
-                <Label htmlFor="new-clause-title">Título de la Sección</Label>
-                <Input
-                    id="new-clause-title"
-                    value={newClauseTitle}
-                    onChange={(e) => setNewClauseTitle(e.target.value)}
-                    placeholder="Ej: Cláusula de Jurisdicción Aplicable"
-                    disabled={isSuggestingClause}
-                />
-            </div>
-
-            <div className="space-y-2">
-                <Label htmlFor="insertion-point">Posición de la nueva sección</Label>
-                <Select value={insertAfterCellId} onValueChange={setInsertAfterCellId} disabled={isSuggestingClause}>
-                    <SelectTrigger id="insertion-point">
-                        <SelectValue placeholder="Seleccionar posición..." />
-                    </SelectTrigger>
-                    <SelectContent>
-                        <SelectItem value="start">Al principio del contrato</SelectItem>
-                        {cells.filter(c => c.visible).map((cell) => (
-                            <SelectItem key={cell.id} value={cell.id}>
-                                Después de: {cell.title || "Sección sin título"}
-                            </SelectItem>
-                        ))}
-                        <SelectItem value="end">Al final del contrato</SelectItem>
-                    </SelectContent>
-                </Select>
-            </div>
-            
-            <div className="space-y-2">
-                <Label htmlFor="suggestion-description">Descripción para la IA</Label>
-                <Textarea
-                    id="suggestion-description"
-                    placeholder="Ej: 'Una cláusula que especifique que cualquier disputa se resolverá en los tribunales de la Ciudad de México.'"
-                    value={clauseSuggestionDescription}
-                    onChange={(e) => setClauseSuggestionDescription(e.target.value)}
-                    rows={3}
-                    disabled={isSuggestingClause}
-                />
-            </div>
-            
-            <Button onClick={handleSuggestClause} disabled={isSuggestingClause || !clauseSuggestionDescription.trim()}>
-                {isSuggestingClause ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-                Generar Sugerencia
-            </Button>
-
-            {suggestedClauseText && (
-              <Card>
-                <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4">
-                  <CardTitle className="text-sm font-medium">Cláusula Sugerida</CardTitle>
-                  <Button onClick={handleListenToClause} size="sm" variant="ghost" disabled={isGeneratingAudio}>
-                      {isGeneratingAudio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
-                      Escuchar
-                  </Button>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm whitespace-pre-wrap">{suggestedClauseText}</p>
-                  {audioDataUri && (
-                      <div className="mt-4">
-                          <audio controls autoPlay src={audioDataUri} className="w-full">
-                              Tu navegador no soporta el elemento de audio.
-                          </audio>
-                      </div>
-                  )}
-                </CardContent>
-              </Card>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={() => setIsClauseSuggesterOpen(false)}>Cancelar</Button>
-            <Button onClick={handleAddSuggestedClause} disabled={!suggestedClauseText || !newClauseTitle.trim() || isSuggestingClause}>
-              Añadir al Contrato
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-
-      <Dialog open={!!rewritingCell} onOpenChange={(isOpen) => !isOpen && handleCloseRewriteDialog()}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle className="flex items-center">
-              <Wand2 className="mr-2 h-6 w-6 text-accent" />
-              Reescribir Sección con IA
-            </DialogTitle>
-            <DialogDescription>
-              Describe cómo te gustaría cambiar esta sección, y la IA sugerirá una revisión.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <Card className="bg-muted/50">
-              <CardHeader className="pb-2 pt-4">
-                <CardTitle className="text-sm font-medium">Texto Original</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <p className="text-sm text-muted-foreground max-h-32 overflow-y-auto">{rewritingCell?.content}</p>
-              </CardContent>
-            </Card>
-            
-            <Textarea
-              id="rewrite-instruction"
-              placeholder="Ej: 'Hacer esto más formal' o 'Añadir una frase sobre las penalizaciones por terminación.'"
-              value={rewriteInstruction}
-              onChange={(e) => setRewriteInstruction(e.target.value)}
-              rows={3}
-              disabled={isClauseRewriting}
-            />
-            <Button onClick={handleRewriteClause} disabled={isClauseRewriting || !rewriteInstruction.trim()}>
-              {isClauseRewriting ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-              Generar Sugerencia
-            </Button>
-
-            {rewrittenText && (
-              <Card>
-                <CardHeader className="pb-2 pt-4">
-                  <CardTitle className="text-sm font-medium">Revisión Sugerida</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-sm whitespace-pre-wrap">{rewrittenText}</p>
-                </CardContent>
-              </Card>
-            )}
-          </div>
-          <DialogFooter>
-            <Button variant="ghost" onClick={handleCloseRewriteDialog}>Cancelar</Button>
-            <Button onClick={handleAcceptRewrite} disabled={!rewrittenText || isClauseRewriting}>
-              Aceptar y Actualizar Sección
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
       
+      <ClauseSuggesterDialog
+        open={isClauseSuggesterOpen}
+        onOpenChange={setIsClauseSuggesterOpen}
+        cells={cells}
+        onAddClause={handleAddSuggestedClause}
+        toast={toast}
+      />
+
+      <RewriteClauseDialog
+        cell={rewritingCell}
+        onClose={handleCloseRewriteDialog}
+        onAccept={handleAcceptRewrite}
+        toast={toast}
+      />
+
       <AlertDialog open={!!cellToDeleteId} onOpenChange={(open) => !open && setCellToDeleteId(null)}>
         <AlertDialogContent>
           <AlertDialogHeader>
