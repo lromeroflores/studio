@@ -160,7 +160,8 @@ export function RichTextEditor({
       <div
         ref={editorRef}
         contentEditable={!disabled}
-        onInput={handleContentChange}
+        onBlur={handleContentChange}
+        suppressContentEditableWarning={true}
         // The dangerouslySetInnerHTML prop is removed to prevent React from
         // re-rendering the content on every keystroke, which caused the cursor jump.
         // The content is now managed by the useEffect hook.
