@@ -1,12 +1,12 @@
 
 'use client';
 
-import React, { useState, useEffect, Suspense, useCallback } from 'react';
+import React, { useState, useEffect, Suspense, useCallback, useMemo } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Trash2, ArrowUp, ArrowDown, PlusCircle, Save, RefreshCw, Wand2, ArrowLeft, Volume2 } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
+import { Loader2, Trash2, ArrowUp, ArrowDown, PlusCircle, Save, RefreshCw, Wand2, ArrowLeft, Volume2, ListTree } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -36,6 +36,7 @@ import { textToSpeech } from '@/ai/flows/text-to-speech-flow';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { EditableTable } from '@/components/contract/editable-table';
+import { Switch } from '@/components/ui/switch';
 
 
 function ContractEditorContent() {
@@ -74,12 +75,17 @@ function ContractEditorContent() {
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [audioDataUri, setAudioDataUri] = useState<string | null>(null);
 
+  // State for section manager
+  const [isSectionManagerOpen, setIsSectionManagerOpen] = useState(false);
+
+  const visibleCellIds = useMemo(() => cells.filter(c => c.visible).map(c => c.id), [cells]);
+
   const loadContract = useCallback(async () => {
     if (!contractId) {
         setIsLoading(false);
         toast({ title: 'Error', description: 'No se proporcionó un ID de oportunidad.', variant: 'destructive' });
         const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
-        setCells(template.generateCells({}));
+        setCells(template.generateCells({}).map(c => ({...c, visible: true})));
         return;
     }
 
@@ -108,7 +114,6 @@ function ContractEditorContent() {
     }
     
     // Set contractData for display purposes (e.g., header title)
-    // We can merge data from a general source if needed in the future, but for now template data is enough.
     setContractData(templateDataSource);
 
 
@@ -126,7 +131,8 @@ function ContractEditorContent() {
             const savedData = Array.isArray(result) ? result[0] : result;
             
             if (savedData && savedData.avance_json && savedData.avance_json.cells && savedData.avance_json.cells.length > 0) {
-                setCells(savedData.avance_json.cells);
+                const loadedCells = savedData.avance_json.cells.map((c: ContractCell) => ({ ...c, visible: c.visible !== false }));
+                setCells(loadedCells);
                 toast({ title: 'Progreso Cargado', description: 'Se ha restaurado tu último avance guardado.' });
                 progressLoaded = true;
             }
@@ -138,7 +144,7 @@ function ContractEditorContent() {
     // --- 3. If no progress was loaded, generate from template ---
     if (!progressLoaded) {
         const template = defaultTemplates.find(t => t.name.includes(currentContractType || '')) || defaultTemplates[0];
-        const initialCells = template.generateCells(templateDataSource);
+        const initialCells = template.generateCells(templateDataSource).map(c => ({...c, visible: true}));
         setCells(initialCells);
         if (Object.keys(templateDataSource).length > 0) {
             toast({ title: 'Contrato Generado', description: `Se ha generado un nuevo contrato para ${template.name}.` });
@@ -171,7 +177,9 @@ function ContractEditorContent() {
   };
 
   const moveCell = (index: number, direction: 'up' | 'down') => {
-    if ((direction === 'up' && index === 0) || (direction === 'down' && index === cells.length - 1)) {
+    const visibleIndex = visibleCellIds.indexOf(cells[index].id);
+
+    if ((direction === 'up' && visibleIndex === 0) || (direction === 'down' && visibleIndex === visibleCellIds.length - 1)) {
         return;
     }
     
@@ -186,6 +194,7 @@ function ContractEditorContent() {
       id: `cell-${Date.now()}-${Math.random()}`,
       title: 'Nueva Sección',
       content: text,
+      visible: true,
     };
     const newCells = [...cells];
     const insertAtIndex = index !== undefined ? index + 1 : cells.length;
@@ -233,7 +242,7 @@ function ContractEditorContent() {
     toast({ title: 'Renumerando contrato...', description: 'La IA está reordenando los números de las cláusulas.' });
 
     const SEPARATOR = "\n\n---CELL-BREAK---\n\n";
-    const combinedText = cells.map(c => c.content).join(SEPARATOR);
+    const combinedText = cells.filter(c => c.visible).map(c => c.content).join(SEPARATOR);
 
     try {
         const result = await renumberContract({ contractText: combinedText });
@@ -243,24 +252,25 @@ function ContractEditorContent() {
         }
 
         const renumberedParts = result.renumberedContractText.split('---CELL-BREAK---');
+        const visibleCellsToUpdate = cells.filter(c => c.visible);
 
-        if (renumberedParts.length === cells.length) {
-            const updatedCells = cells.map((cell, index) => ({
-                ...cell,
-                content: renumberedParts[index].trim(),
-            }));
+        if (renumberedParts.length === visibleCellsToUpdate.length) {
+            const updatedCells = cells.map(cell => {
+                if (!cell.visible) return cell;
+                const visibleIndex = visibleCellsToUpdate.findIndex(c => c.id === cell.id);
+                return {
+                    ...cell,
+                    content: renumberedParts[visibleIndex].trim(),
+                };
+            });
             setCells(updatedCells);
             toast({ title: 'Contrato Renumerado', description: 'Las cláusulas y referencias cruzadas han sido actualizadas.' });
         } else {
-            console.error("La IA no preservó la estructura de las celdas. Fusionando en una sola celda.");
-            const singleCell: ContractCell = {
-                id: `cell-${Date.now()}`,
-                content: result.renumberedContractText,
-            };
-            setCells([singleCell]);
+            console.error("La IA no preservó la estructura de las celdas. No se aplicaron cambios.");
              toast({ 
-                title: 'Contrato Renumerado y Fusionado', 
-                description: 'Las cláusulas fueron actualizadas pero la estructura de celdas no pudo ser preservada.',
+                title: 'Error en Renumeración', 
+                description: 'La estructura devuelta por la IA no coincide con las secciones visibles. No se aplicaron los cambios.',
+                variant: 'destructive',
             });
         }
     } catch (error) {
@@ -287,8 +297,6 @@ function ContractEditorContent() {
   const confirmContractTypeChange = () => {
     if (!nextContractType) return;
     
-    // Set the new contract type state. This will trigger the useEffect hook
-    // to re-run loadContract with the new type.
     setCurrentContractType(nextContractType);
     
     const newParams = new URLSearchParams(searchParams.toString());
@@ -391,6 +399,11 @@ function ContractEditorContent() {
     }
   };
 
+  const toggleCellVisibility = (id: string, checked: boolean) => {
+    setCells(cells.map(cell =>
+      cell.id === id ? { ...cell, visible: checked } : cell
+    ));
+  };
 
   if (isLoading) {
     return (
@@ -432,6 +445,10 @@ function ContractEditorContent() {
                 <Wand2 className="mr-2 h-4 w-4" />
                 Sugerir Cláusula
               </Button>
+              <Button onClick={() => setIsSectionManagerOpen(true)} variant="outline">
+                <ListTree className="mr-2 h-4 w-4" />
+                Gestionar Secciones
+              </Button>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-center">
               <Button onClick={handleRenumber} disabled={isRenumbering || isSaving} variant="outline">
@@ -448,58 +465,64 @@ function ContractEditorContent() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 mt-8 items-start">
         {/* Editor Column */}
         <div className="space-y-4 contract-notebook">
-          {cells.map((cell, index) => (
-            <Card key={cell.id} className="group/cell relative transition-shadow hover:shadow-lg">
-              <div className="absolute top-2 right-2 z-10 flex items-center space-x-1 bg-background/50 backdrop-blur-sm rounded-md p-1 opacity-0 group-hover/cell:opacity-100 transition-opacity duration-200">
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenRewriteDialog(cell)} disabled={isRenumbering || isSaving} title="Reescribir con IA">
-                    <Wand2 className="h-4 w-4 text-accent" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'up')} disabled={index === 0 || isRenumbering || isSaving} title="Mover Arriba">
-                  <ArrowUp className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'down')} disabled={index === cells.length - 1 || isRenumbering || isSaving} title="Mover Abajo">
-                  <ArrowDown className="h-4 w-4" />
-                </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => requestDeleteCell(cell.id)} disabled={isRenumbering || isSaving} title="Eliminar Sección">
-                  <Trash2 className="h-4 w-4 text-destructive" />
-                </Button>
-              </div>
-              <CardContent className="p-4">
-                {cell.title && (
-                    <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 border-b pb-2">{cell.title}</h3>
-                  )}
-                  {cell.content.trim().startsWith('<table') ? (
-                    <EditableTable
-                      htmlContent={cell.content}
-                      onContentChange={(newContent) => updateCellContent(cell.id, newContent)}
-                      disabled={isRenumbering || isSaving}
-                    />
-                  ) : (
-                    <Textarea
-                        value={cell.content}
-                        onChange={(e) => updateCellContent(cell.id, e.target.value)}
-                        className="w-full h-auto min-h-[60px] resize-none border-0 shadow-none focus-visible:ring-0 p-0 text-base font-serif"
-                        onInput={handleAutoResizeTextarea}
-                        disabled={isRenumbering || isSaving}
-                        ref={node => {
-                            if (node) {
-                                if (!node.dataset.resized) {
-                                    node.style.height = 'auto';
-                                    node.style.height = `${node.scrollHeight}px`;
-                                    node.dataset.resized = "true";
-                                }
-                            }
-                        }}
-                    />
-                  )}
-              </CardContent>
-              <div className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 w-full flex justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity z-10">
-                  <Button variant="outline" size="sm" className="rounded-full bg-background hover:bg-secondary shadow-md" onClick={() => addCell('Nueva sección editable...', index)} disabled={isRenumbering || isSaving}>
-                      <PlusCircle className="mr-2 h-4 w-4" /> Añadir Sección Abajo
+          {cells.map((cell, index) => {
+            if (!cell.visible) return null;
+            
+            const visibleIndex = visibleCellIds.indexOf(cell.id);
+
+            return (
+              <Card key={cell.id} className="group/cell relative transition-shadow hover:shadow-lg">
+                <div className="absolute top-2 right-2 z-10 flex items-center space-x-1 bg-background/50 backdrop-blur-sm rounded-md p-1 opacity-0 group-hover/cell:opacity-100 transition-opacity duration-200">
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => handleOpenRewriteDialog(cell)} disabled={isRenumbering || isSaving} title="Reescribir con IA">
+                      <Wand2 className="h-4 w-4 text-accent" />
                   </Button>
-              </div>
-            </Card>
-          ))}
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'up')} disabled={visibleIndex === 0 || isRenumbering || isSaving} title="Mover Arriba">
+                    <ArrowUp className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'down')} disabled={visibleIndex === visibleCellIds.length - 1 || isRenumbering || isSaving} title="Mover Abajo">
+                    <ArrowDown className="h-4 w-4" />
+                  </Button>
+                  <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => requestDeleteCell(cell.id)} disabled={isRenumbering || isSaving} title="Eliminar Sección">
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
+                <CardContent className="p-4">
+                  {cell.title && (
+                      <h3 className="text-xs font-bold uppercase tracking-wider text-muted-foreground mb-3 border-b pb-2">{cell.title}</h3>
+                    )}
+                    {cell.content.trim().startsWith('<table') ? (
+                      <EditableTable
+                        htmlContent={cell.content}
+                        onContentChange={(newContent) => updateCellContent(cell.id, newContent)}
+                        disabled={isRenumbering || isSaving}
+                      />
+                    ) : (
+                      <Textarea
+                          value={cell.content}
+                          onChange={(e) => updateCellContent(cell.id, e.target.value)}
+                          className="w-full h-auto min-h-[60px] resize-none border-0 shadow-none focus-visible:ring-0 p-0 text-base font-serif"
+                          onInput={handleAutoResizeTextarea}
+                          disabled={isRenumbering || isSaving}
+                          ref={node => {
+                              if (node) {
+                                  if (!node.dataset.resized) {
+                                      node.style.height = 'auto';
+                                      node.style.height = `${node.scrollHeight}px`;
+                                      node.dataset.resized = "true";
+                                  }
+                              }
+                          }}
+                      />
+                    )}
+                </CardContent>
+                <div className="absolute bottom-[-20px] left-1/2 -translate-x-1/2 w-full flex justify-center opacity-0 group-hover/cell:opacity-100 transition-opacity z-10">
+                    <Button variant="outline" size="sm" className="rounded-full bg-background hover:bg-secondary shadow-md" onClick={() => addCell('Nueva sección editable...', index)} disabled={isRenumbering || isSaving}>
+                        <PlusCircle className="mr-2 h-4 w-4" /> Añadir Sección Abajo
+                    </Button>
+                </div>
+              </Card>
+            )
+          })}
         </div>
         
         {/* Preview Column */}
@@ -507,6 +530,40 @@ function ContractEditorContent() {
           <ContractPreview cells={cells} data={contractData} />
         </div>
       </div>
+
+      <Dialog open={isSectionManagerOpen} onOpenChange={setIsSectionManagerOpen}>
+        <DialogContent className="sm:max-w-2xl">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <ListTree className="mr-2 h-6 w-6 text-accent" />
+              Gestionar Secciones del Contrato
+            </DialogTitle>
+            <DialogDescription>
+              Activa o desactiva las secciones que deseas incluir en el documento final.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+            <div className="space-y-3">
+              {cells.map((cell) => (
+                <div key={cell.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
+                  <Label htmlFor={`switch-${cell.id}`} className="flex-1 pr-4 cursor-pointer">
+                    <p className="font-semibold">{cell.title || "Sección sin título"}</p>
+                    <p className="text-xs text-muted-foreground truncate">{cell.content.split('\n')[0]}</p>
+                  </Label>
+                  <Switch
+                    id={`switch-${cell.id}`}
+                    checked={cell.visible}
+                    onCheckedChange={(checked) => toggleCellVisibility(cell.id, checked)}
+                  />
+                </div>
+              ))}
+            </div>
+          </div>
+          <DialogFooter>
+            <Button onClick={() => setIsSectionManagerOpen(false)}>Cerrar</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={isClauseSuggesterOpen} onOpenChange={setIsClauseSuggesterOpen}>
         <DialogContent className="sm:max-w-[600px]">

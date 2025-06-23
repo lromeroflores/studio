@@ -21,9 +21,10 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
   const [isExporting, setIsExporting] = React.useState(false);
 
   const finalContractHtml = useMemo(() => {
-    // The styling is now pre-applied in the cell content from the template.
-    // We just need to join the cells and handle newlines.
-    return cells.map(cell => cell.content.replace(/\n/g, '<br />')).join('<br /><br />');
+    return cells
+      .filter(cell => cell.visible)
+      .map(cell => cell.content.replace(/\n/g, '<br />'))
+      .join('<br /><br />');
   }, [cells]);
 
 
@@ -62,24 +63,12 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
       let heightLeft = contentHeight;
       let position = margin;
 
-      // Add header/logo on each page (optional)
-      const addHeader = (pdfInstance: jsPDF) => {
-         const logoUrl = "https://bancaenlinea.covalto.com/feb/common/styles/themes/images/covalto-login.png";
-         // This is a simplified way to add a logo. For complex headers, more logic is needed.
-         // Note: Due to CORS, this image might not render if the browser blocks it.
-         // Using it via html2canvas is more reliable.
-      };
-
-      // Add content to first page
-      // addHeader(pdf);
       pdf.addImage(canvas, 'PNG', margin, position, contentWidth, contentHeight);
       heightLeft -= (pdfPageHeight - margin * 2);
 
-      // Add new pages if content overflows
       while (heightLeft > 0) {
         position = heightLeft - contentHeight - margin;
         pdf.addPage();
-        // addHeader(pdf);
         pdf.addImage(canvas, 'PNG', margin, position, contentWidth, contentHeight);
         heightLeft -= (pdfPageHeight - margin);
       }

@@ -12,6 +12,7 @@ export interface ContractCell {
   id: string;
   title?: string;
   content: string;
+  visible?: boolean;
 }
 
 export interface ContractTemplate {
