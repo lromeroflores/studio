@@ -1,3 +1,4 @@
+
 'use server';
 /**
  * @fileOverview Converts text to speech using Genkit.
@@ -12,10 +13,10 @@ import {googleAI} from '@genkit-ai/googleai';
 import {z} from 'genkit';
 import wav from 'wav';
 
-export const TextToSpeechInputSchema = z.string();
+const TextToSpeechInputSchema = z.string();
 export type TextToSpeechInput = z.infer<typeof TextToSpeechInputSchema>;
 
-export const TextToSpeechOutputSchema = z.object({
+const TextToSpeechOutputSchema = z.object({
   media: z.string().describe('The base64 encoded WAV audio data URI.'),
 });
 export type TextToSpeechOutput = z.infer<typeof TextToSpeechOutputSchema>;
