@@ -22,9 +22,10 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
   const finalContractHtml = useMemo(() => {
     return cells
       .filter(cell => cell.visible)
-      // Wrap each cell's content in a div to allow prose styles to apply margins correctly
+      // Wrap each cell's content in a div to ensure it's a block element,
+      // and join with a double line break for clear separation between sections.
       .map(cell => `<div>${cell.content}</div>`)
-      .join('');
+      .join('<br /><br />');
   }, [cells]);
 
 
