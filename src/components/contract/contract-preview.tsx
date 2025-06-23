@@ -1,14 +1,13 @@
 
 'use client';
 
-import React, { useCallback, useMemo, useRef } from 'react';
+import React, { useMemo, useRef } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ContractCell } from '@/components/contract/types';
 import jsPDF from 'jspdf';
-import html2canvas from 'html2canvas';
 
 interface ContractPreviewProps {
   cells: ContractCell[];
@@ -23,8 +22,9 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
   const finalContractHtml = useMemo(() => {
     return cells
       .filter(cell => cell.visible)
-      .map(cell => cell.content.replace(/\n/g, '<br />'))
-      .join('<br /><br />');
+      // Wrap each cell's content in a div to allow prose styles to apply margins correctly
+      .map(cell => `<div>${cell.content}</div>`)
+      .join('');
   }, [cells]);
 
 
@@ -38,40 +38,26 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
     setIsExporting(true);
     toast({ title: "Exportando PDF...", description: "Por favor, espere mientras se genera el PDF." });
     
-    try {
-      const canvas = await html2canvas(contentToExport, {
-        scale: 2,
-        useCORS: true,
-        logging: false,
-        backgroundColor: '#ffffff',
-      });
+    // Temporarily change variable color to black for a professional PDF look.
+    const strongElements = Array.from(contentToExport.querySelectorAll('strong'));
+    strongElements.forEach(el => {
+      el.style.color = 'black';
+    });
 
+    try {
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'pt',
         format: 'letter',
       });
 
-      const pdfPageWidth = pdf.internal.pageSize.getWidth();
-      const pdfPageHeight = pdf.internal.pageSize.getHeight();
-      const margin = 72; // 1 inch
-      const contentWidth = pdfPageWidth - margin * 2;
-      
-      const imgProps = pdf.getImageProperties(canvas);
-      const contentHeight = (imgProps.height * contentWidth) / imgProps.width;
-      
-      let heightLeft = contentHeight;
-      let position = margin;
-
-      pdf.addImage(canvas, 'PNG', margin, position, contentWidth, contentHeight);
-      heightLeft -= (pdfPageHeight - margin * 2);
-
-      while (heightLeft > 0) {
-        position = heightLeft - contentHeight - margin;
-        pdf.addPage();
-        pdf.addImage(canvas, 'PNG', margin, position, contentWidth, contentHeight);
-        heightLeft -= (pdfPageHeight - margin);
-      }
+      // Use jspdf.html() for better text rendering and automatic pagination
+      await pdf.html(contentToExport, {
+          margin: [72, 72, 72, 72], // 1 inch margins [top, right, bottom, left]
+          autoPaging: 'text', // Automatically handle page breaks, avoiding cutting text
+          width: 612 - 144, // Letter width (612pt) - 2 * margin
+          windowWidth: contentToExport.scrollWidth,
+      });
 
       pdf.save('contract-document.pdf');
       toast({ title: "PDF Exportado", description: "El contrato ha sido descargado exitosamente." });
@@ -80,6 +66,10 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
       console.error("Error exporting PDF:", error);
       toast({ title: "Error al Exportar PDF", description: "No se pudo exportar el PDF debido a un error inesperado.", variant: "destructive" });
     } finally {
+      // Revert styles back to red for the on-screen preview
+      strongElements.forEach(el => {
+          el.style.color = ''; // Revert to stylesheet color
+      });
       setIsExporting(false);
     }
   };
@@ -100,7 +90,7 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
               style={{ width: '150px', marginBottom: '2rem' }}
             />
             <div
-              className="prose prose-sm max-w-none break-words" 
+              className="prose max-w-none text-justify leading-relaxed prose-strong:text-red-600 prose-headings:font-bold" 
               dangerouslySetInnerHTML={{ __html: finalContractHtml }}
             />
         </div>
