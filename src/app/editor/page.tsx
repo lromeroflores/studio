@@ -428,11 +428,11 @@ function ContractEditorContent() {
       </div>
 
       {/* Toolbar */}
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div className="flex flex-wrap items-center gap-3">
               <Label htmlFor="contract-type-select" className="font-medium">Tipo de Contrato:</Label>
               <Select value={currentContractType || undefined} onValueChange={handleContractTypeChange}>
-                  <SelectTrigger id="contract-type-select" className="w-[300px]">
+                  <SelectTrigger id="contract-type-select" className="w-full sm:w-[300px]">
                       <SelectValue placeholder="Seleccionar tipo..." />
                   </SelectTrigger>
                   <SelectContent>
@@ -441,6 +441,8 @@ function ContractEditorContent() {
                       <SelectItem value="SaaS">Contrato SaaS</SelectItem>
                   </SelectContent>
               </Select>
+          </div>
+          <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 w-full sm:w-auto">
               <Button onClick={handleOpenClauseSuggester} variant="outline">
                 <Wand2 className="mr-2 h-4 w-4" />
                 Sugerir Cláusula
@@ -449,8 +451,6 @@ function ContractEditorContent() {
                 <ListTree className="mr-2 h-4 w-4" />
                 Gestionar Secciones
               </Button>
-          </div>
-          <div className="flex items-center gap-2 self-start sm:self-center">
               <Button onClick={handleRenumber} disabled={isRenumbering || isSaving} variant="outline">
                   {isRenumbering ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <RefreshCw className="mr-2 h-4 w-4" />}
                   Renumerar
