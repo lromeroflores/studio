@@ -41,27 +41,32 @@ export function RichTextEditor({
   disabled,
 }: RichTextEditorProps) {
   const editorRef = useRef<HTMLDivElement>(null);
-  const lastValue = useRef(value);
 
+  // Synchronize the editor's content with the `value` prop from the parent.
+  // This is carefully designed to avoid resetting the cursor position during edits.
+  // It only updates the DOM if the `value` prop is different from the current
+  // content of the editor, which happens on initial load or external changes (like re-numbering),
+  // but not on re-renders caused by the user typing in this same editor.
   useEffect(() => {
-    if (editorRef.current && value !== lastValue.current) {
+    if (editorRef.current && editorRef.current.innerHTML !== value) {
       editorRef.current.innerHTML = value;
     }
   }, [value]);
 
-  const applyCommand = (command: string, value?: string) => {
-    if (disabled || !editorRef.current) return;
-    document.execCommand(command, false, value);
-    editorRef.current.focus();
-    handleContentChange(); // Update state after command
-  };
-
   const handleContentChange = () => {
     if (editorRef.current) {
       const newHtml = editorRef.current.innerHTML;
-      lastValue.current = newHtml;
-      onChange(newHtml);
+      if (onChange && newHtml !== value) {
+        onChange(newHtml);
+      }
     }
+  };
+
+  const applyCommand = (command: string, valueArg?: string) => {
+    if (disabled || !editorRef.current) return;
+    document.execCommand(command, false, valueArg);
+    editorRef.current.focus();
+    handleContentChange(); // Update state after command
   };
 
   return (
@@ -74,6 +79,7 @@ export function RichTextEditor({
           onClick={() => applyCommand('bold')}
           disabled={disabled}
           title="Negrita"
+          type="button"
         >
           <Bold className="h-4 w-4" />
         </Button>
@@ -84,6 +90,7 @@ export function RichTextEditor({
           onClick={() => applyCommand('italic')}
           disabled={disabled}
           title="Cursiva"
+          type="button"
         >
           <Italic className="h-4 w-4" />
         </Button>
@@ -94,6 +101,7 @@ export function RichTextEditor({
           onClick={() => applyCommand('underline')}
           disabled={disabled}
           title="Subrayado"
+          type="button"
         >
           <Underline className="h-4 w-4" />
         </Button>
@@ -153,7 +161,9 @@ export function RichTextEditor({
         ref={editorRef}
         contentEditable={!disabled}
         onInput={handleContentChange}
-        dangerouslySetInnerHTML={{ __html: value }}
+        // The dangerouslySetInnerHTML prop is removed to prevent React from
+        // re-rendering the content on every keystroke, which caused the cursor jump.
+        // The content is now managed by the useEffect hook.
         className={cn(
           'w-full min-h-[120px] p-4 focus:outline-none focus-visible:ring-1 focus-visible:ring-ring',
           'prose prose-sm max-w-none',
