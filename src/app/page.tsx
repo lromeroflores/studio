@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { LogIn } from 'lucide-react';
+import { CovaltoLogo } from '@/components/icons/covalto-logo';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -22,12 +23,7 @@ export default function LoginPage() {
       <Card className="w-full max-w-md shadow-2xl bg-card/90 backdrop-blur-sm border-border/50 z-10">
         <CardHeader className="space-y-2 text-center pt-8">
           <div className="flex justify-center mb-4">
-            <img 
-              src="https://bancaenlinea.covalto.com/feb/common/styles/themes/images/covalto-login.png" 
-              alt="Covalto Logo" 
-              width="200" 
-              height="auto" 
-            />
+            <CovaltoLogo className="w-48 h-auto" />
           </div>
           <CardTitle className="text-2xl font-bold text-foreground">Portal de Generación de Contratos</CardTitle>
           <CardDescription className="text-muted-foreground">

@@ -8,6 +8,7 @@ import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ContractCell } from '@/components/contract/types';
 import jsPDF from 'jspdf';
+import { CovaltoLogo } from '../icons/covalto-logo';
 
 interface ContractPreviewProps {
   cells: ContractCell[];
@@ -84,9 +85,7 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
       </CardHeader>
       <CardContent className="px-6 pb-6 pt-0">
          <div className="p-10 bg-white border rounded-md min-h-[500px] overflow-y-auto font-serif text-black" ref={previewContentRef}>
-            <img 
-              src="https://bancaenlinea.covalto.com/feb/common/styles/themes/images/covalto-login.png" 
-              alt="Covalto Logo"
+            <CovaltoLogo
               style={{ width: '150px', marginBottom: '2rem' }}
             />
             <div
