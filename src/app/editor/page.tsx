@@ -36,6 +36,8 @@ import { textToSpeech } from '@/ai/flows/text-to-speech-flow';
 import { Label } from '@/components/ui/label';
 import { EditableTable } from '@/components/contract/editable-table';
 import { Switch } from '@/components/ui/switch';
+import { Input } from '@/components/ui/input';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 
 
 function ContractEditorContent() {
@@ -66,6 +68,8 @@ function ContractEditorContent() {
   const [clauseSuggestionDescription, setClauseSuggestionDescription] = useState('');
   const [isSuggestingClause, setIsSuggestingClause] = useState(false);
   const [suggestedClauseText, setSuggestedClauseText] = useState<string | null>(null);
+  const [newClauseTitle, setNewClauseTitle] = useState('');
+  const [insertAfterCellId, setInsertAfterCellId] = useState<string>('end');
   const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
   const [audioDataUri, setAudioDataUri] = useState<string | null>(null);
 
@@ -323,6 +327,8 @@ function ContractEditorContent() {
   const handleOpenClauseSuggester = () => {
     setClauseSuggestionDescription('');
     setSuggestedClauseText(null);
+    setNewClauseTitle('');
+    setInsertAfterCellId('end');
     setAudioDataUri(null);
     setIsClauseSuggesterOpen(true);
   };
@@ -359,11 +365,39 @@ function ContractEditorContent() {
   }
 
   const handleAddSuggestedClause = () => {
-    if (suggestedClauseText) {
-      addCell(suggestedClauseText);
-      setIsClauseSuggesterOpen(false);
-      toast({ title: 'Sección Añadida', description: 'La cláusula sugerida por la IA ha sido añadida al final del contrato.' });
+    if (!suggestedClauseText) {
+      toast({ title: 'Error', description: 'Primero debe generar una sugerencia de cláusula.', variant: 'destructive' });
+      return;
     }
+    if (!newClauseTitle.trim()) {
+        toast({ title: 'Falta el Título', description: 'Por favor, asígnale un título a la nueva sección.', variant: 'destructive' });
+        return;
+    }
+
+    const newCell: ContractCell = {
+      id: `cell-${Date.now()}-${Math.random()}`,
+      title: newClauseTitle,
+      content: suggestedClauseText,
+      visible: true,
+    };
+
+    let newCells = [...cells];
+    if (insertAfterCellId === 'end') {
+      newCells.push(newCell);
+    } else if (insertAfterCellId === 'start') {
+      newCells.unshift(newCell);
+    } else {
+      const targetIndex = cells.findIndex(c => c.id === insertAfterCellId);
+      if (targetIndex !== -1) {
+        newCells.splice(targetIndex + 1, 0, newCell);
+      } else {
+        newCells.push(newCell); // Fallback to end
+      }
+    }
+    setCells(newCells);
+
+    setIsClauseSuggesterOpen(false);
+    toast({ title: 'Sección Añadida', description: 'La cláusula sugerida por la IA ha sido añadida al contrato.' });
   };
 
   const toggleCellVisibility = (id: string, checked: boolean) => {
@@ -532,21 +566,54 @@ function ContractEditorContent() {
               Añadir Cláusula con IA
             </DialogTitle>
             <DialogDescription>
-              Describe la cláusula que necesitas y la IA redactará una sugerencia para ti. También puedes escucharla antes de añadirla.
+              Describe la cláusula que necesitas, asígnale un título y elige dónde insertarla en el contrato.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <Textarea
-              id="suggestion-description"
-              placeholder="Ej: 'Una cláusula sobre la terminación anticipada del contrato con 30 días de preaviso.'"
-              value={clauseSuggestionDescription}
-              onChange={(e) => setClauseSuggestionDescription(e.target.value)}
-              rows={3}
-              disabled={isSuggestingClause}
-            />
+          <div className="grid gap-6 py-4">
+            <div className="space-y-2">
+                <Label htmlFor="new-clause-title">Título de la Sección</Label>
+                <Input
+                    id="new-clause-title"
+                    value={newClauseTitle}
+                    onChange={(e) => setNewClauseTitle(e.target.value)}
+                    placeholder="Ej: Cláusula de Jurisdicción Aplicable"
+                    disabled={isSuggestingClause}
+                />
+            </div>
+
+            <div className="space-y-2">
+                <Label htmlFor="insertion-point">Posición de la nueva sección</Label>
+                <Select value={insertAfterCellId} onValueChange={setInsertAfterCellId} disabled={isSuggestingClause}>
+                    <SelectTrigger id="insertion-point">
+                        <SelectValue placeholder="Seleccionar posición..." />
+                    </SelectTrigger>
+                    <SelectContent>
+                        <SelectItem value="start">Al principio del contrato</SelectItem>
+                        {cells.filter(c => c.visible).map((cell) => (
+                            <SelectItem key={cell.id} value={cell.id}>
+                                Después de: {cell.title || "Sección sin título"}
+                            </SelectItem>
+                        ))}
+                        <SelectItem value="end">Al final del contrato</SelectItem>
+                    </SelectContent>
+                </Select>
+            </div>
+            
+            <div className="space-y-2">
+                <Label htmlFor="suggestion-description">Descripción para la IA</Label>
+                <Textarea
+                    id="suggestion-description"
+                    placeholder="Ej: 'Una cláusula que especifique que cualquier disputa se resolverá en los tribunales de la Ciudad de México.'"
+                    value={clauseSuggestionDescription}
+                    onChange={(e) => setClauseSuggestionDescription(e.target.value)}
+                    rows={3}
+                    disabled={isSuggestingClause}
+                />
+            </div>
+            
             <Button onClick={handleSuggestClause} disabled={isSuggestingClause || !clauseSuggestionDescription.trim()}>
-              {isSuggestingClause ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
-              Generar Sugerencia
+                {isSuggestingClause ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+                Generar Sugerencia
             </Button>
 
             {suggestedClauseText && (
@@ -573,7 +640,7 @@ function ContractEditorContent() {
           </div>
           <DialogFooter>
             <Button variant="ghost" onClick={() => setIsClauseSuggesterOpen(false)}>Cancelar</Button>
-            <Button onClick={handleAddSuggestedClause} disabled={!suggestedClauseText || isSuggestingClause}>
+            <Button onClick={handleAddSuggestedClause} disabled={!suggestedClauseText || !newClauseTitle.trim() || isSuggestingClause}>
               Añadir al Contrato
             </Button>
           </DialogFooter>
