@@ -53,7 +53,6 @@ export default function OpportunitiesPage() {
   // State for filters and sorting
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [contractTypeFilter, setContractTypeFilter] = useState('all');
   const [sortOrder, setSortOrder] = useState('desc'); // 'desc' for newest, 'asc' for oldest
 
 
@@ -69,7 +68,7 @@ export default function OpportunitiesPage() {
         const data = await response.json();
         
         const mappedData: Opportunity[] = data.oportunidades
-          .filter((opp: any) => opp.id_portunidad) // Filter out opportunities without a valid ID
+          .filter((opp: any) => opp.id_portunidad && opp.tipo_contrato === 'NDA') // Filter for NDA and valid ID
           .map((opp: any) => ({
             id: `opp-${opp.id_portunidad}`,
             clientName: opp.nombre_oportunidad,
@@ -101,12 +100,6 @@ export default function OpportunitiesPage() {
     router.push(`/editor?${query}`);
   };
 
-  const uniqueContractTypes = useMemo(() => {
-    if (!opportunities) return [];
-    const types = new Set(opportunities.map(opp => opp.contractType));
-    return Array.from(types);
-  }, [opportunities]);
-
   const filteredAndSortedOpportunities = useMemo(() => {
     let filtered = opportunities.filter(opp => {
       const searchTermLower = searchTerm.toLowerCase();
@@ -123,10 +116,6 @@ export default function OpportunitiesPage() {
       filtered = filtered.filter(opp => opp.opportunityStatus === statusFilter);
     }
 
-    if (contractTypeFilter !== 'all') {
-      filtered = filtered.filter(opp => opp.contractType === contractTypeFilter);
-    }
-
     return filtered.sort((a, b) => {
       const dateA = new Date(a.lastUpdated).getTime();
       const dateB = new Date(b.lastUpdated).getTime();
@@ -135,7 +124,7 @@ export default function OpportunitiesPage() {
       }
       return dateA - dateB;
     });
-  }, [opportunities, searchTerm, statusFilter, contractTypeFilter, sortOrder]);
+  }, [opportunities, searchTerm, statusFilter, sortOrder]);
 
   
   const renderLoadingSkeletons = () => (
@@ -177,7 +166,7 @@ export default function OpportunitiesPage() {
             onChange={(e) => setSearchTerm(e.target.value)}
           />
         </div>
-        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 w-full lg:w-auto">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 w-full lg:w-auto">
           <Select value={statusFilter} onValueChange={setStatusFilter}>
             <SelectTrigger className="w-full">
               <SelectValue placeholder="Filtrar por estatus" />
@@ -187,18 +176,6 @@ export default function OpportunitiesPage() {
               <SelectItem value="Nuevo">Nuevo</SelectItem>
               <SelectItem value="En Progreso">En Progreso</SelectItem>
               <SelectItem value="Completado">Completado</SelectItem>
-            </SelectContent>
-          </Select>
-
-          <Select value={contractTypeFilter} onValueChange={setContractTypeFilter}>
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Filtrar por tipo" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">Todos los tipos</SelectItem>
-              {uniqueContractTypes.map(type => (
-                <SelectItem key={type} value={type}>{type}</SelectItem>
-              ))}
             </SelectContent>
           </Select>
 
@@ -232,9 +209,9 @@ export default function OpportunitiesPage() {
             <Briefcase className="h-12 w-12 text-muted-foreground mb-4" />
             <h2 className="text-2xl font-semibold">No se encontraron oportunidades</h2>
             <p className="text-lg text-muted-foreground mt-2">
-              {searchTerm || statusFilter !== 'all' || contractTypeFilter !== 'all'
+              {searchTerm || statusFilter !== 'all'
                 ? "No hay oportunidades que coincidan con tus filtros actuales."
-                : "Actualmente no tienes oportunidades asignadas."}
+                : "Actualmente no tienes oportunidades de NDA asignadas."}
             </p>
           </CardContent>
         </Card>

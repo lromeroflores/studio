@@ -33,7 +33,6 @@ import { renumberContract } from '@/ai/flows/renumber-contract-flow';
 import { rewriteContractClause } from '@/ai/flows/rewrite-contract-clause';
 import { suggestContractClause } from '@/ai/flows/suggest-contract-clause';
 import { textToSpeech } from '@/ai/flows/text-to-speech-flow';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { EditableTable } from '@/components/contract/editable-table';
 import { Switch } from '@/components/ui/switch';
@@ -46,7 +45,6 @@ function ContractEditorContent() {
 
   const opportunityName = searchParams.get('opportunityName') || 'Oportunidad sin Nombre';
   const contractId = searchParams.get('contractId');
-  const contractType = searchParams.get('contractType');
 
   const [cells, setCells] = useState<ContractCell[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,10 +52,6 @@ function ContractEditorContent() {
   const [isRenumbering, setIsRenumbering] = useState(false);
   const [contractData, setContractData] = useState<Record<string, any> | null>(null);
   
-  const [currentContractType, setCurrentContractType] = useState(contractType);
-  const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
-  const [nextContractType, setNextContractType] = useState<string | null>(null);
-
   // State for delete confirmation
   const [cellToDeleteId, setCellToDeleteId] = useState<string | null>(null);
 
@@ -84,7 +78,7 @@ function ContractEditorContent() {
     if (!contractId) {
         setIsLoading(false);
         toast({ title: 'Error', description: 'No se proporcionó un ID de oportunidad.', variant: 'destructive' });
-        const template = defaultTemplates.find(t => t.name.includes(contractType || '')) || defaultTemplates[0];
+        const template = defaultTemplates[0];
         setCells(template.generateCells({}).map(c => ({...c, visible: true})));
         return;
     }
@@ -143,7 +137,7 @@ function ContractEditorContent() {
 
     // --- 3. If no progress was loaded, generate from template ---
     if (!progressLoaded) {
-        const template = defaultTemplates.find(t => t.name.includes(currentContractType || '')) || defaultTemplates[0];
+        const template = defaultTemplates[0]; // Always NDA
         const initialCells = template.generateCells(templateDataSource).map(c => ({...c, visible: true}));
         setCells(initialCells);
         if (Object.keys(templateDataSource).length > 0) {
@@ -154,7 +148,7 @@ function ContractEditorContent() {
     }
 
     setIsLoading(false);
-  }, [contractId, currentContractType, toast]);
+  }, [contractId, toast]);
 
 
   useEffect(() => {
@@ -287,33 +281,6 @@ function ContractEditorContent() {
     textarea.style.height = `${textarea.scrollHeight}px`;
   };
 
-  const handleContractTypeChange = (newType: string) => {
-    if (newType !== currentContractType) {
-      setNextContractType(newType);
-      setIsConfirmDialogOpen(true);
-    }
-  };
-
-  const confirmContractTypeChange = () => {
-    if (!nextContractType) return;
-    
-    setCurrentContractType(nextContractType);
-    
-    const newParams = new URLSearchParams(searchParams.toString());
-    newParams.set('contractType', nextContractType);
-    router.replace(`/editor?${newParams.toString()}`, { scroll: false });
-    
-    const newTemplate = defaultTemplates.find(t => t.name.includes(nextContractType)) || defaultTemplates[0];
-    toast({
-      title: 'Plantilla Cambiada',
-      description: `Cargando la plantilla para ${newTemplate.name}.`
-    });
-
-    setIsConfirmDialogOpen(false);
-    setNextContractType(null);
-  };
-
-
   // Handlers for the rewriter dialog
   const handleOpenRewriteDialog = (cell: ContractCell) => {
     setRewritingCell(cell);
@@ -430,17 +397,10 @@ function ContractEditorContent() {
       {/* Toolbar */}
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div className="flex flex-wrap items-center gap-3">
-              <Label htmlFor="contract-type-select" className="font-medium">Tipo de Contrato:</Label>
-              <Select value={currentContractType || undefined} onValueChange={handleContractTypeChange}>
-                  <SelectTrigger id="contract-type-select" className="w-full sm:w-[300px]">
-                      <SelectValue placeholder="Seleccionar tipo..." />
-                  </SelectTrigger>
-                  <SelectContent>
-                      <SelectItem value="NDA">Acuerdo de Confidencialidad (NDA)</SelectItem>
-                      <SelectItem value="Servicios">Contrato de Servicios</SelectItem>
-                      <SelectItem value="SaaS">Contrato SaaS</SelectItem>
-                  </SelectContent>
-              </Select>
+              <Label htmlFor="contract-type-display" className="font-medium">Tipo de Contrato:</Label>
+              <div id="contract-type-display" className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 py-2 text-sm sm:w-[300px]">
+                <span>Acuerdo de Confidencialidad (NDA)</span>
+              </div>
           </div>
           <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 w-full sm:w-auto">
               <Button onClick={handleOpenClauseSuggester} variant="outline">
@@ -685,21 +645,6 @@ function ContractEditorContent() {
           <AlertDialogFooter>
             <AlertDialogCancel onClick={() => setCellToDeleteId(null)}>Cancelar</AlertDialogCancel>
             <AlertDialogAction onClick={confirmDeleteCell} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
-
-      <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Confirmar cambio de plantilla?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esto reemplazará el contenido actual del contrato con la nueva plantilla seleccionada. Cualquier cambio no guardado se perderá. ¿Deseas continuar?
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel onClick={() => setNextContractType(null)}>Cancelar</AlertDialogCancel>
-            <AlertDialogAction onClick={confirmContractTypeChange}>Confirmar</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
