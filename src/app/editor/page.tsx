@@ -55,6 +55,9 @@ function ContractEditorContent() {
   const [isConfirmDialogOpen, setIsConfirmDialogOpen] = useState(false);
   const [nextContractType, setNextContractType] = useState<string | null>(null);
 
+  // State for delete confirmation
+  const [cellToDeleteId, setCellToDeleteId] = useState<string | null>(null);
+
   // State for the AI rewriter
   const [rewritingCell, setRewritingCell] = useState<ContractCell | null>(null);
   const [rewriteInstruction, setRewriteInstruction] = useState('');
@@ -146,9 +149,15 @@ function ContractEditorContent() {
     setCells(cells.map(cell => cell.id === id ? { ...cell, content: newContent } : cell));
   };
 
-  const deleteCell = (id: string) => {
-    setCells(cells.filter(cell => cell.id !== id));
+  const requestDeleteCell = (id: string) => {
+    setCellToDeleteId(id);
+  };
+
+  const confirmDeleteCell = () => {
+    if (!cellToDeleteId) return;
+    setCells(cells.filter(cell => cell.id !== cellToDeleteId));
     toast({ title: 'Sección Eliminada' });
+    setCellToDeleteId(null);
   };
 
   const moveCell = (index: number, direction: 'up' | 'down') => {
@@ -389,7 +398,7 @@ function ContractEditorContent() {
                 <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => moveCell(index, 'down')} disabled={index === cells.length - 1 || isRenumbering || isSaving} title="Mover Abajo">
                   <ArrowDown className="h-4 w-4" />
                 </Button>
-                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => deleteCell(cell.id)} disabled={isRenumbering || isSaving} title="Eliminar Sección">
+                <Button variant="ghost" size="icon" className="h-7 w-7" onClick={() => requestDeleteCell(cell.id)} disabled={isRenumbering || isSaving} title="Eliminar Sección">
                   <Trash2 className="h-4 w-4 text-destructive" />
                 </Button>
               </div>
@@ -491,6 +500,21 @@ function ContractEditorContent() {
         </DialogContent>
       </Dialog>
       
+      <AlertDialog open={!!cellToDeleteId} onOpenChange={(open) => !open && setCellToDeleteId(null)}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Confirmar eliminación?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. Se eliminará permanentemente esta sección del contrato.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setCellToDeleteId(null)}>Cancelar</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmDeleteCell} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">Eliminar</AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <AlertDialog open={isConfirmDialogOpen} onOpenChange={setIsConfirmDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
