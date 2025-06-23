@@ -1,7 +1,9 @@
 
 import type { SVGProps } from 'react';
+import { cn } from "@/lib/utils"
 
 export function CovaltoLogo(props: SVGProps<SVGSVGElement>) {
+  const { className, ...otherProps } = props;
   const blue = '#002642'; // Corresponds to rgb(0%,14.901961%,25.882354%)
   const orange = '#FF9834'; // Corresponds to rgb(100%,59.607846%,20.392157%)
 
@@ -11,7 +13,8 @@ export function CovaltoLogo(props: SVGProps<SVGSVGElement>) {
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 345 35"
       aria-label="Covalto Logo"
-      {...props}
+      className={cn("h-auto w-full", className)} // Default classes, can be overridden
+      {...otherProps}
     >
       <g id="surface1">
         <path fill={blue} d="M 239.316406 6.214844 L 245.699219 6.214844 L 245.699219 7.625 L 241.105469 7.625 L 241.105469 10.398438 L 245.40625 10.398438 L 245.40625 11.78125 L 241.105469 11.78125 L 241.105469 14.609375 L 245.800781 14.609375 L 245.800781 16.003906 L 239.316406 16.003906 Z M 239.316406 6.214844 " />
