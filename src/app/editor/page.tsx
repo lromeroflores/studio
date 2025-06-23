@@ -6,7 +6,7 @@ import { useRouter, useSearchParams } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
-import { Loader2, Trash2, ArrowUp, ArrowDown, PlusCircle, Save, RefreshCw, Wand2, ArrowLeft } from 'lucide-react';
+import { Loader2, Trash2, ArrowUp, ArrowDown, PlusCircle, Save, RefreshCw, Wand2, ArrowLeft, Volume2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -31,6 +31,8 @@ import { defaultTemplates } from '@/lib/templates';
 import { ContractPreview } from '@/components/contract/contract-preview';
 import { renumberContract } from '@/ai/flows/renumber-contract-flow';
 import { rewriteContractClause } from '@/ai/flows/rewrite-contract-clause';
+import { suggestContractClause } from '@/ai/flows/suggest-contract-clause';
+import { textToSpeech } from '@/ai/flows/text-to-speech-flow';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { EditableTable } from '@/components/contract/editable-table';
@@ -63,6 +65,14 @@ function ContractEditorContent() {
   const [rewriteInstruction, setRewriteInstruction] = useState('');
   const [isClauseRewriting, setIsClauseRewriting] = useState(false);
   const [rewrittenText, setRewrittenText] = useState<string | null>(null);
+  
+  // State for the AI clause suggester
+  const [isClauseSuggesterOpen, setIsClauseSuggesterOpen] = useState(false);
+  const [clauseSuggestionDescription, setClauseSuggestionDescription] = useState('');
+  const [isSuggestingClause, setIsSuggestingClause] = useState(false);
+  const [suggestedClauseText, setSuggestedClauseText] = useState<string | null>(null);
+  const [isGeneratingAudio, setIsGeneratingAudio] = useState(false);
+  const [audioDataUri, setAudioDataUri] = useState<string | null>(null);
 
   const loadContract = useCallback(async () => {
     if (!contractId) {
@@ -333,6 +343,54 @@ function ContractEditorContent() {
       toast({ title: 'Sección Actualizada', description: 'La sección ha sido actualizada con la sugerencia de la IA.' });
     }
   };
+  
+    // Handlers for the new clause suggester dialog
+  const handleOpenClauseSuggester = () => {
+    setClauseSuggestionDescription('');
+    setSuggestedClauseText(null);
+    setAudioDataUri(null);
+    setIsClauseSuggesterOpen(true);
+  };
+
+  const handleSuggestClause = async () => {
+    if (!clauseSuggestionDescription) return;
+    setIsSuggestingClause(true);
+    setSuggestedClauseText(null);
+    setAudioDataUri(null);
+    try {
+      const { suggestedClause } = await suggestContractClause({ clauseDescription: clauseSuggestionDescription });
+      setSuggestedClauseText(suggestedClause);
+    } catch (error) {
+      console.error("Failed to suggest clause:", error);
+      toast({ title: 'Falló la Sugerencia', description: 'No se pudo generar la cláusula.', variant: 'destructive' });
+    } finally {
+      setIsSuggestingClause(false);
+    }
+  };
+
+  const handleListenToClause = async () => {
+    if (!suggestedClauseText) return;
+    setIsGeneratingAudio(true);
+    setAudioDataUri(null);
+    try {
+      const { media } = await textToSpeech(suggestedClauseText);
+      setAudioDataUri(media);
+    } catch (error) {
+      console.error("Failed to generate audio:", error);
+      toast({ title: 'Falló el Audio', description: 'No se pudo generar el audio para la cláusula.', variant: 'destructive' });
+    } finally {
+      setIsGeneratingAudio(false);
+    }
+  }
+
+  const handleAddSuggestedClause = () => {
+    if (suggestedClauseText) {
+      addCell(suggestedClauseText);
+      setIsClauseSuggesterOpen(false);
+      toast({ title: 'Sección Añadida', description: 'La cláusula sugerida por la IA ha sido añadida al final del contrato.' });
+    }
+  };
+
 
   if (isLoading) {
     return (
@@ -358,7 +416,7 @@ function ContractEditorContent() {
 
       {/* Toolbar */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8">
-          <div className="flex items-center gap-3">
+          <div className="flex flex-wrap items-center gap-3">
               <Label htmlFor="contract-type-select" className="font-medium">Tipo de Contrato:</Label>
               <Select value={currentContractType || undefined} onValueChange={handleContractTypeChange}>
                   <SelectTrigger id="contract-type-select" className="w-[300px]">
@@ -370,6 +428,10 @@ function ContractEditorContent() {
                       <SelectItem value="SaaS">Contrato SaaS</SelectItem>
                   </SelectContent>
               </Select>
+              <Button onClick={handleOpenClauseSuggester} variant="outline">
+                <Wand2 className="mr-2 h-4 w-4" />
+                Sugerir Cláusula
+              </Button>
           </div>
           <div className="flex items-center gap-2 self-start sm:self-center">
               <Button onClick={handleRenumber} disabled={isRenumbering || isSaving} variant="outline">
@@ -445,6 +507,62 @@ function ContractEditorContent() {
           <ContractPreview cells={cells} data={contractData} />
         </div>
       </div>
+
+      <Dialog open={isClauseSuggesterOpen} onOpenChange={setIsClauseSuggesterOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center">
+              <Wand2 className="mr-2 h-6 w-6 text-accent" />
+              Añadir Cláusula con IA
+            </DialogTitle>
+            <DialogDescription>
+              Describe la cláusula que necesitas y la IA redactará una sugerencia para ti. También puedes escucharla antes de añadirla.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <Textarea
+              id="suggestion-description"
+              placeholder="Ej: 'Una cláusula sobre la terminación anticipada del contrato con 30 días de preaviso.'"
+              value={clauseSuggestionDescription}
+              onChange={(e) => setClauseSuggestionDescription(e.target.value)}
+              rows={3}
+              disabled={isSuggestingClause}
+            />
+            <Button onClick={handleSuggestClause} disabled={isSuggestingClause || !clauseSuggestionDescription.trim()}>
+              {isSuggestingClause ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Wand2 className="mr-2 h-4 w-4" />}
+              Generar Sugerencia
+            </Button>
+
+            {suggestedClauseText && (
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between pb-2 pt-4">
+                  <CardTitle className="text-sm font-medium">Cláusula Sugerida</CardTitle>
+                  <Button onClick={handleListenToClause} size="sm" variant="ghost" disabled={isGeneratingAudio}>
+                      {isGeneratingAudio ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Volume2 className="mr-2 h-4 w-4" />}
+                      Escuchar
+                  </Button>
+                </CardHeader>
+                <CardContent>
+                  <p className="text-sm whitespace-pre-wrap">{suggestedClauseText}</p>
+                  {audioDataUri && (
+                      <div className="mt-4">
+                          <audio controls autoPlay src={audioDataUri} className="w-full">
+                              Tu navegador no soporta el elemento de audio.
+                          </audio>
+                      </div>
+                  )}
+                </CardContent>
+              </Card>
+            )}
+          </div>
+          <DialogFooter>
+            <Button variant="ghost" onClick={() => setIsClauseSuggesterOpen(false)}>Cancelar</Button>
+            <Button onClick={handleAddSuggestedClause} disabled={!suggestedClauseText || isSuggestingClause}>
+              Añadir al Contrato
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <Dialog open={!!rewritingCell} onOpenChange={(isOpen) => !isOpen && handleCloseRewriteDialog()}>
         <DialogContent className="sm:max-w-[600px]">

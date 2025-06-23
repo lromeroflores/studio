@@ -50,6 +50,9 @@ const suggestContractClauseFlow = ai.defineFlow(
   },
   async input => {
     const {output} = await prompt(input);
-    return output!;
+    if (!output) {
+      throw new Error('The AI failed to return a suggested clause.');
+    }
+    return output;
   }
 );
