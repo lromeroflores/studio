@@ -86,7 +86,7 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
       <CardContent className="px-6 pb-6 pt-0">
          <div className="p-10 bg-white border rounded-md min-h-[500px] overflow-y-auto font-serif text-black" ref={previewContentRef}>
             <CovaltoLogo
-              style={{ width: '150px', marginBottom: '2rem' }}
+              className="w-[150px] mb-8"
             />
             <div
               className="prose max-w-none text-justify leading-relaxed prose-strong:text-red-600 prose-headings:font-bold" 
