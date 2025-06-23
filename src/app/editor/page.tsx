@@ -548,7 +548,6 @@ function ContractEditorContent() {
                 <div key={cell.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
                   <Label htmlFor={`switch-${cell.id}`} className="flex-1 pr-4 cursor-pointer">
                     <p className="font-semibold">{cell.title || "Sección sin título"}</p>
-                    <p className="text-xs text-muted-foreground truncate">{cell.content.split('\n')[0]}</p>
                   </Label>
                   <Switch
                     id={`switch-${cell.id}`}
