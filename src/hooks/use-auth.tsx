@@ -1,1 +1,1 @@
-// This file is no longer in use as Firebase Authentication has been removed.
+// This file is no longer in use and its content has been removed.

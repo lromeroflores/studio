@@ -1,1 +1,1 @@
-// This file is no longer in use as user profile management has been removed.
+// This file is no longer in use and its content has been removed.
