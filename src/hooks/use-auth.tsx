@@ -1,1 +1,1 @@
-// This file is no longer in use and its content has been removed.
+// This hook is no longer in use and its content has been removed.
