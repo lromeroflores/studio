@@ -1,23 +1,14 @@
-
 'use client'; // Required for usePathname
 
 import React, { useEffect } from 'react'; // Added useEffect
-import { Geist, Geist_Mono } from 'next/font/google';
+import { Inter } from 'next/font/google';
 import './globals.css';
 import { Toaster } from "@/components/ui/toaster";
 import AppLayout from '@/components/layout/app-layout';
 import { usePathname } from 'next/navigation';
 // import type { Metadata } from 'next'; // Import for type safety if using generateMetadata
 
-const geistSans = Geist({
-  variable: '--font-geist-sans',
-  subsets: ['latin'],
-});
-
-const geistMono = Geist_Mono({
-  variable: '--font-geist-mono',
-  subsets: ['latin'],
-});
+const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 
 export default function RootLayout({
   children,
@@ -62,7 +53,7 @@ export default function RootLayout({
         <title>{pageTitle}</title>
         <meta name="description" content="Streamline your contract management with AI-powered tools and efficient workflows." />
       </head>
-      <body className={`${geistSans.variable} ${geistMono.variable} antialiased bg-background text-foreground`}>
+      <body className={`${inter.variable} antialiased bg-background text-foreground`}>
           {isAuthPage ? (
             children 
           ) : (
