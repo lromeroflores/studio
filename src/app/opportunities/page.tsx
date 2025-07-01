@@ -61,7 +61,7 @@ export default function OpportunitiesPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch('http://contractease.ddns.net:8080/oportunidades');
+        const response = await fetch('/api/opportunities');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }

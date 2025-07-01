@@ -369,7 +369,7 @@ function ContractEditorContent() {
 
     // --- 1. Fetch detailed data for populating the contract template ---
     try {
-        const detailedResponse = await fetch('http://contractease.ddns.net:8080/get_oportunidad', {
+        const detailedResponse = await fetch('/api/opportunity', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id_portunidad: opportunityId }),
@@ -394,7 +394,7 @@ function ContractEditorContent() {
     // --- 2. Try to load saved progress ---
     let progressLoaded = false;
     try {
-        const progressResponse = await fetch('http://contractease.ddns.net:8080/get_avance', {
+        const progressResponse = await fetch('/api/progress/get', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ id_oportunidad: opportunityId })
@@ -491,7 +491,7 @@ function ContractEditorContent() {
     };
 
     try {
-      const response = await fetch('http://contractease.ddns.net:8080/insert_avance', {
+      const response = await fetch('/api/progress/insert', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
