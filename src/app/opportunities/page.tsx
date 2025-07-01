@@ -67,8 +67,7 @@ export default function OpportunitiesPage() {
         }
         const data = await response.json();
         
-        const mappedData: Opportunity[] = data
-          .filter((opp: any) => opp.id_portunidad && opp.tipo_contrato === 'NDA') // Filter for NDA and valid ID
+        const mappedData: Opportunity[] = data.filter((opp: any) => opp.id_portunidad && opp.tipo_contrato === 'NDA') // Filter for NDA and valid ID
           .map((opp: any) => ({
             id: `${opp.id_portunidad}`,
             clientName: opp.nombre_oportunidad,
