@@ -1,0 +1,36 @@
+
+steps:
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - image
+      - build
+      - '-t'
+      - >-
+        us-central1-docker.pkg.dev/$PROJECT_ID/ai-services/contract-ease-app
+      - .
+  - name: gcr.io/cloud-builders/docker
+    args:
+      - image
+      - push
+      - >-
+        us-central1-docker.pkg.dev/$PROJECT_ID/ai-services/contract-ease-app
+  - name: gcr.io/google.com/cloudsdktool/cloud-sdk
+    args:
+      - gcloud
+      - run
+      - deploy
+      - contract-ease-webapp
+      - '--image=us-central1-docker.pkg.dev/$PROJECT_ID/ai-services/contract-ease-app'
+      - '--region=us-central1'
+      - '--platform=managed'
+      - '--memory=1Gi'
+      - '--allow-unauthenticated'
+      - '--service-account=label-studio-for-hitl@$PROJECT_ID.iam.gserviceaccount.com'
+      - '--update-secrets=GOOGLE_API_KEY=gemini-api-key:latest'
+      - '--min-instances=0'
+      - '--max-instances=3'
+      - '--update-labels=environment=${_ENV}'
+
+options:
+  pool:
+    name: projects/$PROJECT_ID/locations/us-central1/workerPools/worker-pool

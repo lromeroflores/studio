@@ -61,18 +61,17 @@ export default function OpportunitiesPage() {
       setIsLoading(true);
       setError(null);
       try {
-        const response = await fetch('https://magicloops.dev/api/loop/f4f138b7-61e0-455e-913a-e6709d111f13/run');
+        const response = await fetch('http://contractease.ddns.net:8080/oportunidades');
         if (!response.ok) {
           throw new Error(`HTTP error! status: ${response.status}`);
         }
         const data = await response.json();
         
-        const mappedData: Opportunity[] = data.oportunidades
+        const mappedData: Opportunity[] = data
           .filter((opp: any) => opp.id_portunidad && opp.tipo_contrato === 'NDA') // Filter for NDA and valid ID
           .map((opp: any) => ({
-            id: `opp-${opp.id_portunidad}`,
+            id: `${opp.id_portunidad}`,
             clientName: opp.nombre_oportunidad,
-            contractId: `${opp.id_portunidad}`, // Use raw ID for contract linking
             contractType: opp.tipo_contrato,
             opportunityStatus: mapApiStatusToOpportunityStatus(opp.estatus),
             contractStatus: mapApiStatusToContractStatus(opp.estatus),
@@ -93,7 +92,7 @@ export default function OpportunitiesPage() {
 
   const handleSelectOpportunity = (opportunity: Opportunity) => {
     const query = new URLSearchParams({
-      contractId: opportunity.contractId,
+      opportunityId: opportunity.id,
       opportunityName: opportunity.clientName,
       contractType: opportunity.contractType,
     }).toString();

@@ -332,7 +332,7 @@ function ContractEditorContent() {
   const { toast } = useToast();
 
   const opportunityName = searchParams.get('opportunityName') || 'Oportunidad sin Nombre';
-  const contractId = searchParams.get('contractId');
+  const opportunityId = searchParams.get('opportunityId');
 
   const [cells, setCells] = useState<ContractCell[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -355,7 +355,7 @@ function ContractEditorContent() {
   const visibleCellIds = useMemo(() => cells.filter(c => c.visible).map(c => c.id), [cells]);
 
   const loadContract = useCallback(async () => {
-    if (!contractId) {
+    if (!opportunityId) {
         setIsLoading(false);
         toast({ title: 'Error', description: 'No se proporcionó un ID de oportunidad.', variant: 'destructive' });
         const template = defaultTemplates[0];
@@ -369,10 +369,10 @@ function ContractEditorContent() {
 
     // --- 1. Fetch detailed data for populating the contract template ---
     try {
-        const detailedResponse = await fetch('https://magicloops.dev/api/loop/1c7ea39e-d598-42f8-8db7-1f84ebe37135/run', {
+        const detailedResponse = await fetch('http://contractease.ddns.net:8080/get_oportunidad', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_portunidad: contractId }),
+            body: JSON.stringify({ id_portunidad: opportunityId }),
         });
         
         if (detailedResponse.ok) {
@@ -394,10 +394,10 @@ function ContractEditorContent() {
     // --- 2. Try to load saved progress ---
     let progressLoaded = false;
     try {
-        const progressResponse = await fetch('https://magicloops.dev/api/loop/6b6a524c-dc85-401b-bcb3-a99daa6283eb/run', {
+        const progressResponse = await fetch('http://contractease.ddns.net:8080/get_avance', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ id_oportunidad: contractId })
+            body: JSON.stringify({ id_oportunidad: opportunityId })
         });
 
         if (progressResponse.ok) {
@@ -428,7 +428,7 @@ function ContractEditorContent() {
     }
 
     setIsLoading(false);
-  }, [contractId, toast]);
+  }, [opportunityId, toast]);
 
 
   useEffect(() => {
@@ -477,7 +477,7 @@ function ContractEditorContent() {
   };
 
   const handleSave = async () => {
-    if (!contractId) {
+    if (!opportunityId) {
       toast({ title: 'Error al Guardar', description: 'No hay un ID de contrato u oportunidad para guardar.', variant: 'destructive' });
       return;
     }
@@ -486,12 +486,12 @@ function ContractEditorContent() {
     toast({ title: 'Guardando...', description: 'Tu progreso está siendo guardado.' });
 
     const payload = {
-      id_oportunidad: contractId,
+      id_oportunidad: opportunityId,
       avance_json: { cells },
     };
 
     try {
-      const response = await fetch('https://magicloops.dev/api/loop/d3200bc0-87ba-431e-a93b-e2245b612d09/run', {
+      const response = await fetch('http://contractease.ddns.net:8080/insert_avance', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
@@ -615,7 +615,7 @@ function ContractEditorContent() {
           </Button>
           <div>
             <h1 className="text-3xl font-bold tracking-tight text-foreground">{contractData?.nombre_oportunidad || opportunityName}</h1>
-            {contractId && <p className="text-sm text-muted-foreground mt-1">ID de Oportunidad: {contractId}</p>}
+            {opportunityId && <p className="text-sm text-muted-foreground mt-1">ID de Oportunidad: {opportunityId}</p>}
           </div>
       </div>
 

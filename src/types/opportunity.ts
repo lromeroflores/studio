@@ -1,8 +1,7 @@
 
 export interface Opportunity {
   id: string;
-  clientName: string;
-  contractId: string; // To link to the contract for editing
+  clientName: string;// To link to the contract for editing
   contractType: string; // e.g., "NDA", "Service Agreement"
   opportunityStatus: 'Nuevo' | 'En Progreso' | 'Completado';
   contractStatus: 'Borrador' | 'En Revisión' | 'Firmado';

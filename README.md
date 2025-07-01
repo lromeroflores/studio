@@ -57,56 +57,129 @@ Once both servers are running, you can open your browser to `http://localhost:30
 
 ---
 
-## Deployment with Docker and Cloud Run
+## Deployment Cloud Run
 
 This application is configured to be deployed as a container using Docker, which is ideal for services like Google Cloud Run.
 
 ### 1. Build the Docker Image
 
-From the root of your project, run the following command to build the Docker image. Replace `your-project-id` with your GCP project ID and `contract-ease-app` with your desired image name.
+You can build the image manually or use `make`:
 
 ```bash
-docker build -t gcr.io/your-project-id/contract-ease-app:latest .
+make build
 ```
 
-### 2. Run the Container Locally (Optional)
-
-To test the container on your local machine before deploying, run:
+Equivalent to:
 
 ```bash
-docker run -p 3000:3000 -e GOOGLE_API_KEY="your_api_key_here" gcr.io/your-project-id/contract-ease-app:latest
+docker build -t us-central1-docker.pkg.dev/YOUR_PROJECT_ID/ai-services/contract-ease-app .
 ```
 
-This command starts the container, maps port 3000 to your local machine, and passes the required API key as an environment variable. You should be able to access the app at `http://localhost:3000`.
+Replace `YOUR_PROJECT_ID` with your actual GCP project ID.
 
-### 3. Push the Image to Google Container Registry (GCR)
+---
 
-First, configure Docker to authenticate with GCR:
+### 2. Push the Image to Artifact Registry
+
+Authenticate Docker with Artifact Registry:
+
 ```bash
-gcloud auth configure-docker
+gcloud auth configure-docker us-central1-docker.pkg.dev
 ```
 
-Then, push your image to the registry:
+Then push the image (or run `make push`):
+
 ```bash
-docker push gcr.io/your-project-id/contract-ease-app:latest
+make push
 ```
+
+Equivalent to:
+
+```bash
+docker push us-central1-docker.pkg.dev/YOUR_PROJECT_ID/ai-services/contract-ease-app
+```
+
+---
+
+### 3. (Optional) Create or Update the Secret
+
+If you haven’t created the secret yet:
+
+```bash
+echo -n "your_api_key_here" | gcloud secrets create google-api-key --data-file=-
+```
+
+To add a new version to an existing secret:
+
+```bash
+echo -n "your_api_key_here" | gcloud secrets versions add google-api-key --data-file=-
+```
+
+Ensure your Cloud Run **service account** has the following IAM role:
+
+```bash
+roles/secretmanager.secretAccessor
+```
+
+---
 
 ### 4. Deploy to Cloud Run
 
-Deploy your container image to Cloud Run with the following command. This command sets crucial environment variables and memory limits.
+You can deploy using:
+
+```bash
+make deploy ENV=dev
+```
+
+This will:
+
+- Use the image from Artifact Registry
+- Inject the secret `google-api-key` as the `GOOGLE_API_KEY` environment variable
+- Set memory and instance limits
+- Add the environment label (`dev`, `staging`, `prod`, etc.)
+
+Manual equivalent:
 
 ```bash
 gcloud run deploy contract-ease-service \
-  --image gcr.io/your-project-id/contract-ease-app:latest \
+  --image us-central1-docker.pkg.dev/YOUR_PROJECT_ID/ai-services/contract-ease-app \
   --platform managed \
-  --region your-chosen-region \
+  --region us-central1 \
+  --memory=1Gi \
   --allow-unauthenticated \
-  --set-env-vars="GOOGLE_API_KEY=your_api_key_here" \
-  --memory=1Gi
+  --service-account=invoke-eeff-data-extraction@YOUR_PROJECT_ID.iam.gserviceaccount.com \
+  --update-secrets=GOOGLE_API_KEY=google-api-key:latest \
+  --min-instances=0 \
+  --max-instances=3 \
+  --update-labels=environment=dev
 ```
 
-- Replace `your-chosen-region` with a region like `us-central1`.
-- You will be prompted to set other options on the first deploy.
-- For production, you should store your `GOOGLE_API_KEY` securely using [Secret Manager](https://cloud.google.com/secret-manager) and integrate it with Cloud Run.
+> 🔐 `GOOGLE_API_KEY` will be available as a secure environment variable in your container.
 
-This process provides a robust and scalable way to run your ContractEase application on Google Cloud.
+---
+
+### 🧪 Run Locally (Optional)
+
+To test the container locally:
+
+```bash
+docker run -p 3000:3000 -e GOOGLE_API_KEY="your_api_key_here" us-central1-docker.pkg.dev/YOUR_PROJECT_ID/ai-services/contract-ease-app
+```
+
+Then open [http://localhost:3000](http://localhost:3000) in your browser.
+
+---
+
+## 🛠️ Makefile Targets
+
+| Command              | Description                         |
+|----------------------|-------------------------------------|
+| `make build`         | Build the Docker image              |
+| `make push`          | Push the image to Artifact Registry |
+| `make deploy ENV=dev`| Deploy the app to Cloud Run         |
+
+Make sure your environment has `PROJECT_ID` exported if the Makefile relies on it.
+
+---
+
+This setup ensures secure, repeatable, and scalable deployments for the ContractEase application using modern GCP tools.
