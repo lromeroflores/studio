@@ -4,7 +4,7 @@ export const dynamic = 'force-dynamic';
 
 export async function GET() {
   try {
-    const response = await fetch('http://contractease.ddns.net:8080/oportunidades', {
+    const response = await fetch('https://magicloops.dev/api/loop/a3f448a1-695c-43a4-b708-ff8d94b037d7/run', {
       headers: {
         'Accept': 'application/json',
       },
