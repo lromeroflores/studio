@@ -47,7 +47,7 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
     textFallback.textContent = 'Covalto';
     textFallback.style.fontWeight = 'bold';
     textFallback.style.fontSize = '24px';
-    textFallback.style.color = '#002642';
+    textFallback.style.color = '#002642'; // Covalto Blue
 
     if (logoContainer && logoSvg) {
       logoContainer.replaceChild(textFallback, logoSvg);
