@@ -180,8 +180,8 @@ export const defaultTemplates: ContractTemplate[] = [
           visible: true,
         },
         {
-          title: 'Seccion 1 - Tercer clausula',
-          content: `TERCERA. Disposición del Crédito.<br>3.1 (tres punto uno) El Crédito estará vigente hasta el día especificado en el inciso I del Anexo A como Vigencia del Crédito y el Acreditado podrá hacer disposiciones de crédito de conformidad con lo establecido en la presente Cláusula y para el destino que se señala en el inciso I del Anexo A como Destino del Crédito. En la inteligencia que, si no dispone del Crédito, el presente instrumento quedará automáticamente terminado, siendo el Acreditado responsable de cubrir directamente todos los costos y gastos asociados con la preparación, celebración, inscripción, terminación y cancelación de este instrumento.`,
+          title: 'Seccion 1-  Tercer clausula',
+          content: `TERCERA. Disposición del Crédito.\n3.1 (tres punto uno) El Crédito estará vigente hasta el día especificado en el inciso I del Anexo A como Vigencia del Crédito y el Acreditado podrá hacer disposiciones de crédito de conformidad con lo establecido en la presente Cláusula y para el destino que se señala en el inciso I del Anexo A como Destino del Crédito. En la inteligencia que, si no dispone del Crédito, el presente instrumento quedará automáticamente terminado, siendo el Acreditado responsable de cubrir directamente todos los costos y gastos asociados con la preparación, celebración, inscripción, terminación y cancelación de este instrumento.`,
           visible: true,
         },
         {
@@ -230,7 +230,7 @@ export const defaultTemplates: ContractTemplate[] = [
           visible: false,
         },
         {
-          title: 'Seccion 2 - Tercer clausula',
+          title: 'Seccion 3 - Tercer clausula',
           content: `3.5 (tres punto cinco) El Acreditado se obliga a pagar al Banco, por concepto de disposición de Crédito el porcentaje especificado en el inciso I del Anexo A como Comisión por Disposición, mismo que se descontará de la disposición que realice, en el entendido que el monto máximo anual de pago de comisiones por disposición será el porcentaje especificado en el inciso I del Anexo A como Monto máximo anual el cual se calculará sobre el monto total de la línea de Crédito y se genera a partir de la fecha de celebración del presente contrato.<br>El Acreditado se obliga a pagar los costos y comisiones establecidos en la Solicitud de Disposición del Crédito.<br>3.6 (tres punto seis) Adicionalmente, la disposición respectiva deberá ser expresamente autorizada por el Acreditante, y deberá cumplir, con la condición de que no hubiera ocurrido alguna Causa de Vencimiento Anticipado, del presente Contrato, ni ningún hecho que con el lapso del tiempo llegue a constituir una Causa de Vencimiento Anticipado.<br>3.7 (tres punto siete) El Acreditado reconoce que la suscripción y entrega del pagaré que documente cada disposición del Crédito no constituye pago, novación, modificación o extinción de las obligaciones que el Acreditado asume ante el Acreditante en el presente Contrato.`,
           visible: true,
         },
@@ -245,5 +245,7 @@ export const defaultTemplates: ContractTemplate[] = [
     }
   },
 ];
+
+    
 
     
