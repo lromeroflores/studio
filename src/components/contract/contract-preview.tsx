@@ -47,24 +47,29 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
         format: 'letter',
       });
   
-      // Create a temporary, clean div for PDF generation to avoid issues with live DOM
-      const exportContainer = document.createElement('div');
-      exportContainer.style.width = '612px'; // Standard US Letter width in points
-      exportContainer.style.padding = '72px'; // Corresponds to 1-inch margins
-      exportContainer.style.fontFamily = 'serif';
-      exportContainer.style.fontSize = '12px';
-      exportContainer.style.color = 'black';
-      exportContainer.innerHTML = `<h1>Covalto</h1><br/><br/>${finalContractHtml.replace(/<strong style="color: red;">/g, '<strong>').replace(/<\/strong>/g, '</strong>')}`;
+      // Clone the preview node to avoid modifying the live DOM and apply export styles
+      const exportContainer = contentNode.cloneNode(true) as HTMLElement;
+      exportContainer.style.width = '612px';
+      exportContainer.style.padding = '72px'; 
+      exportContainer.style.boxSizing = 'border-box';
+      exportContainer.style.backgroundColor = 'white'; // Ensure white background
+      exportContainer.style.color = 'black'; // Ensure black text
       
+      // Remove red color from strong tags for printing
+      exportContainer.querySelectorAll('strong').forEach(el => {
+        el.style.color = 'black';
+      });
+
       // Make it invisible but renderable
       exportContainer.style.position = 'absolute';
       exportContainer.style.left = '-9999px';
+      exportContainer.style.top = '0';
       
       document.body.appendChild(exportContainer);
   
       await pdf.html(exportContainer, {
         autoPaging: 'text',
-        width: 612 - 144, // Letter width (612pt) - 2 * 72pt margins
+        width: 612, 
         windowWidth: 612,
         margin: [72, 72, 72, 72],
       });
