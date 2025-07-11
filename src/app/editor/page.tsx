@@ -352,14 +352,23 @@ function ContractEditorContent() {
   // State for section manager
   const [isSectionManagerOpen, setIsSectionManagerOpen] = useState(false);
 
+  // State for conditional sections
+  const [tipoAcreditado, setTipoAcreditado] = useState<'Persona Moral' | 'Persona Fisica'>('Persona Moral');
+
   const visibleCellIds = useMemo(() => cells.filter(c => c.visible).map(c => c.id), [cells]);
+
+  const generateContractCells = useCallback((templateDataSource: Record<string, any>, accreditedType: string) => {
+    const template = defaultTemplates[0]; // Always NDA
+    const fullData = { ...templateDataSource, TIPO_ACREDITADO: accreditedType };
+    const initialCells = template.generateCells(fullData).map(c => ({...c, visible: true}));
+    setCells(initialCells);
+  }, []);
 
   const loadContract = useCallback(async () => {
     if (!opportunityId) {
         setIsLoading(false);
         toast({ title: 'Error', description: 'No se proporcionó un ID de oportunidad.', variant: 'destructive' });
-        const template = defaultTemplates[0];
-        setCells(template.generateCells({}).map(c => ({...c, visible: true})));
+        generateContractCells({}, tipoAcreditado);
         return;
     }
 
@@ -367,7 +376,6 @@ function ContractEditorContent() {
 
     let templateDataSource: Record<string, any> = {};
 
-    // --- 1. Fetch detailed data for populating the contract template ---
     try {
         const detailedResponse = await fetch('/api/opportunity', {
             method: 'POST',
@@ -387,11 +395,9 @@ function ContractEditorContent() {
         console.error("Error fetching detailed contract data. A blank template will be generated.", error);
     }
     
-    // Set contractData for display purposes (e.g., header title)
     setContractData(templateDataSource);
 
 
-    // --- 2. Try to load saved progress ---
     let progressLoaded = false;
     try {
         const progressResponse = await fetch('/api/progress/get', {
@@ -407,6 +413,7 @@ function ContractEditorContent() {
             if (savedData && savedData.avance_json && savedData.avance_json.cells && savedData.avance_json.cells.length > 0) {
                 const loadedCells = savedData.avance_json.cells.map((c: ContractCell) => ({ ...c, visible: c.visible !== false }));
                 setCells(loadedCells);
+                setTipoAcreditado(savedData.avance_json.tipoAcreditado || 'Persona Moral');
                 toast({ title: 'Progreso Cargado', description: 'Se ha restaurado tu último avance guardado.' });
                 progressLoaded = true;
             }
@@ -415,28 +422,30 @@ function ContractEditorContent() {
         console.warn("No saved progress found or failed to load, proceeding to generate new contract.", error);
     }
 
-    // --- 3. If no progress was loaded, generate from template ---
     if (!progressLoaded) {
-        const template = defaultTemplates[0]; // Always NDA
-        // NOTE: Here you could add a UI to select `TIPO_ACREDITADO`
-        // For now, we default to 'Persona Moral'.
-        const fullData = { ...templateDataSource, TIPO_ACREDITADO: 'Persona Moral' };
-        const initialCells = template.generateCells(fullData).map(c => ({...c, visible: true}));
-        setCells(initialCells);
+        generateContractCells(templateDataSource, tipoAcreditado);
         if (Object.keys(templateDataSource).length > 0) {
-            toast({ title: 'Contrato Generado', description: `Se ha generado un nuevo contrato para ${template.name}.` });
+            toast({ title: 'Contrato Generado', description: `Se ha generado un nuevo contrato.` });
         } else {
-             toast({ title: 'Plantilla Cargada', description: `Inicia un nuevo contrato para ${template.name}.` });
+             toast({ title: 'Plantilla Cargada', description: `Inicia un nuevo contrato.` });
         }
     }
 
     setIsLoading(false);
-  }, [opportunityId, toast]);
+  }, [opportunityId, toast, generateContractCells, tipoAcreditado]);
 
 
   useEffect(() => {
     loadContract();
   }, [loadContract]);
+
+
+  useEffect(() => {
+    if (!isLoading && contractData) { // Only regenerate if initial data is loaded
+      generateContractCells(contractData, tipoAcreditado);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [tipoAcreditado, isLoading]);
   
   const updateCellContent = (id: string, newContent: string) => {
     setCells(cells.map(cell => cell.id === id ? { ...cell, content: newContent } : cell));
@@ -490,7 +499,7 @@ function ContractEditorContent() {
 
     const payload = {
       id_oportunidad: opportunityId,
-      avance_json: { cells },
+      avance_json: { cells, tipoAcreditado },
     };
 
     try {
@@ -600,7 +609,7 @@ function ContractEditorContent() {
     ));
   };
 
-  if (isLoading) {
+  if (isLoading && cells.length === 0) {
     return (
       <div className="flex justify-center items-center h-96">
         <Loader2 className="h-16 w-16 animate-spin text-primary" />
@@ -629,6 +638,16 @@ function ContractEditorContent() {
               <div id="contract-type-display" className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 py-2 text-sm sm:w-[300px]">
                 <span>Acuerdo de Confidencialidad (NDA)</span>
               </div>
+              <Label htmlFor="accredited-type-select" className="font-medium">Tipo de Acreditado:</Label>
+              <Select value={tipoAcreditado} onValueChange={(value) => setTipoAcreditado(value as 'Persona Moral' | 'Persona Fisica')}>
+                <SelectTrigger id="accredited-type-select" className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Seleccionar tipo..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="Persona Moral">Persona Moral</SelectItem>
+                    <SelectItem value="Persona Fisica">Persona Fisica</SelectItem>
+                </SelectContent>
+              </Select>
           </div>
           <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 w-full sm:w-auto">
               <Button onClick={() => setIsClauseSuggesterOpen(true)} variant="outline">
