@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'id_oportunidad is required' }, { status: 400 });
     }
 
-    const response = await fetch('http://contractease.ddns.net:8080/get_avance', {
+    const response = await fetch('https://magicloops.dev/api/loop/dafdd36b-8aae-46ee-8005-92d06fd4629e/run', {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
