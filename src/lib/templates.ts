@@ -13,6 +13,7 @@ export const defaultTemplates: ContractTemplate[] = [
       { id: 'NOMBRE_DE_LA_ACREDITADA', label: 'Nombre del Acreditado', type: 'text', required: true },
       { id: 'NOMBRE_OBLIGADOS_SOLIDARIOS', label: 'Nombre(s) de Obligado(s) Solidario(s)', type: 'textarea', required: true },
       { id: 'APODERADO_COVALTO', label: 'Apoderado Legal de Covalto', type: 'text', required: true },
+      { id: 'TIPO_ACREDITADO', label: 'Tipo de Acreditado', type: 'text', placeholder: 'Persona Moral o Persona Fisica', required: true },
     ],
     generateCells: (formData): ContractCell[] => {
       const data = {
@@ -22,6 +23,7 @@ export const defaultTemplates: ContractTemplate[] = [
         NOMBRE_DE_LA_ACREDITADA: '[NOMBRE DE LA ACREDITADA]',
         NOMBRE_OBLIGADOS_SOLIDARIOS: '[NOMBRE OBLIGADOS SOLIDARIOS]',
         APODERADO_COVALTO: '[APODERADO COVALTO]',
+        TIPO_ACREDITADO: 'Persona Moral', // Default value
         ...formData,
       };
 
@@ -31,6 +33,26 @@ export const defaultTemplates: ContractTemplate[] = [
         }
         return `<strong style="color: red;">${String(text)}</strong>`;
       };
+      
+      const declaracionesAcreditadoMoral = `
+(a) Es una sociedad debidamente constituida y existente conforme a las leyes de México, según como se relaciona en el inciso II del Anexo A.
+(b) Su(s) representante(s) cuenta(n) con las facultades suficientes y necesarias para celebrar el presente Contrato de Crédito, como se relaciona en el inciso II del Anexo A, mismas que no le han sido revocadas, limitadas o modificadas en forma alguna a la fecha de firma de este documento. 
+(c) Que cuenta con la capacidad suficiente para desarrollar sus negocios a lo largo de toda la República Mexicana, con domicilio fiscal y con Registro Federal de Contribuyentes relacionados en el inciso II del Anexo A.
+(d) 	La suscripción, entrega y cumplimiento del presente instrumento y de cualquier otro documento o título de crédito que el Acreditado deba suscribir conforme al mismo está comprendido dentro de su objeto social, ha sido debidamente autorizado por sus Accionistas o socios y por todos los órganos corporativos correspondientes y no viola: (i) sus estatutos vigentes a la fecha de este documento; ni (ii) ley o disposición normativa o contractual alguna que le obligue o afecte.
+(e) Que actúa en nombre y para beneficio de su representada y no para terceras personas y no existe propietario real distinto al de las personas que ejercen el control según consta en la documentación proporcionada al Banco, que los recursos con los que su representada hará frente a las obligaciones de pago que deriven a su cargo con motivo del presente Contrato son y serán propios y de procedencia lícita, y son producto de su actividad comercial lícita.
+      `.trim();
+
+      const declaracionesAcreditadoFisica = `
+(a) Es una persona física, con capacidad legal suficiente para obligarse en los términos y condiciones del presente Contrato de Crédito y comparece por su propio derecho.
+(b) Actúa por cuenta propia y no a favor de terceros, cuyos generales se relacionan en el inciso II del Anexo A.
+(c) Que cuenta con la capacidad suficiente para desarrollar sus negocios a lo largo de toda la República Mexicana, con domicilio fiscal y con Registro Federal de Contribuyentes relacionados en el inciso II del Anexo A.
+(d) 	La suscripción, entrega y cumplimiento del presente instrumento y de cualquier otro documento o título de crédito que el Acreditado deba suscribir conforme al mismo no viola ley o disposición normativa o contractual alguna que le obligue o afecte.
+(e) Que actúa en nombre y para beneficio propio y no para terceras personas, que los recursos con los que hará frente a las obligaciones de pago que deriven a su cargo con motivo del presente Contrato son y serán propios y de procedencia lícita, y son producto de su actividad comercial lícita.
+      `.trim();
+      
+      const declaracionesAcreditadoContent = data.TIPO_ACREDITADO === 'Persona Moral' 
+        ? declaracionesAcreditadoMoral 
+        : declaracionesAcreditadoFisica;
 
       const cells = [
         {
@@ -40,6 +62,10 @@ export const defaultTemplates: ContractTemplate[] = [
         {
           title: 'Inicio',
           content: `EL CONTRATO DE APERTURA DE CRÉDITO Y OBLIGACIÓN SOLIDARIA (el “Contrato de Crédito”) que celebran por una parte BANCO COVALTO, SOCIEDAD ANÓNIMA INSTITUCIÓN DE BANCA MÚLTIPLE, representada por su apoderado legal, el señor ${styleVar(data.APODERADO_COVALTO)} como Acreditante (el “Acreditante” y/o el “Banco”) con el Acreditado y Obligado(s) Solidario(s) especificados en el Anexo A, en su conjunto identificados como las Partes (las “Partes”); al tenor de las siguientes declaraciones y cláusulas:\n------------------------------------------------- DECLARACIONES\nI. Declaraciones del Acreditante. Declara “BANCO COVALTO”, SOCIEDAD ANÓNIMA INSTITUCIÓN DE BANCA MÚLTIPLE, a través de su representante, que:\n(a) Es una Institución de Crédito, constituida y existente conforme a las leyes de los Estados Unidos Mexicanos (“México”), según consta en la escritura número setenta y ocho mil ciento cuatro, de fecha tres de junio del año dos mil tres, otorgada ante la fe del Licenciado José Visoso del Valle, Notario Público número noventa y dos de la Ciudad de México.\n(b) Es una Institución de Crédito, debidamente autorizada por la Secretaría de Hacienda y Crédito Público para actuar como Institución de Banca Múltiple y se encuentra facultada para celebrar el presente contrato y para asumir y dar cumplimiento a las obligaciones que en el mismo se establecen.\n(c) Su Registro Federal de Contribuyentes es “GFI0306041K7”.\n(d) Tiene su domicilio, para efectos de la Cláusula Vigésima Cuarta de este instrumento, en calle Ferrocarril de Cuernavaca número seiscientos ochenta y nueve, piso nueve, colonia Granada, Alcaldía Miguel Hidalgo, código postal once mil quinientos veintinueve, en la Ciudad de México.\n(e) La suscripción, entrega y cumplimiento del presente instrumento está comprendido dentro de su objeto social, ha sido debidamente autorizado por todos los órganos corporativos correspondientes y no viola: (i) sus estatutos vigentes a la fecha de este documento; ni (ii) ley o disposición normativa o contractual alguna que le obligue o afecte.\n(f) Explicó a las partes de este instrumento el contenido y alcance del mismo.\n(g) Su “Aviso de Privacidad” vigente se encuentra disponible al público en general en el portal de Internet “https://covalto.com/privacidad/#info”; en la inteligencia que, el mismo podrá variar de tiempo en tiempo.\n(h) Su representante cuenta con facultades suficientes para celebrar el presente instrumento en su nombre y representación; facultades que no le han sido revocadas, modificadas o limitadas en forma alguna a la fecha de firma de este documento.\n(i) Con base en las declaraciones del Acreditado y del Obligado Solidario, así como en la información legal y financiera y demás información proporcionada por éstos al Acreditante, y sujeto a los términos y condiciones previstos en el presente instrumento conviene en celebrar el presente contrato.`,
+        },
+        {
+            title: 'Declaraciones Acreditado',
+            content: `II. Declaraciones del Acreditado. Declara el Acreditado que:\n${declaracionesAcreditadoContent}`
         }
       ];
 
@@ -52,3 +78,5 @@ export const defaultTemplates: ContractTemplate[] = [
     }
   },
 ];
+
+    

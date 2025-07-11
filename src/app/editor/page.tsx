@@ -418,7 +418,10 @@ function ContractEditorContent() {
     // --- 3. If no progress was loaded, generate from template ---
     if (!progressLoaded) {
         const template = defaultTemplates[0]; // Always NDA
-        const initialCells = template.generateCells(templateDataSource).map(c => ({...c, visible: true}));
+        // NOTE: Here you could add a UI to select `TIPO_ACREDITADO`
+        // For now, we default to 'Persona Moral'.
+        const fullData = { ...templateDataSource, TIPO_ACREDITADO: 'Persona Moral' };
+        const initialCells = template.generateCells(fullData).map(c => ({...c, visible: true}));
         setCells(initialCells);
         if (Object.keys(templateDataSource).length > 0) {
             toast({ title: 'Contrato Generado', description: `Se ha generado un nuevo contrato para ${template.name}.` });
