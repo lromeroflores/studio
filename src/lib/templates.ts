@@ -14,6 +14,7 @@ export const defaultTemplates: ContractTemplate[] = [
       { id: 'NOMBRE_OBLIGADOS_SOLIDARIOS', label: 'Nombre(s) de Obligado(s) Solidario(s)', type: 'textarea', required: true },
       { id: 'APODERADO_COVALTO', label: 'Apoderado Legal de Covalto', type: 'text', required: true },
       { id: 'TIPO_ACREDITADO', label: 'Tipo de Acreditado', type: 'text', placeholder: 'Persona Moral o Persona Fisica', required: true },
+      { id: 'TIPO_OBLIGADO_SOLIDARIO', label: 'Tipo de Obligado Solidario', type: 'text', placeholder: 'Persona Moral o Persona Fisica', required: true },
     ],
     generateCells: (formData): ContractCell[] => {
       const data = {
@@ -24,6 +25,7 @@ export const defaultTemplates: ContractTemplate[] = [
         NOMBRE_OBLIGADOS_SOLIDARIOS: '[NOMBRE OBLIGADOS SOLIDARIOS]',
         APODERADO_COVALTO: '[APODERADO COVALTO]',
         TIPO_ACREDITADO: 'Persona Moral', // Default value
+        TIPO_OBLIGADO_SOLIDARIO: 'Persona Moral', // Default value
         ...formData,
       };
 
@@ -53,6 +55,24 @@ export const defaultTemplates: ContractTemplate[] = [
       const declaracionesAcreditadoContent = data.TIPO_ACREDITADO === 'Persona Moral' 
         ? declaracionesAcreditadoMoral 
         : declaracionesAcreditadoFisica;
+
+      const declaracionesObligadoSolidarioFisica = `
+(a) Es (Son) una persona(s) física(s), con capacidad legal suficiente para obligarse en los términos y condiciones del presente Contrato de Crédito y comparece(n) por su propio derecho, por cuenta propia y no a favor de terceros, cuyos generales se relacionan en el inciso III del Anexo A.
+      `.trim();
+
+      const declaracionesObligadoSolidarioMoral = `
+(a.1) Es una sociedad debidamente constituida y existente conforme a las leyes de México, según como se relaciona en el inciso III del Anexo A.
+(a.2) Su(s) representante(s) cuenta(n) con las facultades suficientes y necesarias para celebrar el presente Contrato de Crédito, como se relaciona en el inciso III del Anexo A, mismas que no le han sido revocadas, limitadas o modificadas en forma alguna a la fecha de firma de este documento.
+(a.3) Que cuenta con la capacidad suficiente para desarrollar sus negocios a lo largo de toda la República Mexicana, con domicilio fiscal y con Registro Federal de Contribuyentes relacionados en el inciso III del Anexo A.
+(a.4) Su objeto social permite expresamente obligarse solidariamente y garantizar obligaciones de terceros.
+(a.5) La suscripción, entrega y cumplimiento del presente instrumento y de cualquier otro documento o título de crédito que el Obligado Solidario deba suscribir conforme al mismo, está comprendido dentro de su objeto social, ha sido debidamente autorizado por sus accionistas o socios y por todos los órganos corporativos correspondientes y no viola: (i) sus estatutos vigentes a la fecha de este documento; ni (ii) ley o disposición normativa o contractual alguna que le obligue o afecte.
+(a.6) Está de acuerdo en obligarse solidariamente con el Acreditado al cumplimiento y pago exacto y puntual de las obligaciones que le derivan a éste del presente instrumento le reporta un beneficio al Obligado Solidario en razón de la relación corporativa, patrimonial y/o comercial que mantiene con el Acreditado.
+      `.trim();
+
+      const declaracionesObligadoSolidarioContent = data.TIPO_OBLIGADO_SOLIDARIO === 'Persona Moral'
+        ? declaracionesObligadoSolidarioMoral
+        : declaracionesObligadoSolidarioFisica;
+
 
       const cells = [
         {
@@ -92,6 +112,10 @@ export const defaultTemplates: ContractTemplate[] = [
 (y) Conoce la situación sanitaria y económica derivada de la pandemia “COVID-19”, por lo que desarrolló e implementó una estrategia general de negocio conducente. En este sentido, no podrá alegar caso fortuito o fuerza mayor derivada de la situación sanitaria antes mencionada -o sus efectos o consecuencias- para incumplir a las obligaciones contraídas al amparo del Contrato de Crédito, de conformidad con lo dispuesto en la Cláusula Vigésima Quinta.
 (z) Previo a la firma del presente Contrato, el Acreditado realizó la gestión necesaria para dar de alta su firma electrónica avanzada consistente en el conjunto de datos y caracteres que permite la identificación del firmante, que ha sido creada por medios electrónicos bajo su exclusivo control, de manera que está vinculada únicamente al mismo y a los datos a los que se refiere, lo que permite que sea detectable cualquier modificación ulterior de éstos, la cual produce los mismos efectos jurídicos que la firma autógrafa (la “FIEL”) misma que se podrá utilizar, en este contrato como su firma electrónica, que consiste en los datos en forma electrónica consignados en un mensaje de datos, o adjuntados o lógicamente asociados al mismo, que son utilizados para identificar al firmante en relación con el Mensaje de Datos e indicar que el firmante aprueba la información contenida en el mensaje de datos, y que produce los mismos efectos jurídicos que la firma autógrafa, siendo inclusive admisible como prueba en juicio (la “Firma Electrónica”) para la formalización del presente Contrato, la Solicitud de Disposición del Crédito, el Pagaré y demás Documentos del Crédito. Es uno de los motivos determinantes de la voluntad de las Partes reconocer que el presente Contrato se podrá celebrar mediante Firma Electrónica y que en dado caso tendrá la misma validez y eficacia como si hubiese sido celebrado con firma autógrafa.
 (aa) Tiene pleno conocimiento del alcance, forma de uso y características de una Firma Electrónica. Adicionalmente y de manera personal realizó todas las gestiones para dar de alta su firma electrónica avanzada y es el único usuario y responsable de la misma, por lo que no podrá alegar mal uso de esta por un tercero y por consecuencia no podrá, sin incurrir en responsabilidad penal, negar la firma del presente Contrato y/o cualquier Anexo.`
+        },
+        {
+          title: 'Declaraciones Obligado Solidario',
+          content: `III. Declaraciones del Obligado Solidario. Declara el Obligado Solidario, que:\n${declaracionesObligadoSolidarioContent}`
         }
       ];
 
@@ -104,5 +128,3 @@ export const defaultTemplates: ContractTemplate[] = [
     }
   },
 ];
-
-    

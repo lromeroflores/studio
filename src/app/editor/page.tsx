@@ -354,12 +354,22 @@ function ContractEditorContent() {
 
   // State for conditional sections
   const [tipoAcreditado, setTipoAcreditado] = useState<'Persona Moral' | 'Persona Fisica'>('Persona Moral');
+  const [tipoObligadoSolidario, setTipoObligadoSolidario] = useState<'Persona Moral' | 'Persona Fisica'>('Persona Moral');
+
 
   const visibleCellIds = useMemo(() => cells.filter(c => c.visible).map(c => c.id), [cells]);
 
-  const generateContractCells = useCallback((templateDataSource: Record<string, any>, accreditedType: string) => {
+  const generateContractCells = useCallback((
+    templateDataSource: Record<string, any>,
+    accreditedType: string,
+    obligorType: string
+  ) => {
     const template = defaultTemplates[0]; // Always NDA
-    const fullData = { ...templateDataSource, TIPO_ACREDITADO: accreditedType };
+    const fullData = { 
+      ...templateDataSource,
+      TIPO_ACREDITADO: accreditedType,
+      TIPO_OBLIGADO_SOLIDARIO: obligorType
+    };
     const initialCells = template.generateCells(fullData).map(c => ({...c, visible: true}));
     setCells(initialCells);
   }, []);
@@ -368,7 +378,7 @@ function ContractEditorContent() {
     if (!opportunityId) {
         setIsLoading(false);
         toast({ title: 'Error', description: 'No se proporcionó un ID de oportunidad.', variant: 'destructive' });
-        generateContractCells({}, tipoAcreditado);
+        generateContractCells({}, tipoAcreditado, tipoObligadoSolidario);
         return;
     }
 
@@ -414,6 +424,7 @@ function ContractEditorContent() {
                 const loadedCells = savedData.avance_json.cells.map((c: ContractCell) => ({ ...c, visible: c.visible !== false }));
                 setCells(loadedCells);
                 setTipoAcreditado(savedData.avance_json.tipoAcreditado || 'Persona Moral');
+                setTipoObligadoSolidario(savedData.avance_json.tipoObligadoSolidario || 'Persona Moral');
                 toast({ title: 'Progreso Cargado', description: 'Se ha restaurado tu último avance guardado.' });
                 progressLoaded = true;
             }
@@ -423,7 +434,7 @@ function ContractEditorContent() {
     }
 
     if (!progressLoaded) {
-        generateContractCells(templateDataSource, tipoAcreditado);
+        generateContractCells(templateDataSource, tipoAcreditado, tipoObligadoSolidario);
         if (Object.keys(templateDataSource).length > 0) {
             toast({ title: 'Contrato Generado', description: `Se ha generado un nuevo contrato.` });
         } else {
@@ -432,7 +443,7 @@ function ContractEditorContent() {
     }
 
     setIsLoading(false);
-  }, [opportunityId, toast, generateContractCells, tipoAcreditado]);
+  }, [opportunityId, toast, generateContractCells, tipoAcreditado, tipoObligadoSolidario]);
 
 
   useEffect(() => {
@@ -442,10 +453,10 @@ function ContractEditorContent() {
 
   useEffect(() => {
     if (!isLoading && contractData) { // Only regenerate if initial data is loaded
-      generateContractCells(contractData, tipoAcreditado);
+      generateContractCells(contractData, tipoAcreditado, tipoObligadoSolidario);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipoAcreditado, isLoading]);
+  }, [tipoAcreditado, tipoObligadoSolidario, isLoading]);
   
   const updateCellContent = (id: string, newContent: string) => {
     setCells(cells.map(cell => cell.id === id ? { ...cell, content: newContent } : cell));
@@ -499,7 +510,7 @@ function ContractEditorContent() {
 
     const payload = {
       id_oportunidad: opportunityId,
-      avance_json: { cells, tipoAcreditado },
+      avance_json: { cells, tipoAcreditado, tipoObligadoSolidario },
     };
 
     try {
@@ -635,12 +646,22 @@ function ContractEditorContent() {
       <div className="flex flex-wrap items-center justify-between gap-4 mb-8">
           <div className="flex flex-wrap items-center gap-3">
               <Label htmlFor="contract-type-display" className="font-medium">Tipo de Contrato:</Label>
-              <div id="contract-type-display" className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 py-2 text-sm sm:w-[300px]">
+              <div id="contract-type-display" className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 py-2 text-sm sm:w-auto">
                 <span>Acuerdo de Confidencialidad (NDA)</span>
               </div>
               <Label htmlFor="accredited-type-select" className="font-medium">Tipo de Acreditado:</Label>
               <Select value={tipoAcreditado} onValueChange={(value) => setTipoAcreditado(value as 'Persona Moral' | 'Persona Fisica')}>
                 <SelectTrigger id="accredited-type-select" className="w-full sm:w-[200px]">
+                    <SelectValue placeholder="Seleccionar tipo..." />
+                </SelectTrigger>
+                <SelectContent>
+                    <SelectItem value="Persona Moral">Persona Moral</SelectItem>
+                    <SelectItem value="Persona Fisica">Persona Fisica</SelectItem>
+                </SelectContent>
+              </Select>
+               <Label htmlFor="obligor-type-select" className="font-medium">Tipo de Obligado Solidario:</Label>
+              <Select value={tipoObligadoSolidario} onValueChange={(value) => setTipoObligadoSolidario(value as 'Persona Moral' | 'Persona Fisica')}>
+                <SelectTrigger id="obligor-type-select" className="w-full sm:w-[200px]">
                     <SelectValue placeholder="Seleccionar tipo..." />
                 </SelectTrigger>
                 <SelectContent>
@@ -805,5 +826,3 @@ export default function ContractEditorPage() {
         </Suspense>
     );
 }
-
-    
