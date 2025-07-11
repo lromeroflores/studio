@@ -33,14 +33,14 @@ export const defaultTemplates: ContractTemplate[] = [
       const cells = [
         {
           title: 'Titulo y descripcion',
-          content: `CONTRATO DE APERTURA DE CRÉDITO Y OBLIGACIÓN SOLIDARIA\n\nde fecha ${styleVar(data.DIA_FIRMA)} de ${styleVar(data.MES_FIRMA)} de ${styleVar(data.AÑO_FIRMA)}\n\nque celebran\n\n\n${styleVar(data.NOMBRE_DE_LA_ACREDITADA)}\n\ncomo Acreditado \n\n\nBANCO COVALTO, S.A. INSTITUCIÓN DE BANCA MÚLTIPLE\n\ncomo Acreditante y\n\n\n${styleVar(data.NOMBRE_OBLIGADOS_SOLIDARIOS)}\n\ncomo Obligados Solidarios`,
+          content: `<div class="text-center">CONTRATO DE APERTURA DE CRÉDITO Y OBLIGACIÓN SOLIDARIA\n\nde fecha ${styleVar(data.DIA_FIRMA)} de ${styleVar(data.MES_FIRMA)} de ${styleVar(data.AÑO_FIRMA)}\n\nque celebran\n\n\n${styleVar(data.NOMBRE_DE_LA_ACREDITADA)}\n\ncomo Acreditado \n\n\nBANCO COVALTO, S.A. INSTITUCIÓN DE BANCA MÚLTIPLE\n\ncomo Acreditante y\n\n\n${styleVar(data.NOMBRE_OBLIGADOS_SOLIDARIOS)}\n\ncomo Obligados Solidarios</div>`,
         },
       ];
 
       return cells.map((cell, index) => ({
         id: `cell-${index}-${Math.random().toString(36).substring(2, 9)}`,
         title: cell.title,
-        content: cell.content.trim(),
+        content: cell.content.trim().replace(/\n/g, '<br />'),
         visible: true,
       }));
     }
