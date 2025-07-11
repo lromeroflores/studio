@@ -649,26 +649,6 @@ function ContractEditorContent() {
               <div id="contract-type-display" className="flex h-10 w-full items-center rounded-md border border-input bg-muted/50 px-3 py-2 text-sm sm:w-auto">
                 <span>Acuerdo de Confidencialidad (NDA)</span>
               </div>
-              <Label htmlFor="accredited-type-select" className="font-medium">Tipo de Acreditado:</Label>
-              <Select value={tipoAcreditado} onValueChange={(value) => setTipoAcreditado(value as 'Persona Moral' | 'Persona Fisica')}>
-                <SelectTrigger id="accredited-type-select" className="w-full sm:w-[200px]">
-                    <SelectValue placeholder="Seleccionar tipo..." />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="Persona Moral">Persona Moral</SelectItem>
-                    <SelectItem value="Persona Fisica">Persona Fisica</SelectItem>
-                </SelectContent>
-              </Select>
-               <Label htmlFor="obligor-type-select" className="font-medium">Tipo de Obligado Solidario:</Label>
-              <Select value={tipoObligadoSolidario} onValueChange={(value) => setTipoObligadoSolidario(value as 'Persona Moral' | 'Persona Fisica')}>
-                <SelectTrigger id="obligor-type-select" className="w-full sm:w-[200px]">
-                    <SelectValue placeholder="Seleccionar tipo..." />
-                </SelectTrigger>
-                <SelectContent>
-                    <SelectItem value="Persona Moral">Persona Moral</SelectItem>
-                    <SelectItem value="Persona Fisica">Persona Fisica</SelectItem>
-                </SelectContent>
-              </Select>
           </div>
           <div className="flex flex-wrap items-center justify-start sm:justify-end gap-2 w-full sm:w-auto">
               <Button onClick={() => setIsClauseSuggesterOpen(true)} variant="outline">
@@ -759,20 +739,58 @@ function ContractEditorContent() {
               Activa o desactiva las secciones que deseas incluir en el documento final.
             </DialogDescription>
           </DialogHeader>
-          <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
-            <div className="space-y-3">
-              {cells.map((cell) => (
-                <div key={cell.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
-                  <Label htmlFor={`switch-${cell.id}`} className="flex-1 pr-4 cursor-pointer">
-                    <p className="font-semibold">{cell.title || "Sección sin título"}</p>
-                  </Label>
-                  <Switch
-                    id={`switch-${cell.id}`}
-                    checked={cell.visible}
-                    onCheckedChange={(checked) => toggleCellVisibility(cell.id, checked)}
-                  />
+          <div className="grid gap-6 py-4 max-h-[60vh] overflow-y-auto pr-2">
+            <div className="space-y-4 p-4 border rounded-lg">
+                <h3 className="font-semibold text-lg">Secciones Condicionales</h3>
+                <p className="text-sm text-muted-foreground">
+                    Define el tipo de participantes para ajustar automáticamente las cláusulas del contrato.
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div className="space-y-2">
+                        <Label htmlFor="accredited-type-select">Tipo de Acreditado:</Label>
+                        <Select value={tipoAcreditado} onValueChange={(value) => setTipoAcreditado(value as 'Persona Moral' | 'Persona Fisica')}>
+                            <SelectTrigger id="accredited-type-select">
+                                <SelectValue placeholder="Seleccionar tipo..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Persona Moral">Persona Moral</SelectItem>
+                                <SelectItem value="Persona Fisica">Persona Fisica</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
+                    <div className="space-y-2">
+                        <Label htmlFor="obligor-type-select">Tipo de Obligado Solidario:</Label>
+                        <Select value={tipoObligadoSolidario} onValueChange={(value) => setTipoObligadoSolidario(value as 'Persona Moral' | 'Persona Fisica')}>
+                            <SelectTrigger id="obligor-type-select">
+                                <SelectValue placeholder="Seleccionar tipo..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                                <SelectItem value="Persona Moral">Persona Moral</SelectItem>
+                                <SelectItem value="Persona Fisica">Persona Fisica</SelectItem>
+                            </SelectContent>
+                        </Select>
+                    </div>
                 </div>
-              ))}
+            </div>
+            <div className="space-y-4 p-4 border rounded-lg">
+                <h3 className="font-semibold text-lg">Visibilidad de Secciones</h3>
+                 <p className="text-sm text-muted-foreground">
+                    Activa o desactiva las secciones individuales que deseas incluir en el documento final.
+                </p>
+                <div className="space-y-3">
+                {cells.map((cell) => (
+                    <div key={cell.id} className="flex items-center justify-between p-3 border rounded-lg bg-muted/50">
+                    <Label htmlFor={`switch-${cell.id}`} className="flex-1 pr-4 cursor-pointer">
+                        <p className="font-semibold">{cell.title || "Sección sin título"}</p>
+                    </Label>
+                    <Switch
+                        id={`switch-${cell.id}`}
+                        checked={cell.visible}
+                        onCheckedChange={(checked) => toggleCellVisibility(cell.id, checked)}
+                    />
+                    </div>
+                ))}
+                </div>
             </div>
           </div>
           <DialogFooter>
