@@ -73,6 +73,26 @@ export const defaultTemplates: ContractTemplate[] = [
         ? declaracionesObligadoSolidarioMoral
         : declaracionesObligadoSolidarioFisica;
 
+      const declaracionesAmbasPersonasObligadoSolidario = `
+(b) Es su voluntad celebrar el presente Contrato en su carácter de Obligado Solidario.
+(c) Tiene su domicilio, para efectos de la Cláusula Vigésima Cuarta de este instrumento, en el indicado en el inciso III del Anexo A.
+(d) La información legal y financiera y demás información proporcionada por el Obligado Solidario al Acreditante es verdadera, correcta y vigente.
+(e) Es su intención obligarse solidariamente con el Acreditado al cumplimiento y pago exacto y puntual de todas y cada una de las obligaciones que derivan al Acreditado del presente instrumento y de los demás Documentos del Crédito, incluyendo, sin limitar, el pago exacto y puntal de la suma principal, intereses, comisiones, gastos y demás accesorios del Crédito.
+(f) En su caso, pagará la suma principal, intereses, comisiones, gastos y demás accesorios del Crédito con recursos de procedencia lícita.
+(g) No existe reclamación ni disputa ni amenaza de reclamación o disputa en su contra o en contra de cualquiera de sus propiedades, ante tribunal, dependencia gubernamental o árbitro alguno, que pudiera afectar la legalidad, validez o exigibilidad de este instrumento, su condición financiera o su capacidad de pagar la suma principal, intereses, comisiones, gastos y demás accesorios del Crédito.
+(h) No se encuentra en incumplimiento legal o contractual cualquiera que pudiera afectar la legalidad, validez o exigibilidad de este instrumento, su condición financiera o su capacidad de pagar la suma principal, intereses, comisiones, gastos y demás accesorios del Crédito.
+(i) El otorgamiento del presente instrumento no contraviene, ni resulta en incumplimiento de: (i) cualquier ley, reglamento, decreto o autorización (incluyendo licencias o concesiones) aplicables en su caso; o, (ii) cualquier contrato o convenio de cualquier naturaleza, respecto del cual sea parte.
+(j) Se encuentra al corriente en el pago de las obligaciones legales, fiscales y contractuales a su cargo cuyo incumplimiento pudiera afectar en forma adversa su situación financiera y capacidad de pago, incluyendo, entre otras, el pago de Impuestos (como dicho término se define más adelante), las contribuciones a su cargo, pago de cuotas obrero-patronales, aportaciones al Instituto del Fondo Nacional de la Vivienda para los Trabajadores, al Sistema de Ahorro para el Retiro y/o al Instituto Mexicano del Seguro Social, de manera respectiva, y el cumplimiento de la legislación laboral aplicable en México.
+(k) No se encuentra en procedimiento judicial o extrajudicial de insolvencia, concurso, reestructura o reorganización alguna.
+(l) No requiere autorización, aprobación, registro u otro acto de, o ante, cualquier autoridad gubernamental de México o de cualquier otra jurisdicción que le sea aplicable para la suscripción, entrega y cumplimiento del presente instrumento y de cualquier otro documento que deba suscribir conforme al mismo.
+(m) A la fecha de este instrumento, sus empleados no se encuentran en huelga ni tiene conocimiento de que exista emplazamiento a huelga o que pretenda presentarse dicho emplazamiento por parte de sus trabajadores o por parte de cualquier sindicato o asociación.
+(n) Las obligaciones que asume conforme a este instrumento y demás Documentos del Crédito constituyen obligaciones legales y válidas.
+(o) Previo a la firma de este instrumento, el Acreditante puso a su disposición y le explicó inequívocamente el contenido y alcance legal de su “Aviso de Privacidad”, vigente a la fecha de firma de este instrumento, manifestando al respecto el Obligado Solidario estar de acuerdo con el tratamiento que el Acreditante da y dará a sus datos personales en cumplimiento a lo dispuesto en la Ley Federal de Protección de Datos Personales en Posesión de los Particulares y reconociendo que dicho “Aviso de Privacidad” podrá cambiar de tiempo en tiempo y podrá ser consultado por éste en el portal de Internet del Acreditante, mismo que, al momento de la firma, consultó en el siguiente enlace “https://covalto.com/privacidad/#info”.
+(p) Conoce la situación sanitaria y económica derivada de la pandemia “COVID-19”, por lo que desarrollo e implementó una estrategia general de negocio conducente. En este sentido, no podrá alegar caso fortuito o fuerza mayor derivada de la situación sanitaria antes mencionada -o sus efectos o consecuencias- para incumplir a las obligaciones contraídas al amparo del Contrato de Crédito, de conformidad con lo dispuesto en la Cláusula Vigésima Quinta.
+(q) Previo a la firma del presente Contrato, el Obligado Solidario realizó la gestión necesaria para dar de alta su firma electrónica avanzada consistente en el conjunto de datos y caracteres que permite la identificación del firmante, que ha sido creada por medios electrónicos bajo su exclusivo control, de manera que está vinculada únicamente al mismo y a los datos a los que se refiere, lo que permite que sea detectable cualquier modificación ulterior de éstos, la cual produce los mismos efectos jurídicos que la firma autógrafa (la “FIEL”) misma que se podrá utilizar, en este contrato como su firma electrónica, que consiste en los datos en forma electrónica consignados en un mensaje de datos, o adjuntados o lógicamente asociados al mismo, que son utilizados para identificar al firmante en relación con el Mensaje de Datos e indicar que el firmante aprueba la información contenida en el mensaje de datos, y que produce los mismos efectos jurídicos que la firma autógrafa, siendo inclusive admisible como prueba en juicio (la “Firma Electrónica”) para la formalización del presente Contrato, la Solicitud de Disposición del Crédito, el Pagaré y demás Documentos del Crédito. Es uno de los motivos determinantes de la voluntad de las Partes reconocer que el presente Contrato se podrá celebrar mediante Firma Electrónica y que en dado caso tendrá la misma validez y eficacia como si hubiese sido celebrado con firma autógrafa.
+(r) Tiene pleno conocimiento del alcance, forma de uso y características de una Firma Electrónica. Adicionalmente y de manera personal realizó todas las gestiones para dar de alta su firma electrónica avanzada y es el único usuario y responsable de la misma, por lo que no podrá alegar mal uso de esta por un tercero y por consecuencia no podrá, sin incurrir en responsabilidad penal, negar la firma del presente Contrato y/o cualquier Anexo.
+      `.trim();
+
 
       const cells = [
         {
@@ -116,6 +136,10 @@ export const defaultTemplates: ContractTemplate[] = [
         {
           title: 'Declaraciones Obligado Solidario',
           content: `III. Declaraciones del Obligado Solidario. Declara el Obligado Solidario, que:\n${declaracionesObligadoSolidarioContent}`
+        },
+        {
+          title: 'Declaraciones para ambas personas Obligado Solidario',
+          content: declaracionesAmbasPersonasObligadoSolidario,
         }
       ];
 
