@@ -370,7 +370,7 @@ function ContractEditorContent() {
       TIPO_ACREDITADO: accreditedType,
       TIPO_OBLIGADO_SOLIDARIO: obligorType
     };
-    const initialCells = template.generateCells(fullData).map(c => ({...c, visible: true}));
+    const initialCells = template.generateCells(fullData).map(c => ({...c, visible: c.visible !== false}));
     setCells(initialCells);
   }, []);
 
@@ -844,3 +844,5 @@ export default function ContractEditorPage() {
         </Suspense>
     );
 }
+
+    
