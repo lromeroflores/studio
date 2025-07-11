@@ -41,46 +41,36 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
     toast({ title: "Exportando PDF...", description: "Por favor, espere mientras se genera el PDF." });
   
     try {
-      // 1. Create a new, clean div for PDF export to avoid issues with live DOM
-      const exportContainer = document.createElement('div');
-      exportContainer.style.width = '612px'; // Standard US Letter width in points
-      exportContainer.style.padding = '72px'; // Corresponds to 1-inch margins
-      exportContainer.style.fontFamily = 'Times-Roman, serif';
-      exportContainer.style.color = 'black';
-      exportContainer.style.fontSize = '12px';
-      
-      // 2. Add content to the clean div
-      const logoPlaceholder = document.createElement('div');
-      logoPlaceholder.textContent = 'Covalto';
-      logoPlaceholder.style.fontWeight = 'bold';
-      logoPlaceholder.style.fontSize = '24px';
-      logoPlaceholder.style.marginBottom = '2rem';
-      exportContainer.appendChild(logoPlaceholder);
-  
-      const contentDiv = document.createElement('div');
-      contentDiv.innerHTML = finalContractHtml;
-      
-      // 3. Ensure strong tags are black for professional look
-      contentDiv.querySelectorAll('strong').forEach(el => {
-        el.style.color = 'black';
-      });
-
-      exportContainer.appendChild(contentDiv);
-
-      // Append to body to make it renderable, but keep it off-screen
-      document.body.appendChild(exportContainer);
-  
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'pt',
         format: 'letter',
       });
   
+      // Create a temporary, clean div for PDF generation to avoid issues with live DOM
+      const exportContainer = document.createElement('div');
+      exportContainer.style.width = '612px'; // Standard US Letter width in points
+      exportContainer.style.padding = '72px'; // Corresponds to 1-inch margins
+      exportContainer.style.fontFamily = 'serif';
+      exportContainer.style.fontSize = '12px';
+      exportContainer.style.color = 'black';
+      exportContainer.innerHTML = `<h1>Covalto</h1><br/><br/>${finalContractHtml.replace(/<strong style="color: red;">/g, '<strong>').replace(/<\/strong>/g, '</strong>')}`;
+      
+      // Make it invisible but renderable
+      exportContainer.style.position = 'absolute';
+      exportContainer.style.left = '-9999px';
+      
+      document.body.appendChild(exportContainer);
+  
       await pdf.html(exportContainer, {
         autoPaging: 'text',
         width: 612 - 144, // Letter width (612pt) - 2 * 72pt margins
         windowWidth: 612,
+        margin: [72, 72, 72, 72],
       });
+  
+      // Cleanup
+      document.body.removeChild(exportContainer);
   
       pdf.save('contract-document.pdf');
       toast({ title: "PDF Exportado", description: "El contrato ha sido descargado exitosamente." });
@@ -88,13 +78,8 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
     } catch (error) {
       console.error("Error exporting PDF:", error);
       const errorMessage = error instanceof Error ? error.message : "No se pudo exportar el PDF debido a un error inesperado.";
-      toast({ title: "Error al Exportar PDF", description: errorMessage, variant: "destructive" });
+      toast({ title: "Error al Exportar PDF", description: `Detalle: ${errorMessage}`, variant: "destructive" });
     } finally {
-      // 4. Clean up the temporary div from the body
-      const tempDiv = document.querySelector('[data-export-temp]');
-      if (tempDiv) {
-        document.body.removeChild(tempDiv);
-      }
       setIsExporting(false);
     }
   };
