@@ -234,12 +234,17 @@ export const defaultTemplates: ContractTemplate[] = [
           content: `3.5 (tres punto cinco) El Acreditado se obliga a pagar al Banco, por concepto de disposición de Crédito el porcentaje especificado en el inciso I del Anexo A como Comisión por Disposición, mismo que se descontará de la disposición que realice, en el entendido que el monto máximo anual de pago de comisiones por disposición será el porcentaje especificado en el inciso I del Anexo A como Monto máximo anual el cual se calculará sobre el monto total de la línea de Crédito y se genera a partir de la fecha de celebración del presente contrato.<br>El Acreditado se obliga a pagar los costos y comisiones establecidos en la Solicitud de Disposición del Crédito.<br>3.6 (tres punto seis) Adicionalmente, la disposición respectiva deberá ser expresamente autorizada por el Acreditante, y deberá cumplir, con la condición de que no hubiera ocurrido alguna Causa de Vencimiento Anticipado, del presente Contrato, ni ningún hecho que con el lapso del tiempo llegue a constituir una Causa de Vencimiento Anticipado.<br>3.7 (tres punto siete) El Acreditado reconoce que la suscripción y entrega del pagaré que documente cada disposición del Crédito no constituye pago, novación, modificación o extinción de las obligaciones que el Acreditado asume ante el Acreditante en el presente Contrato.`,
           visible: true,
         },
+        {
+          title: 'Cuarta clausula',
+          content: `CUARTA. Fondeo del Crédito.<br />4.1 (cuatro punto uno) El Acreditado conviene de manera enunciativa mas no limitativa en que el Crédito pueda ser fondeado o descontado con FIRA, por lo que, en caso, que ésta sea la fuente de fondeo, el presente Contrato se regirá, además de lo en él previsto, por las reglas bajo las cuales operan los Créditos fondeados o descontados con FIRA, obligándose el Acreditado a cumplir con todas las condiciones que señale FIRA en relación con el Crédito.<br />4.2 (cuatro punto dos) El Acreditado manifiesta su conformidad con las modificaciones 	en la tasa de interés o cualquier otra condición del Crédito, que pudieran presentarse por parte de FIRA, a partir de la fecha en que tales modificaciones entren en vigor y se obliga a firmar, en su caso, los documentos necesarios para reflejar tales cambios.<br />4.3 (cuatro punto tres) En caso de que por incumplimiento del Acreditado y/o del Obligado Solidario a cualquier obligación derivada del presente Contrato, FIRA impusiere alguna sanción económica con cargo al Acreditante, el Acreditado y/o el Obligado Solidario reembolsarán al Acreditante todas aquellas cantidades que se hubieren cubierto por tal motivo, en un plazo máximo de 20 (veinte) días hábiles siguientes a aquel en que se le requiera.<br />4.4 (cuatro punto cuatro) En caso de incumplimiento a cualquiera de los puntos mencionados en esta Sección, el Acreditado y/o el Obligado Solidario pagarán al Acreditante una pena convencional equivalente a 2.0 (dos punto cero) veces el importe de los intereses ordinarios calculados conforme a lo señalado en la Cláusula de Intereses del presente Contrato, calculada desde el día del incumplimiento y hasta el día en que quede totalmente pagada.`,
+          visible: true,
+        }
       ];
 
       return cells.map((cell, index) => ({
         id: `cell-${index}-${Math.random().toString(36).substring(2, 9)}`,
         title: cell.title,
-        content: cell.content.trim().replace(/\\n/g, '<br />'),
+        content: cell.content.trim().replace(/\n/g, '<br />'),
         visible: cell.visible !== false, // Default to true if not specified
       }));
     }
@@ -249,3 +254,4 @@ export const defaultTemplates: ContractTemplate[] = [
     
 
     
+
