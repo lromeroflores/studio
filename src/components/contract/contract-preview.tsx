@@ -55,6 +55,18 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
       exportContainer.style.backgroundColor = 'white'; // Ensure white background
       exportContainer.style.color = 'black'; // Ensure black text
       
+      // Find and replace the SVG logo with simple text for PDF compatibility
+      const logoContainer = exportContainer.querySelector('[data-logo-container]');
+      if (logoContainer) {
+        const logoText = document.createElement('h1');
+        logoText.textContent = 'Covalto';
+        logoText.style.fontWeight = 'bold';
+        logoText.style.fontSize = '24px';
+        logoText.style.color = '#002642';
+        logoContainer.innerHTML = ''; // Clear the container
+        logoContainer.appendChild(logoText);
+      }
+
       // Remove red color from strong tags for printing
       exportContainer.querySelectorAll('strong').forEach(el => {
         el.style.color = 'black';
