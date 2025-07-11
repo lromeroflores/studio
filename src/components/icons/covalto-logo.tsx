@@ -4,16 +4,16 @@ import { cn } from "@/lib/utils"
 
 export function CovaltoLogo(props: SVGProps<SVGSVGElement>) {
   const { className, ...otherProps } = props;
-  const blue = '#002642'; // Corresponds to rgb(0%,14.901961%,25.882354%)
-  const orange = '#FF9834'; // Corresponds to rgb(100%,59.607846%,20.392157%)
+  const blue = '#002642'; 
+  const orange = '#FF9834'; 
 
-  // Using direct SVG attributes for better compatibility with libraries like jsPDF/html2canvas
+  // Directly using fill attribute instead of style object for better compatibility
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 345 35"
       aria-label="Covalto Logo"
-      className={cn("h-auto w-full", className)} // Default classes, can be overridden
+      className={cn("h-auto w-full", className)} 
       {...otherProps}
     >
       <g id="surface1">

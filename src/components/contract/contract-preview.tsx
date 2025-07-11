@@ -8,6 +8,7 @@ import { Download, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import type { ContractCell } from '@/components/contract/types';
 import jsPDF from 'jspdf';
+import html2canvas from 'html2canvas';
 import { CovaltoLogo } from '@/components/icons/covalto-logo';
 
 interface ContractPreviewProps {
@@ -23,15 +24,14 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
   const finalContractHtml = useMemo(() => {
     return cells
       .filter(cell => cell.visible)
-      // Wrap each cell's content in a div to ensure it's a block element,
-      // and join with a double line break for clear separation between sections.
       .map(cell => `<div>${cell.content}</div>`)
       .join('<br /><br />');
   }, [cells]);
 
 
   const handleExportPdf = async () => {
-    if (!previewContentRef.current) {
+    const elementToExport = previewContentRef.current;
+    if (!elementToExport) {
       toast({ title: 'Error de Exportación', description: 'No se pudo encontrar el contenido para exportar.', variant: 'destructive' });
       return;
     }
@@ -40,54 +40,41 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
     toast({ title: 'Exportando PDF...', description: 'Por favor, espere mientras se genera el PDF.' });
 
     try {
+      const canvas = await html2canvas(elementToExport, {
+        scale: 2, // Improve resolution
+        useCORS: true,
+        backgroundColor: '#ffffff',
+      });
+      
+      const imgData = canvas.toDataURL('image/png');
       const pdf = new jsPDF({
         orientation: 'p',
-        unit: 'pt',
+        unit: 'px',
         format: 'letter',
       });
 
-      // Create a clean, temporary container for export
-      const exportContainer = document.createElement('div');
-      exportContainer.style.position = 'absolute';
-      exportContainer.style.left = '-9999px';
-      exportContainer.style.top = '0';
-      exportContainer.style.width = '550px'; // Standard letter width minus margins
-      exportContainer.style.padding = '20px';
-      exportContainer.style.fontFamily = 'Times, serif';
-      exportContainer.style.fontSize = '12pt';
-      exportContainer.style.color = 'black';
-      exportContainer.style.backgroundColor = 'white';
-      
-      // Add a simple text header instead of SVG
-      const header = `<div style="margin-bottom: 2rem; font-size: 24px; font-weight: bold; color: #002642;">Covalto</div>`;
-      
-      exportContainer.innerHTML = header + finalContractHtml;
-      
-      // Remove any problematic styling from strong tags
-      const strongTags = exportContainer.getElementsByTagName('strong');
-      for (let i = 0; i < strongTags.length; i++) {
-        strongTags[i].style.color = 'black';
-        strongTags[i].style.fontWeight = 'bold';
+      const pdfWidth = pdf.internal.pageSize.getWidth();
+      const pdfHeight = pdf.internal.pageSize.getHeight();
+      const canvasWidth = canvas.width;
+      const canvasHeight = canvas.height;
+      const ratio = canvasWidth / pdfWidth;
+      const imgHeight = canvasHeight / ratio;
+
+      let heightLeft = imgHeight;
+      let position = 0;
+
+      pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+      heightLeft -= pdfHeight;
+
+      while (heightLeft > 0) {
+        position = heightLeft - imgHeight;
+        pdf.addPage();
+        pdf.addImage(imgData, 'PNG', 0, position, pdfWidth, imgHeight);
+        heightLeft -= pdfHeight;
       }
-
-      document.body.appendChild(exportContainer);
       
-      // Allow a brief moment for rendering before capture
-      await new Promise(resolve => setTimeout(resolve, 100));
-
-      await pdf.html(exportContainer, {
-        callback: function (doc) {
-          doc.save('contract-document.pdf');
-          toast({ title: 'PDF Exportado', description: 'El contrato ha sido descargado exitosamente.' });
-        },
-        x: 30, // Left margin
-        y: 30, // Top margin
-        width: 552, // Printable area width
-        windowWidth: 552,
-        autoPaging: 'text',
-      });
-      
-      document.body.removeChild(exportContainer);
+      pdf.save('contract-document.pdf');
+      toast({ title: 'PDF Exportado', description: 'El contrato ha sido descargado exitosamente.' });
 
     } catch (error) {
       console.error('Error exporting PDF:', error);
@@ -108,9 +95,9 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
         </CardDescription>
       </CardHeader>
       <CardContent className="px-6 pb-6 pt-0">
-         <div className="p-10 bg-white border rounded-md min-h-[500px] overflow-y-auto font-serif text-black" ref={previewContentRef}>
+         <div id="pdf-preview-content" className="p-10 bg-white border rounded-md min-h-[500px] overflow-y-auto font-serif text-black" ref={previewContentRef}>
             <div data-logo-container style={{ marginBottom: '2rem' }}>
-              <CovaltoLogo style={{ width: '150px' }} />
+              <CovaltoLogo className="w-[150px]" />
             </div>
             <div
               className="prose max-w-none text-justify leading-relaxed prose-strong:text-red-600 prose-headings:font-bold" 
