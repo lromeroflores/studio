@@ -1,7 +1,7 @@
 
 'use client';
 
-import React, { useMemo, useRef } from 'react';
+import React, { useMemo, useRef, useState } from 'react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from '@/components/ui/card';
 import { Download, Loader2 } from 'lucide-react';
@@ -18,7 +18,7 @@ interface ContractPreviewProps {
 export function ContractPreview({ cells, data }: ContractPreviewProps) {
   const { toast } = useToast();
   const previewContentRef = useRef<HTMLDivElement>(null);
-  const [isExporting, setIsExporting] = React.useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const finalContractHtml = useMemo(() => {
     return cells
@@ -39,6 +39,19 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
 
     setIsExporting(true);
     toast({ title: "Exportando PDF...", description: "Por favor, espere mientras se genera el PDF." });
+    
+    // Temporarily replace SVG with text for PDF export to avoid html2canvas errors
+    const logoContainer = contentToExport.querySelector('[data-logo-container]');
+    const logoSvg = logoContainer?.querySelector('svg');
+    const textFallback = document.createElement('div');
+    textFallback.textContent = 'Covalto';
+    textFallback.style.fontWeight = 'bold';
+    textFallback.style.fontSize = '24px';
+    textFallback.style.color = '#002642';
+
+    if (logoContainer && logoSvg) {
+      logoContainer.replaceChild(textFallback, logoSvg);
+    }
     
     // Temporarily change variable color to black for a professional PDF look.
     const strongElements = Array.from(contentToExport.querySelectorAll('strong'));
@@ -68,10 +81,13 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
       console.error("Error exporting PDF:", error);
       toast({ title: "Error al Exportar PDF", description: "No se pudo exportar el PDF debido a un error inesperado.", variant: "destructive" });
     } finally {
-      // Revert styles back to red for the on-screen preview
+      // Revert styles and logo back for the on-screen preview
       strongElements.forEach(el => {
           el.style.color = ''; // Revert to stylesheet color
       });
+      if (logoContainer && logoSvg) {
+        logoContainer.replaceChild(logoSvg, textFallback);
+      }
       setIsExporting(false);
     }
   };
@@ -86,7 +102,7 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
       </CardHeader>
       <CardContent className="px-6 pb-6 pt-0">
          <div className="p-10 bg-white border rounded-md min-h-[500px] overflow-y-auto font-serif text-black" ref={previewContentRef}>
-            <div style={{ marginBottom: '2rem' }}>
+            <div data-logo-container style={{ marginBottom: '2rem' }}>
               <CovaltoLogo style={{ width: '150px' }} />
             </div>
             <div
