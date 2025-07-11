@@ -31,71 +31,68 @@ export function ContractPreview({ cells, data }: ContractPreviewProps) {
 
 
   const handleExportPdf = async () => {
-    const contentNode = previewContentRef.current;
-    if (!contentNode) {
-      toast({ title: "Error de Exportación", description: "Contenido de la vista previa no encontrado.", variant: "destructive" });
+    if (!previewContentRef.current) {
+      toast({ title: 'Error de Exportación', description: 'No se pudo encontrar el contenido para exportar.', variant: 'destructive' });
       return;
     }
-  
+
     setIsExporting(true);
-    toast({ title: "Exportando PDF...", description: "Por favor, espere mientras se genera el PDF." });
-  
+    toast({ title: 'Exportando PDF...', description: 'Por favor, espere mientras se genera el PDF.' });
+
     try {
       const pdf = new jsPDF({
         orientation: 'p',
         unit: 'pt',
         format: 'letter',
       });
-  
-      // Clone the preview node to avoid modifying the live DOM and apply export styles
-      const exportContainer = contentNode.cloneNode(true) as HTMLElement;
-      exportContainer.style.width = '612px';
-      exportContainer.style.padding = '72px'; 
-      exportContainer.style.boxSizing = 'border-box';
-      exportContainer.style.backgroundColor = 'white'; // Ensure white background
-      exportContainer.style.color = 'black'; // Ensure black text
-      
-      // Find and replace the SVG logo with simple text for PDF compatibility
-      const logoContainer = exportContainer.querySelector('[data-logo-container]');
-      if (logoContainer) {
-        const logoText = document.createElement('h1');
-        logoText.textContent = 'Covalto';
-        logoText.style.fontWeight = 'bold';
-        logoText.style.fontSize = '24px';
-        logoText.style.color = '#002642';
-        logoContainer.innerHTML = ''; // Clear the container
-        logoContainer.appendChild(logoText);
-      }
 
-      // Remove red color from strong tags for printing
-      exportContainer.querySelectorAll('strong').forEach(el => {
-        el.style.color = 'black';
-      });
-
-      // Make it invisible but renderable
+      // Create a clean, temporary container for export
+      const exportContainer = document.createElement('div');
       exportContainer.style.position = 'absolute';
       exportContainer.style.left = '-9999px';
       exportContainer.style.top = '0';
+      exportContainer.style.width = '550px'; // Standard letter width minus margins
+      exportContainer.style.padding = '20px';
+      exportContainer.style.fontFamily = 'Times, serif';
+      exportContainer.style.fontSize = '12pt';
+      exportContainer.style.color = 'black';
+      exportContainer.style.backgroundColor = 'white';
       
+      // Add a simple text header instead of SVG
+      const header = `<div style="margin-bottom: 2rem; font-size: 24px; font-weight: bold; color: #002642;">Covalto</div>`;
+      
+      exportContainer.innerHTML = header + finalContractHtml;
+      
+      // Remove any problematic styling from strong tags
+      const strongTags = exportContainer.getElementsByTagName('strong');
+      for (let i = 0; i < strongTags.length; i++) {
+        strongTags[i].style.color = 'black';
+        strongTags[i].style.fontWeight = 'bold';
+      }
+
       document.body.appendChild(exportContainer);
-  
+      
+      // Allow a brief moment for rendering before capture
+      await new Promise(resolve => setTimeout(resolve, 100));
+
       await pdf.html(exportContainer, {
+        callback: function (doc) {
+          doc.save('contract-document.pdf');
+          toast({ title: 'PDF Exportado', description: 'El contrato ha sido descargado exitosamente.' });
+        },
+        x: 30, // Left margin
+        y: 30, // Top margin
+        width: 552, // Printable area width
+        windowWidth: 552,
         autoPaging: 'text',
-        width: 612, 
-        windowWidth: 612,
-        margin: [72, 72, 72, 72],
       });
-  
-      // Cleanup
+      
       document.body.removeChild(exportContainer);
-  
-      pdf.save('contract-document.pdf');
-      toast({ title: "PDF Exportado", description: "El contrato ha sido descargado exitosamente." });
-  
+
     } catch (error) {
-      console.error("Error exporting PDF:", error);
-      const errorMessage = error instanceof Error ? error.message : "No se pudo exportar el PDF debido a un error inesperado.";
-      toast({ title: "Error al Exportar PDF", description: `Detalle: ${errorMessage}`, variant: "destructive" });
+      console.error('Error exporting PDF:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Ocurrió un error inesperado.';
+      toast({ title: 'Error al Exportar PDF', description: `Detalle: ${errorMessage}`, variant: 'destructive' });
     } finally {
       setIsExporting(false);
     }
