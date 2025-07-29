@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "contract-ease.fullname" . }}
+  labels:
+    {{- include "contract-ease.labels" . | nindent 4 }}
+  {{- with .Values.vault.enabled }}
+  annotations:
+    vault.hashicorp.com/agent-inject: "true"
+    vault.hashicorp.com/role: {{ .Values.vault.role | quote }}
+    vault.hashicorp.com/agent-inject-secret-secrets.env: {{ .Values.vault.secretPath | quote }}
+    vault.hashicorp.com/agent-inject-template-secrets.env: |
+      {{ .Values.vault.secretTemplate | nindent 6 }}
+  {{- end }}
+spec:
+  replicas: {{ .Values.replicaCount }}
+  selector:
+    matchLabels:
+      {{- include "contract-ease.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      labels:
+        {{- include "contract-ease.selectorLabels" . | nindent 8 }}
+    spec:
+      serviceAccountName: {{ include "contract-ease.serviceAccountName" . }}
+      containers:
+        - name: {{ .Chart.Name }}
+          image: "{{ .Values.image.repository }}:{{ .Values.image.tag | default .Chart.AppVersion }}"
+          imagePullPolicy: {{ .Values.image.pullPolicy }}
+          ports:
+            - name: http
+              containerPort: {{ .Values.env.PORT }}
+              protocol: TCP
+          env:
+            - name: PORT
+              value: {{ .Values.env.PORT | quote }}
+            - name: NODE_ENV
+              value: {{ .Values.env.NODE_ENV | quote }}
+          {{- if .Values.vault.enabled }}
+          # Inyecta los secretos desde el archivo renderizado por Vault
+          args: ["/bin/sh", "-c", ". /vault/secrets/secrets.env && node server.js"]
+          {{- end }}
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+          resources:
+            {{- toYaml .Values.resources | nindent 12 }}
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}

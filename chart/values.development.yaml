@@ -1,0 +1,17 @@
+# Valores específicos para el entorno de desarrollo
+
+replicaCount: 1
+
+ingress:
+  enabled: true
+  className: "nginx"
+  hosts:
+    - host: dev.contract-ease.com
+      paths:
+        - path: /
+          pathType: ImplementationSpecific
+
+vault:
+  enabled: true
+  role: "contract-ease-dev"
+  secretPath: "secret/data/dev/contract-ease"

@@ -1,44 +1,38 @@
-# 1. Base Image: Use the official Node.js image for the build stage.
-FROM node:20-alpine AS base
+# Dockerfile para una aplicación Next.js
 
-# 2. Build Stage: Install dependencies and build the Next.js app.
-FROM base AS builder
+# Etapa 1: Instalación de dependencias
+FROM node:20-alpine AS deps
 WORKDIR /app
+COPY package.json package-lock.json ./
+RUN npm install --frozen-lockfile
 
-# Install dependencies based on the lock file.
-COPY package.json yarn.lock* package-lock.json* pnpm-lock.yaml* ./
-RUN \
-  if [ -f yarn.lock ]; then yarn --frozen-lockfile; \
-  elif [ -f package-lock.json ]; then npm ci; \
-  elif [ -f pnpm-lock.yaml ]; then yarn global add pnpm && pnpm i --frozen-lockfile; \
-  else echo "Lockfile not found." && exit 1; \
-  fi
-
-# Copy the rest of the application source code.
+# Etapa 2: Construcción de la aplicación
+FROM node:20-alpine AS builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
-# Set build-time arguments for Genkit environment variables
-ARG GOOGLE_API_KEY
-ENV GOOGLE_API_KEY=${GOOGLE_API_KEY}
+# Variables de entorno para la construcción (si son necesarias)
+# ARG NEXT_PUBLIC_API_URL
+# ENV NEXT_PUBLIC_API_URL=${NEXT_PUBLIC_API_URL}
 
-# Build the Next.js application.
 RUN npm run build
 
-# 3. Production Stage: Create a smaller image for running the app.
-FROM base AS runner
+# Etapa 3: Ejecución de la aplicación
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Set the environment to production.
 ENV NODE_ENV=production
+# Descomentar la siguiente línea si usas un hostname personalizado en producción
+# ENV HOSTNAME=0.0.0.0
 
-# Copy the built application from the builder stage.
+# Copia los archivos de construcción
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next ./.next
-COPY --from=builder /app/node_modules ./node_modules
-COPY --from=builder /app/package.json ./package.json
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-# Expose the port the app runs on.
+# El puerto por defecto que expone Next.js
 EXPOSE 3000
 
-# The command to start the application.
-CMD ["npm", "start"]
+# Comando para iniciar el servidor de Next.js
+CMD ["node", "server.js"]

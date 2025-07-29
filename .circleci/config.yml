@@ -1,0 +1,113 @@
+# Configuración de CircleCI para la aplicación ContractEase (Next.js)
+
+version: 2.1
+
+# Orbs para simplificar la configuración
+orbs:
+  node: circleci/node@5.2.0
+  docker: circleci/docker@2.6.0
+  kubernetes: circleci/kubernetes@1.3.1
+  helm: circleci/helm@2.0.1
+
+# Variables de entorno globales (si es necesario)
+# Se recomienda usar Contexts de CircleCI para las credenciales
+# https://circleci.com/docs/contexts/
+
+jobs:
+  build_and_push_image:
+    description: "Construye la imagen de Docker y la sube al registry"
+    docker:
+      - image: cimg/node:20.10
+    parameters:
+      registry:
+        type: string
+        description: "El registry de Docker al que se subirá la imagen (e.g., docker.io/my-user, gcr.io/my-project)"
+      image_name:
+        type: string
+        description: "El nombre de la imagen de Docker"
+    steps:
+      - checkout
+      - docker/check:
+          registry: << parameters.registry >>
+          docker-password: DOCKER_PASSWORD # Usar variable de entorno de CircleCI
+          docker-username: DOCKER_LOGIN
+      - docker/build:
+          image: << parameters.image_name >>
+          registry: << parameters.registry >>
+          tag: << pipeline.git.revision >>
+      - docker/push:
+          image: << parameters.image_name >>
+          registry: << parameters.registry >>
+          tag: << pipeline.git.revision >>
+
+  deploy_to_kubernetes:
+    description: "Despliega la aplicación en Kubernetes usando Helm"
+    docker:
+      - image: cimg/base:2023.10
+    parameters:
+      environment:
+        type: enum
+        enum: ["development", "staging", "production"]
+        description: "El entorno de despliegue"
+      cluster_name:
+        type: string
+        description: "El nombre del clúster de Kubernetes"
+      namespace:
+        type: string
+        description: "El namespace de Kubernetes para el despliegue"
+    steps:
+      - checkout
+      - kubernetes/install
+      - kubernetes/update-kubeconfig-with-context:
+          cluster-name: << parameters.cluster_name >>
+      - helm/install
+      - run:
+          name: "Desplegar con Helm"
+          # Este comando asume que los secretos de Vault se inyectan en el clúster
+          # a través de un mecanismo como el Vault Agent Injector.
+          command: |
+            helm upgrade --install contract-ease ./chart \
+              -f ./chart/values.yaml \
+              -f ./chart/values.<< parameters.environment >>.yaml \
+              --set image.tag=<< pipeline.git.revision >> \
+              --namespace << parameters.namespace >> \
+              --wait
+
+workflows:
+  build_and_deploy:
+    jobs:
+      - build_and_push_image:
+          name: build-dev
+          registry: "DOCKER_REGISTRY_DEV" # Usar variable de contexto de CircleCI
+          image_name: "contract-ease"
+          filters:
+            branches:
+              only: develop
+      - deploy_to_kubernetes:
+          name: deploy-dev
+          environment: development
+          cluster_name: "K8S_CLUSTER_DEV" # Usar variable de contexto
+          namespace: "development"
+          requires:
+            - build-dev
+          filters:
+            branches:
+              only: develop
+
+      - build_and_push_image:
+          name: build-prod
+          registry: "DOCKER_REGISTRY_PROD" # Usar variable de contexto de CircleCI
+          image_name: "contract-ease"
+          filters:
+            branches:
+              only: main
+      - deploy_to_kubernetes:
+          name: deploy-prod
+          environment: production
+          cluster_name: "K8S_CLUSTER_PROD" # Usar variable de contexto
+          namespace: "production"
+          requires:
+            - build-prod
+          filters:
+            branches:
+              only: main
