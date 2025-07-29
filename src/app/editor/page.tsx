@@ -378,7 +378,7 @@ function ContractEditorContent() {
     if (!opportunityId) {
         setIsLoading(false);
         toast({ title: 'Error', description: 'No se proporcionó un ID de oportunidad.', variant: 'destructive' });
-        generateContractCells({}, tipoAcreditado, tipoObligadoSolidario);
+        generateContractCells({}, 'Persona Moral', 'Persona Moral');
         return;
     }
 
@@ -434,7 +434,7 @@ function ContractEditorContent() {
     }
 
     if (!progressLoaded) {
-        generateContractCells(templateDataSource, tipoAcreditado, tipoObligadoSolidario);
+        generateContractCells(templateDataSource, 'Persona Moral', 'Persona Moral');
         if (Object.keys(templateDataSource).length > 0) {
             toast({ title: 'Contrato Generado', description: `Se ha generado un nuevo contrato.` });
         } else {
@@ -443,7 +443,8 @@ function ContractEditorContent() {
     }
 
     setIsLoading(false);
-  }, [opportunityId, toast, generateContractCells, tipoAcreditado, tipoObligadoSolidario]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [opportunityId, toast, generateContractCells]);
 
 
   useEffect(() => {
@@ -456,7 +457,7 @@ function ContractEditorContent() {
       generateContractCells(contractData, tipoAcreditado, tipoObligadoSolidario);
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [tipoAcreditado, tipoObligadoSolidario, isLoading]);
+  }, [tipoAcreditado, tipoObligadoSolidario]);
   
   const updateCellContent = (id: string, newContent: string) => {
     setCells(cells.map(cell => cell.id === id ? { ...cell, content: newContent } : cell));
@@ -844,5 +845,3 @@ export default function ContractEditorPage() {
         </Suspense>
     );
 }
-
-    
