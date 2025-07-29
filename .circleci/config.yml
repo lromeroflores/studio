@@ -1,113 +1,97 @@
-# Configuración de CircleCI para la aplicación ContractEase (Next.js)
-
 version: 2.1
 
-# Orbs para simplificar la configuración
-orbs:
-  node: circleci/node@5.2.0
-  docker: circleci/docker@2.6.0
-  kubernetes: circleci/kubernetes@1.3.1
-  helm: circleci/helm@2.0.1
+parameters:
+  project-name:
+    type: string
+    default: 'contract-ease'
 
-# Variables de entorno globales (si es necesario)
-# Se recomienda usar Contexts de CircleCI para las credenciales
-# https://circleci.com/docs/contexts/
+orbs:
+  argocd: credijusto/argocd@volatile
+  ssh: credijusto/ssh@volatile
+  gcp-gcr: circleci/gcp-gcr@0.15.3
+  node: circleci/node@5.2.0
+
+executors:
+  default:
+    machine:
+      image: ubuntu-2204:2024.05.1
+      docker_layer_caching: true
 
 jobs:
-  build_and_push_image:
-    description: "Construye la imagen de Docker y la sube al registry"
+  validate:
     docker:
-      - image: cimg/node:20.10
-    parameters:
-      registry:
-        type: string
-        description: "El registry de Docker al que se subirá la imagen (e.g., docker.io/my-user, gcr.io/my-project)"
-      image_name:
-        type: string
-        description: "El nombre de la imagen de Docker"
+      - image: us-central1-docker.pkg.dev/covalto-registry-spt/cli/cli:latest
+        auth:
+          username: _json_key
+          password: $GCLOUD_SERVICE_KEY
+    resource_class: small
     steps:
       - checkout
-      - docker/check:
-          registry: << parameters.registry >>
-          docker-password: DOCKER_PASSWORD # Usar variable de entorno de CircleCI
-          docker-username: DOCKER_LOGIN
-      - docker/build:
-          image: << parameters.image_name >>
-          registry: << parameters.registry >>
-          tag: << pipeline.git.revision >>
-      - docker/push:
-          image: << parameters.image_name >>
-          registry: << parameters.registry >>
-          tag: << pipeline.git.revision >>
+      - ssh/start-tunnel
+      - ssh/execute:
+          command: cj validate
 
-  deploy_to_kubernetes:
-    description: "Despliega la aplicación en Kubernetes usando Helm"
-    docker:
-      - image: cimg/base:2023.10
-    parameters:
-      environment:
-        type: enum
-        enum: ["development", "staging", "production"]
-        description: "El entorno de despliegue"
-      cluster_name:
-        type: string
-        description: "El nombre del clúster de Kubernetes"
-      namespace:
-        type: string
-        description: "El namespace de Kubernetes para el despliegue"
+  lint:
+    executor: node/default
     steps:
       - checkout
-      - kubernetes/install
-      - kubernetes/update-kubeconfig-with-context:
-          cluster-name: << parameters.cluster_name >>
-      - helm/install
+      - node/install-packages:
+          pkg-manager: npm
       - run:
-          name: "Desplegar con Helm"
-          # Este comando asume que los secretos de Vault se inyectan en el clúster
-          # a través de un mecanismo como el Vault Agent Injector.
-          command: |
-            helm upgrade --install contract-ease ./chart \
-              -f ./chart/values.yaml \
-              -f ./chart/values.<< parameters.environment >>.yaml \
-              --set image.tag=<< pipeline.git.revision >> \
-              --namespace << parameters.namespace >> \
-              --wait
+          name: Run Linter
+          command: npm run lint
+
+  test:
+    executor: node/default
+    steps:
+      - checkout
+      - node/install-packages:
+          pkg-manager: npm
+      - run:
+          name: Run Tests
+          command: npm run test
+
+  build-and-push:
+    executor:
+      name: default
+    steps:
+      - checkout
+      - gcp-gcr/gcr-auth:
+          registry-url: us-central1-docker.pkg.dev
+      - gcp-gcr/build-image:
+          registry-url: us-central1-docker.pkg.dev
+          image: covalto-ai-services/<< pipeline.parameters.project-name >>
+          tag: ${CIRCLE_SHA1:0:7}
+      - gcp-gcr/push-image:
+          registry-url: us-central1-docker.pkg.dev
+          image: covalto-ai-services/<< pipeline.parameters.project-name >>
+          tag: ${CIRCLE_SHA1:0:7}
 
 workflows:
-  build_and_deploy:
+  main:
     jobs:
-      - build_and_push_image:
-          name: build-dev
-          registry: "DOCKER_REGISTRY_DEV" # Usar variable de contexto de CircleCI
-          image_name: "contract-ease"
-          filters:
-            branches:
-              only: develop
-      - deploy_to_kubernetes:
-          name: deploy-dev
-          environment: development
-          cluster_name: "K8S_CLUSTER_DEV" # Usar variable de contexto
-          namespace: "development"
-          requires:
-            - build-dev
-          filters:
-            branches:
-              only: develop
+      - validate:
+          context: [gcp-bastion, code-repository, gcp-docker-repository]
 
-      - build_and_push_image:
-          name: build-prod
-          registry: "DOCKER_REGISTRY_PROD" # Usar variable de contexto de CircleCI
-          image_name: "contract-ease"
+      - lint:
+          requires: [validate]
+          context: [ 'gcp-bastion', 'code-repository', 'gcp-docker-repository' ]
+
+      - test:
+          requires: [ 'lint', 'validate' ]
+          context: [ 'gcp-bastion', 'code-repository', 'gcp-docker-repository' ]
+
+      - build-and-push:
+          requires: [test]
+          context: [gcp-bastion, code-repository, gcp-docker-repository]
           filters:
             branches:
-              only: main
-      - deploy_to_kubernetes:
-          name: deploy-prod
-          environment: production
-          cluster_name: "K8S_CLUSTER_PROD" # Usar variable de contexto
-          namespace: "production"
-          requires:
-            - build-prod
+              only: [main]
+
+      - argocd/sync:
+          requires: [build-and-push]
+          context: [gcp-bastion]
+          revision: main
           filters:
             branches:
-              only: main
+              only: [main]
