@@ -1,12 +1,3 @@
 apiVersion: v2
 name: contract-ease
-description: A Helm chart for deploying the ContractEase Next.js application.
-type: application
-
-# This is the chart version. It should be incremented using semver.
-version: 0.1.0
-
-# This is the version number of the application being deployed.
-# This version number should be incremented each time you make changes
-# to the application.
-appVersion: "1.0.0"
+version: 0.0.0

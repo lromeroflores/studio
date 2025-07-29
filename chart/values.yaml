@@ -1,68 +1,24 @@
-# Valores por defecto para el Helm chart de ContractEase
-
-replicaCount: 1
-
-image:
-  repository: contract-ease # El nombre de la imagen en tu registry
-  pullPolicy: IfNotPresent
-  # La etiqueta de la imagen será establecida por el pipeline de CI/CD
-  # tag: "latest"
-
-imagePullSecrets: []
-nameOverride: ""
-fullnameOverride: ""
-
-serviceAccount:
-  create: true
-  annotations: {}
-  name: ""
-
-service:
-  type: ClusterIP
-  port: 80
+environment: local
+domain: covalto.local
+revision: local
+squad: data-group
+product: covalto-ai-services
+replicas: 1
+docker:
+  image: us-central1-docker.pkg.dev/covalto-registry-spt/covalto-ai-services/contract-ease
 
 ingress:
-  enabled: false
-  className: ""
-  annotations: {}
-    # kubernetes.io/ingress.class: nginx
-    # kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: contract-ease.local
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-  tls: []
+  public: false
 
-resources:
-  # Se recomienda establecer límites de recursos en producción
-  limits:
-    cpu: 500m
-    memory: 512Mi
-  requests:
-    cpu: 250m
-    memory: 256Mi
-
-autoscaling:
-  enabled: false
-  minReplicas: 1
-  maxReplicas: 5
-  targetCPUUtilizationPercentage: 80
-
-# Variables de entorno para la aplicación
-# Los secretos deben ser gestionados por Vault
 env:
-  PORT: "3000"
-  NODE_ENV: "production"
+  ENVIRONMENT: '{{ .Values.environment }}'
+  PROJECT_NAME: '{{ .Release.Name }}'
+  GOOGLE_API_KEY: 'vault:{{ .Values.environment }}/data/{{ .Release.Name }}#GOOGLE_API_KEY'
 
-# Configuración para la inyección de secretos de Vault
-# Esto asume que estás usando el Vault Agent Injector
-# https://www.vaultproject.io/docs/agent/injector
-vault:
-  enabled: false
-  # role: "contract-ease-app" # El rol de Vault que la aplicación usará
-  # secretPath: "secret/data/contract-ease" # La ruta del secreto en Vault
-  # secretTemplate: |
-  #   {{- with secret "secret/data/contract-ease" -}}
-  #   export GOOGLE_API_KEY="{{ .Data.data.GOOGLE_API_KEY }}"
-  #   {{- end }}
+resources_service:
+  request:
+    memory: 100Mi
+    cpu: 150m
+  limits:
+    memory: 250Mi
+    cpu: 300m

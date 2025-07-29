@@ -1,38 +1,25 @@
-{{- if .Values.ingress.enabled -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
-  name: {{ include "contract-ease.fullname" . }}
+  name: '{{ .Release.Name }}'
   labels:
-    {{- include "contract-ease.labels" . | nindent 4 }}
-  {{- with .Values.ingress.annotations }}
-  annotations:
-    {{- toYaml . | nindent 4 }}
-  {{- end }}
+    app.kubernetes.io/name: '{{ .Release.Name }}'
+    app.kubernetes.io/version: '{{ template "shortRevision" . }}'
+    app.kubernetes.io/component: 'application'
+    covalto.com/product: '{{ .Values.product }}'
+    covalto.com/squad: '{{ .Values.squad }}'
 spec:
-  {{- if .Values.ingress.tls }}
-  tls:
-    {{- range .Values.ingress.tls }}
-    - hosts:
-        {{- range .hosts }}
-        - {{ . | quote }}
-        {{- end }}
-      secretName: {{ .secretName }}
-    {{- end }}
-  {{- end }}
+  ingressClassName: nginx-{{ if .Values.ingress.public }}{{ "public" }}{{ else }}{{ "private" }}{{ end }}
   rules:
-    {{- range .Values.ingress.hosts }}
-    - host: {{ .host | quote }}
+    - host: '{{ .Release.Name }}.{{ .Values.domain }}'
       http:
         paths:
-          {{- range .paths }}
-          - path: {{ .path }}
-            pathType: {{ .pathType }}
+          - pathType: ImplementationSpecific
             backend:
               service:
-                name: {{ include "contract-ease.fullname" $ }}
+                name: '{{ .Release.Name }}'
                 port:
-                  name: http
-          {{- end }}
-    {{- end }}
-{{- end }}
+                  name: 'http'
+  tls:
+    - hosts:
+        - '{{ .Release.Name }}.{{ .Values.domain }}'

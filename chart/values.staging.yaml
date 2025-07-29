@@ -1,25 +1,2 @@
-# Valores específicos para el entorno de staging
-
-replicaCount: 2
-
-ingress:
-  enabled: true
-  className: "nginx"
-  hosts:
-    - host: staging.contract-ease.com
-      paths:
-        - path: /
-          pathType: ImplementationSpecific
-
-resources:
-  limits:
-    cpu: 1000m
-    memory: 1Gi
-  requests:
-    cpu: 500m
-    memory: 512Mi
-
-vault:
-  enabled: true
-  role: "contract-ease-staging"
-  secretPath: "secret/data/staging/contract-ease"
+environment: staging
+domain: covalto.info

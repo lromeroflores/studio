@@ -1,18 +1,17 @@
-apiVersion: v1
-kind: Service
+{{ if gt (.Values.replicas | int64) 1 }}
+apiVersion: policy/v1
+kind: PodDisruptionBudget
 metadata:
   name: '{{ .Release.Name }}'
   labels:
     app.kubernetes.io/name: '{{ .Release.Name }}'
-    app.kubernetes.io/version: '{{ template "shortRevision" . }}'
     app.kubernetes.io/component: 'application'
     covalto.com/product: '{{ .Values.product }}'
     covalto.com/squad: '{{ .Values.squad }}'
 spec:
+  minAvailable: 50%
   selector:
-    app.kubernetes.io/name: '{{ .Release.Name }}'
-    app.kubernetes.io/component: 'application'
-  ports:
-    - name: 'http'
-      port: 80
-      targetPort: http
+    matchLabels: 
+      app.kubernetes.io/name: '{{ .Release.Name }}'
+      app.kubernetes.io/component: 'application'
+{{ end }}
