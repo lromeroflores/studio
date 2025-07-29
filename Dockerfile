@@ -1,42 +1,31 @@
-# 1. Install dependencies
-FROM node:20-alpine AS deps
+# 1. Base Image - Use the Covalto/Credijusto standard Node.js image
+FROM us-central1-docker.pkg.dev/covalto-registry-spt/platform-base-images/nodejs:20.12.0-alpine as base
+
+# 2. Build Stage
+FROM base AS build
 WORKDIR /app
-COPY package.json package-lock.json ./
+
+# Install dependencies
+COPY package.json package-lock.json* ./
 RUN npm install --frozen-lockfile
 
-# 2. Build the app
-FROM node:20-alpine AS builder
-WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+# Copy the rest of the application source code
 COPY . .
 
-# Set NEXT_TELEMETRY_DISABLED to 1 to disable telemetry during build.
-ENV NEXT_TELEMETRY_DISABLED 1
-
+# Build the Next.js application
 RUN npm run build
 
-# 3. Run the app
-FROM node:20-alpine AS runner
+# 3. Production Stage
+FROM base AS production
 WORKDIR /app
 
-ENV NODE_ENV production
-# Uncomment the following line in case you want to disable telemetry during runtime.
-ENV NEXT_TELEMETRY_DISABLED 1
+# Copy built assets from the build stage
+COPY --from=build /app/.next ./.next
+COPY --from=build /app/public ./public
+COPY --from=build /app/package.json ./package.json
 
-RUN addgroup --system --gid 1001 nodejs
-RUN adduser --system --uid 1001 nextjs
-
-COPY --from=builder /app/public ./public
-
-# Automatically leverage output traces to reduce image size
-# https://nextjs.org/docs/advanced-features/output-file-tracing
-COPY --from=builder --chown=nextjs:nodejs /app/.next/standalone ./
-COPY --from=builder --chown=nextjs:nodejs /app/.next/static ./.next/static
-
-USER nextjs
-
+# Expose the port the app runs on
 EXPOSE 8080
 
-ENV PORT 8080
-
-CMD ["node", "server.js"]
+# Command to run the application
+CMD ["npm", "start"]
