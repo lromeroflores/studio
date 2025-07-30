@@ -1,4 +1,4 @@
 
 {
-  "extends": ["plugin:react-hooks/recommended", "prettier", "next/core-web-vitals"]
+  "extends": "next/core-web-vitals"
 }
