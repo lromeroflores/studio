@@ -1,75 +1,89 @@
 # ==============================================================================
-# Makefile para el Proyecto ContractEase
+# Makefile for ContractEase Next.js Application
 #
-# Este archivo proporciona comandos convenientes para gestionar el ciclo de vida
-# de la aplicación, desde el desarrollo local hasta el despliegue.
+# This Makefile provides a convenient way to manage common development and
+# deployment tasks.
 # ==============================================================================
 
-# Configuración de la imagen Docker
-# Obtiene el SHA corto del commit actual para usarlo como etiqueta de la imagen.
+# Get the short Git commit hash
 GIT_SHORT_SHA := $(shell git rev-parse --short HEAD)
-DOCKER_IMAGE_NAME := contract-ease
-DOCKER_IMAGE_TAG := $(GIT_SHORT_SHA)
+# Docker image name configuration
+IMAGE_NAME = us-central1-docker.pkg.dev/covalto-registry-spt/covalto-ai-services/contract-ease
 
-.PHONY: help build push run-local dev-next dev-genkit lint lint-fix format clean
+# Set default goal
+.DEFAULT_GOAL := help
 
+# Phony targets to avoid conflicts with file names
+.PHONY: help build push run-local dev-next dev-genkit deploy lint format clean
+
+# Help command to display available targets
 help:
-	@echo "Comandos disponibles:"
-	@echo "  make build          Construye la imagen de Docker para la aplicación."
-	@echo "  make push           Sube la imagen de Docker a un registro (requiere configuración)."
-	@echo "  make run-local      Ejecuta la aplicación en un contenedor Docker localmente."
-	@echo "  make dev-next       Inicia el servidor de desarrollo de Next.js."
-	@echo "  make dev-genkit     Inicia el servidor de desarrollo de Genkit."
-	@echo "  make lint           Ejecuta el linter para verificar la calidad del código."
-	@echo "  make lint-fix       Intenta corregir automáticamente los problemas de lint."
-	@echo "  make format         Formatea todo el código usando Prettier."
-	@echo "  make clean          Elimina las imágenes de Docker locales de este proyecto."
+	@echo "----------------------------------------------------"
+	@echo "  Makefile for ContractEase"
+	@echo "----------------------------------------------------"
+	@echo "Available commands:"
+	@echo "  build          - Build the Docker image for the application."
+	@echo "  push           - Push the Docker image to Artifact Registry."
+	@echo "  run-local      - Run the application locally in a Docker container."
+	@echo "  dev-next       - Start the Next.js frontend development server."
+	@echo "  dev-genkit     - Start the Genkit AI flows development server."
+	@echo "  deploy         - Deploy the application (example for Cloud Run, can be adapted)."
+	@echo "  lint           - Run the linter to check for code quality issues."
+	@echo "  lint-fix       - Automatically fix linting issues."
+	@echo "  format         - Format the codebase using Prettier."
+	@echo "  clean          - Remove local Docker images created for this project."
+	@echo "----------------------------------------------------"
 
-# Construye la imagen de Docker
+
+# Build the Docker image
 build:
-	@echo "Construyendo imagen de Docker: $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)..."
-	docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) .
+	@echo "Building Docker image with tag: $(GIT_SHORT_SHA)"
+	docker build -t $(IMAGE_NAME):$(GIT_SHORT_SHA) .
 
-# Sube la imagen de Docker a un registro (ej. Google Artifact Registry)
-# Asegúrate de haberte autenticado primero (ej. gcloud auth configure-docker)
+# Push the Docker image to Artifact Registry
 push:
-	@echo "Subiendo imagen de Docker a un registro..."
-	# Reemplaza 'your-registry-url' con la URL de tu registro de contenedores.
-	# docker tag $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) your-registry-url/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
-	# docker push your-registry-url/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
-	@echo "Comando 'push' necesita ser configurado con la URL de tu registro."
+	@echo "Pushing Docker image $(IMAGE_NAME):$(GIT_SHORT_SHA) to Artifact Registry..."
+	@echo "Make sure you have authenticated with 'gcloud auth configure-docker us-central1-docker.pkg.dev'"
+	docker push $(IMAGE_NAME):$(GIT_SHORT_SHA)
 
-# Ejecuta la aplicación en un contenedor Docker localmente en el puerto 3000
+# Run the application locally in a Docker container
 run-local:
-	@echo "Ejecutando la aplicación en un contenedor Docker en http://localhost:3000..."
-	docker run --rm -p 3000:3000 --env-file .env $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
+	@echo "Running application in a local Docker container..."
+	@echo "Mapping container port 8080 to host port 3000."
+	@echo "Using environment variables from .env file."
+	docker run --rm -p 3000:8080 --env-file .env $(IMAGE_NAME):$(GIT_SHORT_SHA)
 
-# Inicia el servidor de desarrollo de Next.js
+# Start the Next.js development server
 dev-next:
-	@echo "Iniciando el servidor de desarrollo de Next.js..."
+	@echo "Starting Next.js development server..."
 	npm run dev
 
-# Inicia el servidor de desarrollo de Genkit para los flujos de IA
+# Start the Genkit development server
 dev-genkit:
-	@echo "Iniciando el watcher de Genkit..."
+	@echo "Starting Genkit AI flows development server..."
 	npm run genkit:watch
 
-# Ejecuta el linter para revisar la calidad del código
+# Deploy the application
+deploy:
+	@echo "Deploying is handled by the CircleCI pipeline via Argo CD."
+	@echo "This is a placeholder for manual deployment if needed."
+
+# Run the linter
 lint:
-	@echo "Ejecutando linter..."
+	@echo "Running linter..."
 	npm run lint
 
-# Intenta corregir automáticamente los problemas de linting
+# Fix linting issues automatically
 lint-fix:
-	@echo "Intentando corregir problemas de lint..."
+	@echo "Fixing linting issues..."
 	npm run lint:fix
 
-# Formatea el código con Prettier
+# Format the code
 format:
-	@echo "Formateando el código con Prettier..."
+	@echo "Formatting code with Prettier..."
 	npm run format
 
-# Elimina las imágenes de Docker creadas para este proyecto
+# Clean up local Docker images
 clean:
-	@echo "Eliminando imágenes de Docker locales para $(DOCKER_IMAGE_NAME)..."
-	docker rmi -f $(shell docker images -q $(DOCKER_IMAGE_NAME))
+	@echo "Removing local Docker images for this project..."
+	@docker images -q $(IMAGE_NAME) | xargs -r docker rmi
