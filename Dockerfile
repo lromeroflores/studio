@@ -1,42 +1,41 @@
-# ==============================================================================
-# Dockerfile para la aplicación Next.js (ContractEase)
-#
-# Utiliza una construcción multi-etapa para optimizar el tamaño de la imagen
-# final y mejorar la seguridad.
-# ==============================================================================
-
-# --- Etapa 1: Dependencias ---
-# Esta etapa instala todas las dependencias de Node.js.
-FROM us-central1-docker.pkg.dev/covalto-registry-spt/covalto-base-images/node:20.15.0-alpine as deps
+# === STAGE 1: Dependencias ===
+# Esta etapa instala las dependencias de producción y desarrollo.
+# Se utiliza una imagen base oficial de Node.js que es ligera y segura.
+FROM node:20-alpine AS deps
 WORKDIR /app
 COPY package.json package-lock.json ./
-RUN npm install --frozen-lockfile
+RUN npm install
 
-# --- Etapa 2: Construcción ---
-# Esta etapa construye la aplicación de producción de Next.js.
-FROM us-central1-docker.pkg.dev/covalto-registry-spt/covalto-base-images/node:20.15.0-alpine as builder
+# === STAGE 2: Construcción ===
+# En esta etapa, se construye la aplicación de Next.js.
+# Se copia el código fuente y las dependencias de la etapa anterior.
+FROM node:20-alpine AS builder
 WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
+
+# Variables de entorno para el proceso de construcción de Next.js
+ENV NEXT_TELEMETRY_DISABLED 1
+
+# Ejecuta el script de construcción definido en package.json
 RUN npm run build
 
-# --- Etapa 3: Producción ---
-# Esta es la etapa final que crea la imagen ligera para producción.
-FROM us-central1-docker.pkg.dev/covalto-registry-spt/covalto-base-images/node:20.15.0-alpine as runner
+# === STAGE 3: Producción ===
+# Esta es la etapa final que crea la imagen de producción.
+# Es una imagen ligera que solo contiene lo necesario para ejecutar la aplicación.
+FROM node:20-alpine AS runner
 WORKDIR /app
 
-# Establecer el usuario a 'node' por seguridad, en lugar de 'root'.
-USER node
+ENV NODE_ENV production
+ENV NEXT_TELEMETRY_DISABLED 1
 
-# Copiar artefactos de construcción y dependencias de producción.
+# Copia los archivos de construcción de la etapa 'builder'.
 COPY --from=builder /app/public ./public
-COPY --from=builder --chown=node:node /app/.next/standalone ./
-COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+COPY --from=builder /app/.next/standalone ./
+COPY --from=builder /app/.next/static ./.next/static
 
-# Exponer el puerto en el que se ejecutará la aplicación.
+# El puerto 8080 es el que se expone para que Kubernetes pueda dirigir el tráfico.
 EXPOSE 8080
 
-# Comando para iniciar la aplicación.
+# El comando para iniciar la aplicación en producción, usando el puerto 8080.
 CMD ["node", "server.js"]
-
-    
