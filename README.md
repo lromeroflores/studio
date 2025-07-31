@@ -32,30 +32,20 @@ La aplicación utiliza Genkit para conectarse a los modelos de IA de Google. Nec
 Abre tu terminal en el directorio raíz del proyecto y ejecuta:
 
 ```bash
+make install
+# o
 npm install
 ```
 
 ### 3. Ejecutar los Servidores de Desarrollo
 
-Este proyecto requiere que dos procesos se ejecuten simultáneamente. Puedes ejecutarlos manualmente o usar el `Makefile` proporcionado.
-
-**Opción A: Usando Makefile (en dos terminales separadas)**
-
-**Terminal 1:**
-```bash
-make dev-next
-```
-
-**Terminal 2:**
-```bash
-make dev-genkit
-```
-
-**Opción B: Manualmente**
+Este proyecto requiere que dos procesos se ejecuten simultáneamente para el desarrollo local.
 
 **Terminal 1: Iniciar el Frontend de Next.js**
 
 ```bash
+make dev
+# o
 npm run dev
 ```
 Esto iniciará la aplicación principal, típicamente disponible en `http://localhost:3000`.
@@ -71,23 +61,17 @@ Una vez que ambos servidores estén funcionando, puedes abrir tu navegador en `h
 
 ---
 
-## Despliegue (Kubernetes a través de Helm y Argo CD)
+## Despliegue (Docker y Kubernetes)
 
-Esta aplicación está configurada para ser desplegada como un contenedor usando Docker y gestionada en Kubernetes con un Helm chart. El pipeline de CircleCI automatiza este proceso, que a su vez se integra con Argo CD para seguir una metodología GitOps.
-
-El flujo de trabajo es el siguiente:
-1. Un desarrollador hace un `push` a la rama `main`.
-2. CircleCI se activa, ejecuta las pruebas y el linter.
-3. Si todo es correcto, CircleCI construye una nueva imagen de Docker y la sube a Google Artifact Registry.
-4. Finalmente, CircleCI le notifica a Argo CD que hay una nueva versión, y Argo CD se encarga de sincronizar el clúster de Kubernetes para que use la nueva imagen.
+Esta aplicación está configurada para ser desplegada como un contenedor usando Docker y gestionada en Kubernetes. El pipeline de CircleCI automatiza este proceso.
 
 ### Flujo de Trabajo con Docker Local
 
-Para probar la construcción de la imagen de Docker en tu máquina local (separado del pipeline de CI/CD), puedes usar los siguientes comandos.
+Para construir y probar la imagen de Docker en tu máquina local (separado del pipeline de CI/CD), puedes usar los siguientes comandos.
 
 #### 1. Autenticar Docker con Google Cloud (Prerrequisito)
 
-Antes de poder construir o subir imágenes, necesitas autenticar tu cliente de Docker local con Google Artifact Registry. **Este paso solo se necesita hacer una vez.**
+Antes de poder interactuar con el registro de imágenes de Covalto, necesitas autenticar tu cliente de Docker local con Google Artifact Registry. **Este paso solo se necesita hacer una vez.**
 
 ```bash
 gcloud auth configure-docker us-central1-docker.pkg.dev
@@ -95,11 +79,10 @@ gcloud auth configure-docker us-central1-docker.pkg.dev
 
 #### 2. Construir la Imagen de Docker
 
-Puedes construir la imagen manualmente o usar `make`:
+Usa `make` para construir la imagen. Esto creará una imagen con la etiqueta `latest`.
 
 ```bash
-# Construye la imagen y la etiqueta con 'latest'
-make build
+make docker-build
 ```
 
 #### 3. Ejecutar la Aplicación en un Contenedor Local
@@ -107,40 +90,37 @@ make build
 Para probar la aplicación en un contenedor localmente:
 
 ```bash
-# Este comando lee la GOOGLE_API_KEY de tu archivo .env y ejecuta el contenedor.
-make run-local
+make docker-run
 ```
-Luego, abre [http://localhost:3000](http://localhost:3000) en tu navegador.
+La aplicación estará disponible en [http://localhost:8080](http://localhost:8080).
 
-#### 4. Subir la Imagen a Artifact Registry
-
-Si necesitas subir una imagen desde tu máquina local al registro (esto generalmente lo hace el pipeline de CI), primero asegúrate de haberte autenticado (paso 1) y luego ejecuta:
-
+Para detener el contenedor, ejecuta:
 ```bash
-# Sube la imagen etiquetada como 'latest'
-make push
+make docker-stop
 ```
 
-### Nota Importante sobre el Proceso de Construcción
+### Proceso de Construcción y Despliegue con CI/CD
 
-Este es un proyecto **Next.js (Node.js)**. Su proceso de construcción se basa en `npm` y `Dockerfile`. **No utiliza las herramientas de `func.yaml` o `poetry`**, que son específicas para proyectos de funciones sin servidor (serverless) en Python. El `Dockerfile` y el `Makefile` en este repositorio ya están correctamente configurados para construir y empaquetar esta aplicación web para su despliegue en Kubernetes.
+El flujo de trabajo automatizado es el siguiente:
+1. Un desarrollador hace un `push` a la rama `main`.
+2. CircleCI se activa, ejecuta las pruebas y el linter.
+3. Si todo es correcto, CircleCI construye una nueva imagen de Docker usando el `Dockerfile` y la sube a Google Artifact Registry.
+4. Finalmente, CircleCI le notifica a Argo CD que hay una nueva versión, y Argo CD se encarga de sincronizar el clúster de Kubernetes para que use la nueva imagen.
 
 ---
 
 ## 🛠️ Comandos del Makefile
 
-| Comando              | Descripción                                               |
-|----------------------|-----------------------------------------------------------|
-| `make build`         | Construye la imagen de Docker localmente con la etiqueta `latest`.                            |
-| `make push`          | Sube la imagen `latest` a Artifact Registry.                       |
-| `make run-local`     | Ejecuta la aplicación localmente dentro de un contenedor Docker. |
-| `make dev-next`      | Ejecuta el frontend de Next.js para desarrollo local.     |
-| `make dev-genkit`    | Ejecuta los flujos de IA de Genkit para desarrollo local. |
-| `make deploy ENV=dev`| Despliega la aplicación en Cloud Run (ejemplo de comando).  |
-| `make lint`          | Ejecuta el linter.                                        |
-| `make lint-fix`      | Intenta corregir los problemas de lint automáticamente.      |
-| `make format`        | Formatea el código con Prettier.                          |
-| `make clean`         | Elimina las imágenes de Docker locales creadas para este proyecto. |
-| `make help`          | Muestra una lista de todos los comandos disponibles.        |
-
-Esta configuración asegura despliegues seguros, repetibles y escalables para la aplicación ContractEase usando herramientas modernas nativas de la nube.
+| Comando              | Descripción                                                                 |
+|----------------------|-----------------------------------------------------------------------------|
+| `make help`          | Muestra este mensaje de ayuda.                                              |
+| `make install`       | Instala las dependencias del proyecto con npm.                              |
+| `make dev`           | Ejecuta el servidor de desarrollo local de Next.js.                         |
+| `make lint`          | Ejecuta el linter para revisar el estilo del código.                        |
+| `make format`        | Formatea el código con Prettier.                                            |
+| `make test`          | Ejecuta las pruebas (actualmente no hay pruebas especificadas).             |
+| `make docker-build`  | Construye la imagen de Docker para producción.                              |
+| `make docker-run`    | Ejecuta la aplicación dentro de un contenedor Docker.                       |
+| `make docker-stop`   | Detiene el contenedor Docker que se está ejecutando.                        |
+| `make clean`         | Elimina los artefactos de construcción y las dependencias instaladas.       |
+| `make full-clean`    | Limpia todo, incluida la imagen de Docker construida localmente.            |
