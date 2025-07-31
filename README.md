@@ -85,7 +85,15 @@ El flujo de trabajo es el siguiente:
 
 Para probar la construcción de la imagen de Docker en tu máquina local (separado del pipeline de CI/CD), puedes usar los siguientes comandos.
 
-#### 1. Construir la Imagen de Docker
+#### 1. Autenticar Docker con Google Cloud (Prerrequisito)
+
+Antes de poder construir o subir imágenes, necesitas autenticar tu cliente de Docker local con Google Artifact Registry. **Este paso solo se necesita hacer una vez.**
+
+```bash
+gcloud auth configure-docker us-central1-docker.pkg.dev
+```
+
+#### 2. Construir la Imagen de Docker
 
 Puedes construir la imagen manualmente o usar `make`:
 
@@ -94,7 +102,7 @@ Puedes construir la imagen manualmente o usar `make`:
 make build
 ```
 
-#### 2. Ejecutar la Aplicación en un Contenedor Local
+#### 3. Ejecutar la Aplicación en un Contenedor Local
 
 Para probar la aplicación en un contenedor localmente:
 
@@ -104,15 +112,9 @@ make run-local
 ```
 Luego, abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
-#### 3. Subir la Imagen a Artifact Registry
+#### 4. Subir la Imagen a Artifact Registry
 
-Si necesitas subir una imagen desde tu máquina local al registro (esto generalmente lo hace el pipeline de CI), primero debes autenticarte:
-
-```bash
-gcloud auth configure-docker us-central1-docker.pkg.dev
-```
-
-Luego, sube la imagen:
+Si necesitas subir una imagen desde tu máquina local al registro (esto generalmente lo hace el pipeline de CI), primero asegúrate de haberte autenticado (paso 1) y luego ejecuta:
 
 ```bash
 # Sube la imagen etiquetada como 'latest'
@@ -127,9 +129,9 @@ make push
 |----------------------|-----------------------------------------------------------|
 | `make build`         | Construye la imagen de Docker localmente con la etiqueta `latest`.                            |
 | `make push`          | Sube la imagen `latest` a Artifact Registry.                       |
+| `make run-local`     | Ejecuta la aplicación localmente dentro de un contenedor Docker. |
 | `make dev-next`      | Ejecuta el frontend de Next.js para desarrollo local.     |
 | `make dev-genkit`    | Ejecuta los flujos de IA de Genkit para desarrollo local. |
-| `make run-local`     | Ejecuta la aplicación localmente dentro de un contenedor Docker. |
 | `make deploy ENV=dev`| Despliega la aplicación en Cloud Run (ejemplo de comando).  |
 | `make lint`          | Ejecuta el linter.                                        |
 | `make lint-fix`      | Intenta corregir los problemas de lint automáticamente.      |
@@ -138,5 +140,3 @@ make push
 | `make help`          | Muestra una lista de todos los comandos disponibles.        |
 
 Esta configuración asegura despliegues seguros, repetibles y escalables para la aplicación ContractEase usando herramientas modernas nativas de la nube.
-
-    
