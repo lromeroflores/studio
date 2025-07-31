@@ -5,19 +5,11 @@ squad: data-group
 product: covalto-ai-services
 replicas: 1
 docker:
-  image: us-central1-docker.pkg.dev/covalto-registry-spt/covalto-ai-services/contract-ease
+  image: us-central1-docker.pkg.dev/covalto-registry-spt/covalto-ai-services/contract-gen-app
 
 ingress:
   public: false
 
-serviceAccount:
-  # Specifies whether a service account should be created
-  create: false
-  # Annotations to add to the service account
-  annotations: {}
-  # The name of the service account to use.
-  # If not set and create is true, a name is generated using the fullname template
-  name: ""
 
 env:
   ENVIRONMENT: '{{ .Values.environment }}'
