@@ -1,48 +1,47 @@
-# === Stage 1: Dependencias ===
-# Utiliza la imagen base de Node.js de Covalto para instalar dependencias.
-# Esto asegura consistencia con el entorno de CI/CD.
-FROM us-central1-docker.pkg.dev/covalto-registry-spt/covalto-base-images/nodejs:20.15.0-alpine as deps
+# ---- Etapa 1: Builder ----
+# Construye la aplicación Next.js y genera los archivos estáticos
+
+FROM node:20-alpine AS builder
+
+# Establece el directorio de trabajo
 WORKDIR /app
 
-# Copia solo los archivos de manifiesto del paquete y el lockfile.
-COPY package.json package-lock.json ./
-# Instala las dependencias de producción.
-RUN npm install --omit=dev
+# Copia los archivos de manifiesto y de bloqueo
+COPY package.json ./
+COPY package-lock.json ./
 
+# Instala las dependencias de producción
+RUN npm install
 
-# === Stage 2: Construcción ===
-# Utiliza la misma imagen base para construir la aplicación.
-FROM us-central1-docker.pkg.dev/covalto-registry-spt/covalto-base-images/nodejs:20.15.0-alpine as builder
-WORKDIR /app
-
-# Copia las dependencias instaladas de la etapa anterior.
-COPY --from=deps /app/node_modules ./node_modules
-# Copia el resto del código fuente de la aplicación.
+# Copia el resto de los archivos de la aplicación
 COPY . .
 
-# Construye la aplicación de Next.js para producción.
+# Construye y exporta la aplicación como un sitio estático
 RUN npm run build
 
 
-# === Stage 3: Producción ===
-# Utiliza la misma imagen base, que es ligera, para la etapa final.
-FROM us-central1-docker.pkg.dev/covalto-registry-spt/covalto-base-images/nodejs:20.15.0-alpine as runner
-WORKDIR /app
+# ---- Etapa 2: Production ----
+# Sirve los archivos estáticos con Nginx
 
-# Establece el entorno a producción.
-ENV NODE_ENV=production
+FROM nginx:alpine
 
-# Copia los artefactos de construcción de la etapa anterior.
-COPY --from=builder /app/public ./public
-COPY --from=builder /app/package.json ./package.json
+# Elimina la configuración por defecto de Nginx
+RUN rm /etc/nginx/conf.d/default.conf
 
-# Copia el directorio .next, que contiene la salida de la construcción de Next.js.
-# La estructura recomendada para Standalone Output es copiar la carpeta completa.
-COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+# Copia nuestra configuración personalizada de Nginx
+COPY nginx/nginx.conf /etc/nginx/conf.d/
 
-# Expone el puerto 8080, que es el que la aplicación usará.
+# Establece el directorio de trabajo
+WORKDIR /usr/share/nginx/html
+
+# Limpia el contenido por defecto de Nginx
+RUN rm -rf ./*
+
+# Copia los archivos estáticos desde la etapa 'builder'
+COPY --from=builder /app/out .
+
+# Expone el puerto 8080 (el mismo que en nuestra configuración de K8s)
 EXPOSE 8080
 
-# El comando para iniciar la aplicación.
-# Utiliza el script "start" de package.json, que ejecuta "next start -p 8080".
-CMD ["npm", "start"]
+# Inicia Nginx en modo 'daemon off' para que se mantenga en primer plano
+CMD ["nginx", "-g", "daemon off;"]
