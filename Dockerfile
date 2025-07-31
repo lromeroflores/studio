@@ -1,31 +1,42 @@
-# 1. Base Image - Use the Covalto/Credijusto standard Node.js image
-FROM us-central1-docker.pkg.dev/covalto-registry-spt/platform-base-images/nodejs:20.12.0-alpine as base
+# ==============================================================================
+# Dockerfile para la aplicación Next.js (ContractEase)
+#
+# Utiliza una construcción multi-etapa para optimizar el tamaño de la imagen
+# final y mejorar la seguridad.
+# ==============================================================================
 
-# 2. Build Stage
-FROM base AS build
+# --- Etapa 1: Dependencias ---
+# Esta etapa instala todas las dependencias de Node.js.
+FROM us-central1-docker.pkg.dev/covalto-registry-spt/covalto-base-images/node:20.15.0-alpine as deps
 WORKDIR /app
-
-# Install dependencies
-COPY package.json package-lock.json* ./
+COPY package.json package-lock.json ./
 RUN npm install --frozen-lockfile
 
-# Copy the rest of the application source code
+# --- Etapa 2: Construcción ---
+# Esta etapa construye la aplicación de producción de Next.js.
+FROM us-central1-docker.pkg.dev/covalto-registry-spt/covalto-base-images/node:20.15.0-alpine as builder
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
 COPY . .
-
-# Build the Next.js application
 RUN npm run build
 
-# 3. Production Stage
-FROM base AS production
+# --- Etapa 3: Producción ---
+# Esta es la etapa final que crea la imagen ligera para producción.
+FROM us-central1-docker.pkg.dev/covalto-registry-spt/covalto-base-images/node:20.15.0-alpine as runner
 WORKDIR /app
 
-# Copy built assets from the build stage
-COPY --from=build /app/.next ./.next
-COPY --from=build /app/public ./public
-COPY --from=build /app/package.json ./package.json
+# Establecer el usuario a 'node' por seguridad, en lugar de 'root'.
+USER node
 
-# Expose the port the app runs on
+# Copiar artefactos de construcción y dependencias de producción.
+COPY --from=builder /app/public ./public
+COPY --from=builder --chown=node:node /app/.next/standalone ./
+COPY --from=builder --chown=node:node /app/.next/static ./.next/static
+
+# Exponer el puerto en el que se ejecutará la aplicación.
 EXPOSE 8080
 
-# Command to run the application
-CMD ["npm", "start"]
+# Comando para iniciar la aplicación.
+CMD ["node", "server.js"]
+
+    

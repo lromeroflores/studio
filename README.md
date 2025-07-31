@@ -73,22 +73,40 @@ Una vez que ambos servidores estén funcionando, puedes abrir tu navegador en `h
 
 ## Despliegue (Kubernetes a través de Helm y Argo CD)
 
-Esta aplicación está configurada para ser desplegada como un contenedor usando Docker y gestionada en Kubernetes con un Helm chart. El pipeline de CircleCI automatiza este proceso.
+Esta aplicación está configurada para ser desplegada como un contenedor usando Docker y gestionada en Kubernetes con un Helm chart. El pipeline de CircleCI automatiza este proceso, que a su vez se integra con Argo CD para seguir una metodología GitOps.
 
-### 1. Construir la Imagen de Docker
+El flujo de trabajo es el siguiente:
+1. Un desarrollador hace un `push` a la rama `main`.
+2. CircleCI se activa, ejecuta las pruebas y el linter.
+3. Si todo es correcto, CircleCI construye una nueva imagen de Docker y la sube a Google Artifact Registry.
+4. Finalmente, CircleCI le notifica a Argo CD que hay una nueva versión, y Argo CD se encarga de sincronizar el clúster de Kubernetes para que use la nueva imagen.
+
+### Flujo de Trabajo con Docker Local
+
+Para probar la construcción de la imagen de Docker en tu máquina local (separado del pipeline de CI/CD), puedes usar los siguientes comandos.
+
+#### 1. Construir la Imagen de Docker
 
 Puedes construir la imagen manualmente o usar `make`:
 
 ```bash
+# Construye la imagen y la etiqueta con 'latest'
 make build
 ```
-Esto construirá la imagen y la etiquetará con el SHA corto de git.
 
----
+#### 2. Ejecutar la Aplicación en un Contenedor Local
 
-### 2. Subir la Imagen a Artifact Registry
+Para probar la aplicación en un contenedor localmente:
 
-Autentica Docker con Artifact Registry:
+```bash
+# Este comando lee la GOOGLE_API_KEY de tu archivo .env y ejecuta el contenedor.
+make run-local
+```
+Luego, abre [http://localhost:3000](http://localhost:3000) en tu navegador.
+
+#### 3. Subir la Imagen a Artifact Registry
+
+Si necesitas subir una imagen desde tu máquina local al registro (esto generalmente lo hace el pipeline de CI), primero debes autenticarte:
 
 ```bash
 gcloud auth configure-docker us-central1-docker.pkg.dev
@@ -97,25 +115,9 @@ gcloud auth configure-docker us-central1-docker.pkg.dev
 Luego, sube la imagen:
 
 ```bash
+# Sube la imagen etiquetada como 'latest'
 make push
 ```
-
----
-
-### 3. Desplegar
-
-El despliegue es gestionado por el pipeline de CircleCI, que activa un job `argocd/sync`. Esto le indica a Argo CD que obtenga la última configuración del directorio `chart/` y la aplique al clúster.
-
----
-
-### 🧪 Ejecutar Localmente con Docker
-
-Para probar la aplicación en un contenedor localmente:
-
-```bash
-make run-local
-```
-Este comando lee la `GOOGLE_API_KEY` de tu archivo `.env` y ejecuta el contenedor. Luego, abre [http://localhost:3000](http://localhost:3000) en tu navegador.
 
 ---
 
@@ -123,8 +125,8 @@ Este comando lee la `GOOGLE_API_KEY` de tu archivo `.env` y ejecuta el contenedo
 
 | Comando              | Descripción                                               |
 |----------------------|-----------------------------------------------------------|
-| `make build`         | Construye la imagen de Docker.                            |
-| `make push`          | Sube la imagen a Artifact Registry.                       |
+| `make build`         | Construye la imagen de Docker localmente con la etiqueta `latest`.                            |
+| `make push`          | Sube la imagen `latest` a Artifact Registry.                       |
 | `make dev-next`      | Ejecuta el frontend de Next.js para desarrollo local.     |
 | `make dev-genkit`    | Ejecuta los flujos de IA de Genkit para desarrollo local. |
 | `make run-local`     | Ejecuta la aplicación localmente dentro de un contenedor Docker. |
@@ -136,3 +138,5 @@ Este comando lee la `GOOGLE_API_KEY` de tu archivo `.env` y ejecuta el contenedo
 | `make help`          | Muestra una lista de todos los comandos disponibles.        |
 
 Esta configuración asegura despliegues seguros, repetibles y escalables para la aplicación ContractEase usando herramientas modernas nativas de la nube.
+
+    
