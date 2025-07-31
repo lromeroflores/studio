@@ -1,41 +1,48 @@
-# === STAGE 1: Dependencias ===
-# Esta etapa instala las dependencias de producción y desarrollo.
-# Se utiliza una imagen base oficial de Node.js que es ligera y segura.
-FROM node:20-alpine AS deps
+# === Stage 1: Dependencias ===
+# Utiliza la imagen base de Node.js de Covalto para instalar dependencias.
+# Esto asegura consistencia con el entorno de CI/CD.
+FROM us-central1-docker.pkg.dev/covalto-registry-spt/covalto-base-images/nodejs:20.15.0-alpine as deps
 WORKDIR /app
-COPY package.json package-lock.json ./
-RUN npm install
 
-# === STAGE 2: Construcción ===
-# En esta etapa, se construye la aplicación de Next.js.
-# Se copia el código fuente y las dependencias de la etapa anterior.
-FROM node:20-alpine AS builder
+# Copia solo los archivos de manifiesto del paquete y el lockfile.
+COPY package.json package-lock.json ./
+# Instala las dependencias de producción.
+RUN npm install --omit=dev
+
+
+# === Stage 2: Construcción ===
+# Utiliza la misma imagen base para construir la aplicación.
+FROM us-central1-docker.pkg.dev/covalto-registry-spt/covalto-base-images/nodejs:20.15.0-alpine as builder
 WORKDIR /app
+
+# Copia las dependencias instaladas de la etapa anterior.
 COPY --from=deps /app/node_modules ./node_modules
+# Copia el resto del código fuente de la aplicación.
 COPY . .
 
-# Variables de entorno para el proceso de construcción de Next.js
-ENV NEXT_TELEMETRY_DISABLED 1
-
-# Ejecuta el script de construcción definido en package.json
+# Construye la aplicación de Next.js para producción.
 RUN npm run build
 
-# === STAGE 3: Producción ===
-# Esta es la etapa final que crea la imagen de producción.
-# Es una imagen ligera que solo contiene lo necesario para ejecutar la aplicación.
-FROM node:20-alpine AS runner
+
+# === Stage 3: Producción ===
+# Utiliza la misma imagen base, que es ligera, para la etapa final.
+FROM us-central1-docker.pkg.dev/covalto-registry-spt/covalto-base-images/nodejs:20.15.0-alpine as runner
 WORKDIR /app
 
-ENV NODE_ENV production
-ENV NEXT_TELEMETRY_DISABLED 1
+# Establece el entorno a producción.
+ENV NODE_ENV=production
 
-# Copia los archivos de construcción de la etapa 'builder'.
+# Copia los artefactos de construcción de la etapa anterior.
 COPY --from=builder /app/public ./public
-COPY --from=builder /app/.next/standalone ./
-COPY --from=builder /app/.next/static ./.next/static
+COPY --from=builder /app/package.json ./package.json
 
-# El puerto 8080 es el que se expone para que Kubernetes pueda dirigir el tráfico.
+# Copia el directorio .next, que contiene la salida de la construcción de Next.js.
+# La estructura recomendada para Standalone Output es copiar la carpeta completa.
+COPY --from=builder --chown=nextjs:nodejs /app/.next ./.next
+
+# Expone el puerto 8080, que es el que la aplicación usará.
 EXPOSE 8080
 
-# El comando para iniciar la aplicación en producción, usando el puerto 8080.
-CMD ["node", "server.js"]
+# El comando para iniciar la aplicación.
+# Utiliza el script "start" de package.json, que ejecuta "next start -p 8080".
+CMD ["npm", "start"]
