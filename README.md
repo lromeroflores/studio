@@ -121,6 +121,10 @@ Si necesitas subir una imagen desde tu máquina local al registro (esto generalm
 make push
 ```
 
+### Nota Importante sobre el Proceso de Construcción
+
+Este es un proyecto **Next.js (Node.js)**. Su proceso de construcción se basa en `npm` y `Dockerfile`. **No utiliza las herramientas de `func.yaml` o `poetry`**, que son específicas para proyectos de funciones sin servidor (serverless) en Python. El `Dockerfile` y el `Makefile` en este repositorio ya están correctamente configurados para construir y empaquetar esta aplicación web para su despliegue en Kubernetes.
+
 ---
 
 ## 🛠️ Comandos del Makefile
