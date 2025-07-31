@@ -1,47 +1,36 @@
-# ---- Etapa 1: Builder ----
-# Construye la aplicación Next.js y genera los archivos estáticos
-
 FROM node:20-alpine AS builder
 
-# Establece el directorio de trabajo
 WORKDIR /app
 
-# Copia los archivos de manifiesto y de bloqueo
-COPY package.json ./
-COPY package-lock.json ./
-
-# Instala las dependencias de producción
-RUN npm install
-
-# Copia el resto de los archivos de la aplicación
+# Copy all source files first to ensure npm has full context
 COPY . .
 
-# Construye y exporta la aplicación como un sitio estático
+# Install dependencies with the full project context
+RUN npm install
+
+# Build the application and export it as a static site
 RUN npm run build
-
-
-# ---- Etapa 2: Production ----
-# Sirve los archivos estáticos con Nginx
 
 FROM nginx:alpine
 
-# Elimina la configuración por defecto de Nginx
+# Remove the default nginx configuration
 RUN rm /etc/nginx/conf.d/default.conf
 
-# Copia nuestra configuración personalizada de Nginx
+# Copy our custom nginx configuration
 COPY nginx/nginx.conf /etc/nginx/conf.d/
 
-# Establece el directorio de trabajo
+# Set the working directory to where nginx serves files from
 WORKDIR /usr/share/nginx/html
 
-# Limpia el contenido por defecto de Nginx
+# Clean out any default files
 RUN rm -rf ./*
 
-# Copia los archivos estáticos desde la etapa 'builder'
+# Copy the static assets from the builder stage
+# The 'npm run build' (with 'next export') command places files in the 'out' directory.
 COPY --from=builder /app/out .
 
-# Expone el puerto 8080 (el mismo que en nuestra configuración de K8s)
+# Expose port 8080 to the outside world
 EXPOSE 8080
 
-# Inicia Nginx en modo 'daemon off' para que se mantenga en primer plano
+# Command to run nginx in the foreground
 CMD ["nginx", "-g", "daemon off;"]
