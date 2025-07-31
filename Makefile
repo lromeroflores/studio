@@ -1,119 +1,75 @@
-
-# Makefile for ContractEase App
-
 # ==============================================================================
-# Variables
-# ==============================================================================
-
-# Get Project ID from gcloud config, or use a placeholder
-PROJECT_ID ?= $(shell gcloud config get-value project 2>/dev/null)
-ifeq ($(PROJECT_ID),)
-  PROJECT_ID = "your-gcp-project-id"
-endif
-
-# Service and image names
-SERVICE_NAME = contract-ease-app
-REGION = us-central1
-IMAGE_NAME = covalto-ai-services/$(SERVICE_NAME)
-IMAGE_TAG ?= $(shell git rev-parse --short HEAD)
-REGISTRY_URL = $(REGION)-docker.pkg.dev
-IMAGE_URL = $(REGISTRY_URL)/$(PROJECT_ID)/$(IMAGE_NAME):$(IMAGE_TAG)
-
-# Default environment for deployment
-ENV ?= dev
-
-# ==============================================================================
-# Docker & Build Targets
+# Makefile para el Proyecto ContractEase
+#
+# Este archivo proporciona comandos convenientes para gestionar el ciclo de vida
+# de la aplicación, desde el desarrollo local hasta el despliegue.
 # ==============================================================================
 
-.PHONY: build
+# Configuración de la imagen Docker
+# Obtiene el SHA corto del commit actual para usarlo como etiqueta de la imagen.
+GIT_SHORT_SHA := $(shell git rev-parse --short HEAD)
+DOCKER_IMAGE_NAME := contract-ease
+DOCKER_IMAGE_TAG := $(GIT_SHORT_SHA)
+
+.PHONY: help build push run-local dev-next dev-genkit lint lint-fix format clean
+
+help:
+	@echo "Comandos disponibles:"
+	@echo "  make build          Construye la imagen de Docker para la aplicación."
+	@echo "  make push           Sube la imagen de Docker a un registro (requiere configuración)."
+	@echo "  make run-local      Ejecuta la aplicación en un contenedor Docker localmente."
+	@echo "  make dev-next       Inicia el servidor de desarrollo de Next.js."
+	@echo "  make dev-genkit     Inicia el servidor de desarrollo de Genkit."
+	@echo "  make lint           Ejecuta el linter para verificar la calidad del código."
+	@echo "  make lint-fix       Intenta corregir automáticamente los problemas de lint."
+	@echo "  make format         Formatea todo el código usando Prettier."
+	@echo "  make clean          Elimina las imágenes de Docker locales de este proyecto."
+
+# Construye la imagen de Docker
 build:
-	@echo "Building Docker image: $(IMAGE_URL)"
-	@docker build -t $(IMAGE_URL) .
+	@echo "Construyendo imagen de Docker: $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)..."
+	docker build -t $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) .
 
-.PHONY: push
-push: build
-	@echo "Pushing Docker image to Artifact Registry: $(IMAGE_URL)"
-	@gcloud auth configure-docker $(REGISTRY_URL)
-	@docker push $(IMAGE_URL)
+# Sube la imagen de Docker a un registro (ej. Google Artifact Registry)
+# Asegúrate de haberte autenticado primero (ej. gcloud auth configure-docker)
+push:
+	@echo "Subiendo imagen de Docker a un registro..."
+	# Reemplaza 'your-registry-url' con la URL de tu registro de contenedores.
+	# docker tag $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG) your-registry-url/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
+	# docker push your-registry-url/$(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
+	@echo "Comando 'push' necesita ser configurado con la URL de tu registro."
 
-# ==============================================================================
-# Local Development Targets
-# ==============================================================================
+# Ejecuta la aplicación en un contenedor Docker localmente en el puerto 3000
+run-local:
+	@echo "Ejecutando la aplicación en un contenedor Docker en http://localhost:3000..."
+	docker run --rm -p 3000:3000 --env-file .env $(DOCKER_IMAGE_NAME):$(DOCKER_IMAGE_TAG)
 
-.PHONY: dev
-dev:
-	@echo "Starting Next.js and Genkit development servers..."
-	@echo "Run 'make dev-next' and 'make dev-genkit' in separate terminals."
-
-.PHONY: dev-next
+# Inicia el servidor de desarrollo de Next.js
 dev-next:
-	@echo "Starting Next.js frontend on http://localhost:3000"
+	@echo "Iniciando el servidor de desarrollo de Next.js..."
 	npm run dev
 
-.PHONY: dev-genkit
+# Inicia el servidor de desarrollo de Genkit para los flujos de IA
 dev-genkit:
-	@echo "Starting Genkit AI flows..."
+	@echo "Iniciando el watcher de Genkit..."
 	npm run genkit:watch
 
-.PHONY: run-local
-run-local:
-	@echo "Running the app locally using Docker on port 3000..."
-	@docker run --rm -it -p 3000:3000 -e GOOGLE_API_KEY=$(shell grep GOOGLE_API_KEY .env | cut -d '=' -f2) $(IMAGE_URL)
-
-# ==============================================================================
-# Deployment Targets (Example for Cloud Run)
-# ==============================================================================
-
-.PHONY: deploy
-deploy: push
-	@echo "Deploying image to Cloud Run in environment: $(ENV)..."
-	gcloud run deploy $(SERVICE_NAME)-$(ENV) \
-		--image=$(IMAGE_URL) \
-		--region=$(REGION) \
-		--platform=managed \
-		--allow-unauthenticated \
-		--update-secrets=GOOGLE_API_KEY=google-api-key:latest \
-		--memory=1Gi \
-		--min-instances=0 \
-		--max-instances=3 \
-		--update-labels=environment=$(ENV)
-
-# ==============================================================================
-# Quality & Maintenance Targets
-# ==============================================================================
-
-.PHONY: lint
+# Ejecuta el linter para revisar la calidad del código
 lint:
-	@echo "Running linter..."
+	@echo "Ejecutando linter..."
 	npm run lint
 
-.PHONY: lint-fix
+# Intenta corregir automáticamente los problemas de linting
 lint-fix:
-	@echo "Fixing lint issues..."
+	@echo "Intentando corregir problemas de lint..."
 	npm run lint:fix
 
-.PHONY: format
+# Formatea el código con Prettier
 format:
-	@echo "Formatting code with Prettier..."
+	@echo "Formateando el código con Prettier..."
 	npm run format
 
-.PHONY: clean
+# Elimina las imágenes de Docker creadas para este proyecto
 clean:
-	@echo "Cleaning up local Docker images..."
-	@docker images -q $(IMAGE_URL_BASE) | xargs -r docker rmi
-
-.PHONY: help
-help:
-	@echo "Available commands:"
-	@echo "  make build         Build the Docker image."
-	@echo "  make push          Push the Docker image to Artifact Registry."
-	@echo "  make dev           Show instructions to run dev servers."
-	@echo "  make dev-next      Run the Next.js frontend."
-	@echo "  make dev-genkit    Run the Genkit AI flows."
-	@echo "  make run-local     Run the app locally in a Docker container."
-	@echo "  make deploy        Deploy to Cloud Run (specify ENV, e.g., 'make deploy ENV=staging')."
-	@echo "  make lint          Run the linter."
-	@echo "  make lint-fix      Attempt to fix lint issues automatically."
-	@echo "  make format        Format the codebase with Prettier."
-	@echo "  make clean         Remove local Docker images for this project."
+	@echo "Eliminando imágenes de Docker locales para $(DOCKER_IMAGE_NAME)..."
+	docker rmi -f $(shell docker images -q $(DOCKER_IMAGE_NAME))
