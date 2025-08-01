@@ -1,33 +1,22 @@
-# Archivos de dependencias y logs
 node_modules
 npm-debug.log
 yarn-error.log
 
-# Directorios de construcción y caché
 .next
 dist
 build
 
-# Archivos de configuración locales
 .env
 .env.local
 .env.development.local
 .env.staging.local
 .env.production.local
 
-# Archivos de Docker y CI/CD
 Dockerfile
 .dockerignore
 .circleci/
 chart/
 
-# Otros
 README.md
-*.md
 .gitignore
-.prettierrc.json
-.eslintrc.json
-tsconfig.json
-next.config.js
-next-env.d.ts
 .vscode/

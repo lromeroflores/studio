@@ -5,7 +5,7 @@ squad: data-group
 product: covalto-ai-services
 replicas: 1
 docker:
-  image: us-central1-docker.pkg.dev/covalto-registry-spt/covalto-ai-services/contract-ease
+  image: us-central1-docker.pkg.dev/covalto-registry-spt/covalto-ai-services/contract-gen-app
 
 ingress:
   public: false

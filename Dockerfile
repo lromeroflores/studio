@@ -1,44 +1,31 @@
-# Dockerfile
+FROM node:20-bullseye AS builder
 
-# Etapa 1: Construcción de la aplicación
-FROM node:20-alpine AS builder
-
-# Establecer el directorio de trabajo
 WORKDIR /app
 
-# Copiar archivos de dependencias primero para aprovechar el caché de Docker
 COPY package*.json ./
 
-# Instalar todas las dependencias (incluidas las de desarrollo)
-RUN npm install
+RUN npm ci
 
-# Copiar el resto de los archivos de la aplicación
 COPY . .
 
-# Construir y exportar la aplicación como sitio estático
-# La bandera --force es para evitar errores si hay conflictos de dependencias menores.
-RUN npm run build
+RUN mkdir -p public
 
-# Etapa 2: Servidor de producción con Nginx
-FROM nginx:alpine
+RUN npx next build
 
-# Eliminar la configuración por defecto de Nginx
-RUN rm /etc/nginx/conf.d/default.conf
+FROM node:20-bullseye-slim
 
-# Copiar nuestra configuración personalizada de Nginx
-COPY nginx/nginx.conf /etc/nginx/conf.d/
+WORKDIR /app
 
-# Establecer el directorio de trabajo para los archivos estáticos
-WORKDIR /usr/share/nginx/html
+ENV NODE_ENV=production
+ENV NEXT_TELEMETRY_DISABLED=1
 
-# Limpiar cualquier contenido preexistente
-RUN rm -rf ./*
+COPY --from=builder /app/package*.json ./
 
-# Copiar los archivos estáticos construidos desde la etapa 'builder'
-COPY --from=builder /app/out .
+RUN npm ci --omit=dev
 
-# Exponer el puerto 8080
+COPY --from=builder /app/.next ./.next
+COPY --from=builder /app/public ./public
+
 EXPOSE 8080
 
-# Iniciar Nginx
-CMD ["nginx", "-g", "daemon off;"]
+CMD ["npm", "start"]

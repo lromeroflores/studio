@@ -3,7 +3,7 @@ version: 2.1
 parameters:
   project-name:
     type: string
-    default: 'contract-ease'
+    default: 'contract-gen-app'
 
 orbs:
   argocd: credijusto/argocd@volatile

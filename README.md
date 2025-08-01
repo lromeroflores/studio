@@ -1,6 +1,4 @@
-# ContractEase
-
-This is a Next.js application for managing contracts, built with AI features powered by Genkit.
+# contract-gen-app
 
 ## Desarrollo Local
 
@@ -18,14 +16,14 @@ Para ejecutar la aplicación en tu máquina local, sigue estos pasos.
 
 La aplicación utiliza Genkit para conectarse a los modelos de IA de Google. Necesitarás una clave de API para esto.
 
-1.  Crea un archivo llamado `.env` en la raíz del proyecto.
-2.  Añade tu clave de API de Google AI:
+1. Crea un archivo llamado `.env` en la raíz del proyecto.
+2. Añade tu clave de API de Google AI:
 
-    ```
-    GOOGLE_API_KEY=tu_api_key_aqui
-    ```
+   ```
+   GOOGLE_API_KEY=tu_api_key_aqui
+   ```
 
-    Puedes obtener una clave en [Google AI Studio](https://aistudio.google.com/app/apikey).
+   Puedes obtener una clave en [Google AI Studio](https://aistudio.google.com/app/apikey).
 
 ### 2. Instalar Dependencias
 
@@ -48,6 +46,7 @@ make dev
 # o
 npm run dev
 ```
+
 Esto iniciará la aplicación principal, típicamente disponible en `http://localhost:3000`.
 
 **Terminal 2: Iniciar los Flujos de IA de Genkit**
@@ -55,6 +54,7 @@ Esto iniciará la aplicación principal, típicamente disponible en `http://loca
 ```bash
 npm run genkit:watch
 ```
+
 Esto inicia el servidor de desarrollo de Genkit, que pone las funciones de IA a disposición de tu aplicación Next.js.
 
 Una vez que ambos servidores estén funcionando, puedes abrir tu navegador en `http://localhost:3000` para usar la aplicación.
@@ -92,9 +92,11 @@ Para probar la aplicación en un contenedor localmente:
 ```bash
 make docker-run
 ```
+
 La aplicación estará disponible en [http://localhost:8080](http://localhost:8080).
 
 Para detener el contenedor, ejecuta:
+
 ```bash
 make docker-stop
 ```
@@ -102,6 +104,7 @@ make docker-stop
 ### Proceso de Construcción y Despliegue con CI/CD
 
 El flujo de trabajo automatizado es el siguiente:
+
 1. Un desarrollador hace un `push` a la rama `main`.
 2. CircleCI se activa, ejecuta las pruebas y el linter.
 3. Si todo es correcto, CircleCI construye una nueva imagen de Docker usando el `Dockerfile` y la sube a Google Artifact Registry.
@@ -111,16 +114,16 @@ El flujo de trabajo automatizado es el siguiente:
 
 ## 🛠️ Comandos del Makefile
 
-| Comando              | Descripción                                                                 |
-|----------------------|-----------------------------------------------------------------------------|
-| `make help`          | Muestra este mensaje de ayuda.                                              |
-| `make install`       | Instala las dependencias del proyecto con npm.                              |
-| `make dev`           | Ejecuta el servidor de desarrollo local de Next.js.                         |
-| `make lint`          | Ejecuta el linter para revisar el estilo del código.                        |
-| `make format`        | Formatea el código con Prettier.                                            |
-| `make test`          | Ejecuta las pruebas (actualmente no hay pruebas especificadas).             |
-| `make docker-build`  | Construye la imagen de Docker para producción.                              |
-| `make docker-run`    | Ejecuta la aplicación dentro de un contenedor Docker.                       |
-| `make docker-stop`   | Detiene el contenedor Docker que se está ejecutando.                        |
-| `make clean`         | Elimina los artefactos de construcción y las dependencias instaladas.       |
-| `make full-clean`    | Limpia todo, incluida la imagen de Docker construida localmente.            |
+| Comando               | Descripción                                                           |
+| --------------------- | ---------------------------------------------------------------------- |
+| `make help`         | Muestra este mensaje de ayuda.                                         |
+| `make install`      | Instala las dependencias del proyecto con npm.                         |
+| `make dev`          | Ejecuta el servidor de desarrollo local de Next.js.                    |
+| `make lint`         | Ejecuta el linter para revisar el estilo del código.                  |
+| `make format`       | Formatea el código con Prettier.                                      |
+| `make test`         | Ejecuta las pruebas (actualmente no hay pruebas especificadas).        |
+| `make docker-build` | Construye la imagen de Docker para producción.                        |
+| `make docker-run`   | Ejecuta la aplicación dentro de un contenedor Docker.                 |
+| `make docker-stop`  | Detiene el contenedor Docker que se está ejecutando.                  |
+| `make clean`        | Elimina los artefactos de construcción y las dependencias instaladas. |
+| `make full-clean`   | Limpia todo, incluida la imagen de Docker construida localmente.       |

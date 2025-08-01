@@ -1,6 +1,10 @@
 import { NextResponse } from 'next/server';
 
-export const dynamic = 'force-dynamic';
+// Esto le indica a Next.js que ejecute esta ruta en el momento de la construcción
+// y guarde el resultado como un archivo estático. Esto resolverá el error de build,
+// pero la ruta ya no será dinámica; devolverá los mismos datos cacheados en cada llamada
+// hasta que se reconstruya la aplicación.
+export const dynamic = 'force-static';
 
 export async function GET() {
   try {

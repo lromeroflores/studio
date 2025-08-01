@@ -1,18 +1,18 @@
-# **App Name**: ContractEase
+# **Nombre de la App**: contract-gen-app
 
-## Core Features:
+## Características Principales:
 
-- Templated Field Input: Intuitive interface for filling out contract fields based on a template.
-- AI Clause Generator: AI-powered clause generation for ad-hoc additions, using a 'tool' that selects relevant legal information.
-- Contract Preview: Preview the contract in a formatted, printable style before finalizing.
-- Template Storage: Secure storage of contract templates.
-- PDF Export: Export the finalized contract as a PDF document.
+- Entrada de Campos con Plantilla: Interfaz intuitiva para rellenar campos de contrato basados en una plantilla.
+- Generador de Cláusulas con IA: Generación de cláusulas ad-hoc impulsada por IA, utilizando una 'herramienta' que selecciona información legal relevante.
+- Vista Previa del Contrato: Previsualiza el contrato en un estilo formateado e imprimible antes de finalizarlo.
+- Almacenamiento de Plantillas: Almacenamiento seguro de plantillas de contrato.
+- Exportación a PDF: Exporta el contrato finalizado como un documento PDF.
 
-## Style Guidelines:
+## Guía de Estilos:
 
-- Primary color: Deep blue (#3F51B5) to convey trust and professionalism.
-- Background color: Light grey (#F0F0F5) for a clean and unobtrusive workspace.
-- Accent color: A vibrant purple (#7E57C2) to highlight key actions and AI suggestions.
-- Clean and professional sans-serif fonts for readability.
-- Use clear and simple icons for contract actions and template management.
-- Structured layout with clear sections for input fields, AI suggestions, and preview areas.
+- Color primario: Azul oscuro (#3F51B5) para transmitir confianza y profesionalismo.
+- Color de fondo: Gris claro (#F0F0F5) para un espacio de trabajo limpio y discreto.
+- Color de acento: Un morado vibrante (#7E57C2) para resaltar acciones clave y sugerencias de la IA.
+- Fuentes sans-serif limpias y profesionales para facilitar la legibilidad.
+- Usa iconos claros y sencillos para las acciones del contrato y la gestión de plantillas.
+- Diseño estructurado con secciones claras para los campos de entrada, sugerencias de la IA y áreas de vista previa.
